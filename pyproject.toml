@@ -2,6 +2,7 @@
 name = "coovts"
 dynamic = ["version"]
 description = "Another library for making VTube Studio plugins with Python"
+authors = [{ name = "LgCookie", email = "lgc2333@126.com" }]
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
