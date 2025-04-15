@@ -305,9 +305,8 @@ class Plugin:
     async def stop(self):
         self.stopped = True
         await self._disconnect()
-        if self._run_task and not self._run_task.done():
+        if self._run_task:
             self._run_task.cancel()
-            await self._run_task
         self._run_task = None
 
     async def _run(self):
