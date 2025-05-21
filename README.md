@@ -39,6 +39,6 @@ pip install coovts
 
 ## 📝 Update Log
 
-### 0.1.0.alpha2
+### 0.0.1.alpha2
 
 - Refactored project, complete missing data models, made better type hints
