@@ -1,4 +1,6 @@
-from pydantic import BaseModel
+from typing import Annotated
+
+from pydantic import BaseModel, Field
 
 from ..shared import with_request_model_config, with_response_model_config
 
@@ -16,14 +18,14 @@ class TestEventData(BaseModel):
 
 @with_request_model_config
 class ModelLoadedEventConfig(BaseModel):
-    model_id: list[str] | None = None
+    model_id: Annotated[list[str] | None, Field(alias="modelID")] = None
 
 
 @with_response_model_config
 class ModelLoadedEventData(BaseModel):
     model_loaded: bool
     model_name: str
-    model_id: str
+    model_id: Annotated[str, Field(alias="modelID")]
 
 
 @with_request_model_config
@@ -46,12 +48,12 @@ class HotkeyTriggeredEventConfig(BaseModel):
 
 @with_response_model_config
 class HotkeyTriggeredEventData(BaseModel):
-    hotkey_id: str
+    hotkey_id: Annotated[str, Field(alias="hotkeyID")]
     hotkey_name: str
     hotkey_action: str
     hotkey_file: str
     hotkey_triggered_by_api: bool
-    model_id: str
+    model_id: Annotated[str, Field(alias="modelID")]
     model_name: str
     is_live2d_item: bool
 
@@ -71,7 +73,7 @@ class ModelMovedEventConfig(BaseModel):
 
 @with_response_model_config
 class ModelMovedEventData(BaseModel):
-    model_id: str
+    model_id: Annotated[str, Field(alias="modelID")]
     model_name: str
     model_position: ModelPosition
 
@@ -90,7 +92,7 @@ class Point2D(BaseModel):
 @with_response_model_config
 class ModelOutlineEventData(BaseModel):
     model_name: str
-    model_id: str
+    model_id: Annotated[str, Field(alias="modelID")]
     convex_hull: list[Point2D]
     convex_hull_center: Point2D
     window_size: Point2D
@@ -98,13 +100,13 @@ class ModelOutlineEventData(BaseModel):
 
 @with_response_model_config
 class ArtMeshHitInfo(BaseModel):
-    model_id: str
-    art_mesh_id: str
+    model_id: Annotated[str, Field(alias="modelID")]
+    art_mesh_id: Annotated[str, Field(alias="artMeshID")]
     angle: float
     size: float
-    vertex_id1: int
-    vertex_id2: int
-    vertex_id3: int
+    vertex_id1: Annotated[int, Field(alias="vertexID1")]
+    vertex_id2: Annotated[int, Field(alias="vertexID2")]
+    vertex_id3: Annotated[int, Field(alias="vertexID3")]
     vertex_weight1: float
     vertex_weight2: float
     vertex_weight3: float
@@ -125,10 +127,10 @@ class ModelClickedEventConfig(BaseModel):
 @with_response_model_config
 class ModelClickedEventData(BaseModel):
     model_loaded: bool
-    loaded_model_id: str
+    loaded_model_id: Annotated[str, Field(alias="loadedModelID")]
     loaded_model_name: str
     model_was_clicked: bool
-    mouse_button_id: int
+    mouse_button_id: Annotated[int, Field(alias="mouseButtonID")]
     click_position: Point2D
     window_size: Point2D
     clicked_art_mesh_count: int
@@ -137,14 +139,17 @@ class ModelClickedEventData(BaseModel):
 
 @with_request_model_config
 class ItemEventConfig(BaseModel):
-    item_instance_ids: list[str] | None = None
+    item_instance_ids: Annotated[
+        list[str] | None,
+        Field(alias="item_instance_ids"),
+    ] = None
     item_file_names: list[str] | None = None
 
 
 @with_response_model_config
 class ItemEventData(BaseModel):
     item_event_type: str
-    item_instance_id: str
+    item_instance_id: Annotated[str, Field(alias="itemInstanceID")]
     item_file_name: str
     item_position: Point2D
 

@@ -3,12 +3,14 @@ import sys
 from pathlib import Path
 
 from coovts.plugin import Plugin
+from coovts.types import api, event, get_event_name
 from loguru import logger
 
 AUTH_TOKEN_FILE = Path(__file__).parent / "auth_token.txt"
 plugin = Plugin(
     "Example Plugin",
     "LgCookie",
+    Path(__file__).parent / "icon.png",
     authentication_token=(
         AUTH_TOKEN_FILE.read_text().strip() if AUTH_TOKEN_FILE.exists() else None
     ),
@@ -70,6 +72,29 @@ async def _(e: Exception):
 @plugin.on_handler_run_failed
 async def _(e: Exception):
     logger.opt(exception=e).error("Failed to run handler")
+
+
+# endregion
+
+
+# region api calling (event registering) & handling
+
+
+@plugin.on_authenticated
+async def _():
+    await plugin.call_api(
+        api.EventSubscriptionRequest(
+            event_name=get_event_name(event.ModelMovedEventData),
+            subscribe=True,
+            config=event.ModelMovedEventConfig(),
+        ),
+    )
+    logger.success("Subscribed to ModelMovedEvent")
+
+
+@plugin.handle_event(event.ModelMovedEventData)
+async def _(data: event.ModelMovedEventData):
+    logger.info(f"Model moved: {data}")
 
 
 # endregion

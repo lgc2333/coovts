@@ -1,10 +1,14 @@
 from abc import ABC, abstractmethod
+from collections.abc import Callable, Coroutine
 from types import EllipsisType
-from typing import Any, overload
+from typing import Any, Literal, overload
 
 from pydantic import BaseModel
 
-from . import api
+from . import api, event
+
+type _Deco[**P, R] = Callable[[Callable[P, R]], Callable[P, R]]
+type _Co[T] = Coroutine[Any, Any, T]
 
 class PluginAPI(ABC):
     @abstractmethod
@@ -18,6 +22,12 @@ class PluginAPI(ABC):
         api_version: str = "1.0",
         api_timeout: float | None | EllipsisType = ...,
     ) -> Any: ...
+    @abstractmethod
+    def _handle_event[T: BaseModel](
+        self,
+        event_data_model: type[T],
+        event_name: str | None = None,
+    ) -> _Deco[[T], _Co[Any]]: ...
 
     # region builtin apis
 
@@ -26,7 +36,7 @@ class PluginAPI(ABC):
         self,
         data: api.ArtMeshListRequest,
         *,
-        message_type: str = "ArtMeshListRequest",
+        message_type: Literal["ArtMeshListRequest"] = ...,
         response_model: type[api.ArtMeshListResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
@@ -37,7 +47,7 @@ class PluginAPI(ABC):
         self,
         data: api.ArtMeshSelectionRequest,
         *,
-        message_type: str = "ArtMeshSelectionRequest",
+        message_type: Literal["ArtMeshSelectionRequest"] = ...,
         response_model: type[api.ArtMeshSelectionResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
@@ -48,7 +58,7 @@ class PluginAPI(ABC):
         self,
         data: api.ColorTintRequest,
         *,
-        message_type: str = "ColorTintRequest",
+        message_type: Literal["ColorTintRequest"] = ...,
         response_model: type[api.ColorTintResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
@@ -59,7 +69,7 @@ class PluginAPI(ABC):
         self,
         data: api.AuthenticationRequest,
         *,
-        message_type: str = "AuthenticationRequest",
+        message_type: Literal["AuthenticationRequest"] = ...,
         response_model: type[api.AuthenticationResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
@@ -70,7 +80,7 @@ class PluginAPI(ABC):
         self,
         data: api.AuthenticationTokenRequest,
         *,
-        message_type: str = "AuthenticationTokenRequest",
+        message_type: Literal["AuthenticationTokenRequest"] = ...,
         response_model: type[api.AuthenticationTokenResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
@@ -79,9 +89,20 @@ class PluginAPI(ABC):
     @overload
     async def call_api(
         self,
+        data: api.EventSubscriptionRequest,
+        *,
+        message_type: Literal["EventSubscriptionRequest"] = ...,
+        response_model: type[api.EventSubscriptionResponse] = ...,
+        api_name: str = "VTubeStudioPublicAPI",
+        api_version: str = "1.0",
+        api_timeout: float | None | EllipsisType = ...,
+    ) -> api.EventSubscriptionResponse: ...
+    @overload
+    async def call_api(
+        self,
         data: api.ExpressionActivationRequest,
         *,
-        message_type: str = "ExpressionActivationRequest",
+        message_type: Literal["ExpressionActivationRequest"] = ...,
         response_model: type[api.ExpressionActivationResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
@@ -92,7 +113,7 @@ class PluginAPI(ABC):
         self,
         data: api.ExpressionStateRequest,
         *,
-        message_type: str = "ExpressionStateRequest",
+        message_type: Literal["ExpressionStateRequest"] = ...,
         response_model: type[api.ExpressionStateResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
@@ -103,7 +124,7 @@ class PluginAPI(ABC):
         self,
         data: api.HotkeysInCurrentModelRequest,
         *,
-        message_type: str = "HotkeysInCurrentModelRequest",
+        message_type: Literal["HotkeysInCurrentModelRequest"] = ...,
         response_model: type[api.HotkeysInCurrentModelResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
@@ -114,7 +135,7 @@ class PluginAPI(ABC):
         self,
         data: api.HotkeyTriggerRequest,
         *,
-        message_type: str = "HotkeyTriggerRequest",
+        message_type: Literal["HotkeyTriggerRequest"] = ...,
         response_model: type[api.HotkeyTriggerResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
@@ -125,7 +146,7 @@ class PluginAPI(ABC):
         self,
         data: api.APIStateRequest,
         *,
-        message_type: str = "APIStateRequest",
+        message_type: Literal["APIStateRequest"] = ...,
         response_model: type[api.APIStateResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
@@ -136,7 +157,7 @@ class PluginAPI(ABC):
         self,
         data: api.StatisticsRequest,
         *,
-        message_type: str = "StatisticsRequest",
+        message_type: Literal["StatisticsRequest"] = ...,
         response_model: type[api.StatisticsResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
@@ -147,7 +168,7 @@ class PluginAPI(ABC):
         self,
         data: api.VTSFolderInfoRequest,
         *,
-        message_type: str = "VTSFolderInfoRequest",
+        message_type: Literal["VTSFolderInfoRequest"] = ...,
         response_model: type[api.VTSFolderInfoResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
@@ -158,7 +179,7 @@ class PluginAPI(ABC):
         self,
         data: api.ItemAnimationControlRequest,
         *,
-        message_type: str = "ItemAnimationControlRequest",
+        message_type: Literal["ItemAnimationControlRequest"] = ...,
         response_model: type[api.ItemAnimationControlResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
@@ -169,7 +190,7 @@ class PluginAPI(ABC):
         self,
         data: api.ItemListRequest,
         *,
-        message_type: str = "ItemListRequest",
+        message_type: Literal["ItemListRequest"] = ...,
         response_model: type[api.ItemListResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
@@ -180,7 +201,7 @@ class PluginAPI(ABC):
         self,
         data: api.ItemLoadRequest,
         *,
-        message_type: str = "ItemLoadRequest",
+        message_type: Literal["ItemLoadRequest"] = ...,
         response_model: type[api.ItemLoadResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
@@ -191,7 +212,7 @@ class PluginAPI(ABC):
         self,
         data: api.ItemMoveRequest,
         *,
-        message_type: str = "ItemMoveRequest",
+        message_type: Literal["ItemMoveRequest"] = ...,
         response_model: type[api.ItemMoveResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
@@ -202,7 +223,7 @@ class PluginAPI(ABC):
         self,
         data: api.ItemPinRequest,
         *,
-        message_type: str = "ItemPinRequest",
+        message_type: Literal["ItemPinRequest"] = ...,
         response_model: type[api.ItemPinResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
@@ -213,7 +234,7 @@ class PluginAPI(ABC):
         self,
         data: api.ItemUnloadRequest,
         *,
-        message_type: str = "ItemUnloadRequest",
+        message_type: Literal["ItemUnloadRequest"] = ...,
         response_model: type[api.ItemUnloadResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
@@ -224,7 +245,7 @@ class PluginAPI(ABC):
         self,
         data: api.AvailableModelsRequest,
         *,
-        message_type: str = "AvailableModelsRequest",
+        message_type: Literal["AvailableModelsRequest"] = ...,
         response_model: type[api.AvailableModelsResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
@@ -235,7 +256,7 @@ class PluginAPI(ABC):
         self,
         data: api.CurrentModelRequest,
         *,
-        message_type: str = "CurrentModelRequest",
+        message_type: Literal["CurrentModelRequest"] = ...,
         response_model: type[api.CurrentModelResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
@@ -246,7 +267,7 @@ class PluginAPI(ABC):
         self,
         data: api.ModelLoadRequest,
         *,
-        message_type: str = "ModelLoadRequest",
+        message_type: Literal["ModelLoadRequest"] = ...,
         response_model: type[api.ModelLoadResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
@@ -257,7 +278,7 @@ class PluginAPI(ABC):
         self,
         data: api.MoveModelRequest,
         *,
-        message_type: str = "MoveModelRequest",
+        message_type: Literal["MoveModelRequest"] = ...,
         response_model: type[api.MoveModelResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
@@ -268,7 +289,7 @@ class PluginAPI(ABC):
         self,
         data: api.NDIConfigRequest,
         *,
-        message_type: str = "NDIConfigRequest",
+        message_type: Literal["NDIConfigRequest"] = ...,
         response_model: type[api.NDIConfigResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
@@ -279,7 +300,7 @@ class PluginAPI(ABC):
         self,
         data: api.FaceFoundRequest,
         *,
-        message_type: str = "FaceFoundRequest",
+        message_type: Literal["FaceFoundRequest"] = ...,
         response_model: type[api.FaceFoundResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
@@ -290,7 +311,7 @@ class PluginAPI(ABC):
         self,
         data: api.InjectParameterDataRequest,
         *,
-        message_type: str = "InjectParameterDataRequest",
+        message_type: Literal["InjectParameterDataRequest"] = ...,
         response_model: type[api.InjectParameterDataResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
@@ -301,7 +322,7 @@ class PluginAPI(ABC):
         self,
         data: api.InputParameterListRequest,
         *,
-        message_type: str = "InputParameterListRequest",
+        message_type: Literal["InputParameterListRequest"] = ...,
         response_model: type[api.InputParameterListResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
@@ -312,7 +333,7 @@ class PluginAPI(ABC):
         self,
         data: api.Live2DParameterListRequest,
         *,
-        message_type: str = "Live2DParameterListRequest",
+        message_type: Literal["Live2DParameterListRequest"] = ...,
         response_model: type[api.Live2DParameterListResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
@@ -323,7 +344,7 @@ class PluginAPI(ABC):
         self,
         data: api.ParameterCreationRequest,
         *,
-        message_type: str = "ParameterCreationRequest",
+        message_type: Literal["ParameterCreationRequest"] = ...,
         response_model: type[api.ParameterCreationResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
@@ -334,7 +355,7 @@ class PluginAPI(ABC):
         self,
         data: api.ParameterDeletionRequest,
         *,
-        message_type: str = "ParameterDeletionRequest",
+        message_type: Literal["ParameterDeletionRequest"] = ...,
         response_model: type[api.ParameterDeletionResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
@@ -345,7 +366,7 @@ class PluginAPI(ABC):
         self,
         data: api.ParameterValueRequest,
         *,
-        message_type: str = "ParameterValueRequest",
+        message_type: Literal["ParameterValueRequest"] = ...,
         response_model: type[api.ParameterValueResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
@@ -356,7 +377,7 @@ class PluginAPI(ABC):
         self,
         data: api.GetCurrentModelPhysicsRequest,
         *,
-        message_type: str = "GetCurrentModelPhysicsRequest",
+        message_type: Literal["GetCurrentModelPhysicsRequest"] = ...,
         response_model: type[api.GetCurrentModelPhysicsResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
@@ -367,7 +388,7 @@ class PluginAPI(ABC):
         self,
         data: api.SetCurrentModelPhysicsRequest,
         *,
-        message_type: str = "SetCurrentModelPhysicsRequest",
+        message_type: Literal["SetCurrentModelPhysicsRequest"] = ...,
         response_model: type[api.SetCurrentModelPhysicsResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
@@ -378,7 +399,7 @@ class PluginAPI(ABC):
         self,
         data: api.PostProcessingListRequest,
         *,
-        message_type: str = "PostProcessingListRequest",
+        message_type: Literal["PostProcessingListRequest"] = ...,
         response_model: type[api.PostProcessingListResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
@@ -389,7 +410,7 @@ class PluginAPI(ABC):
         self,
         data: api.PostProcessingUpdateRequest,
         *,
-        message_type: str = "PostProcessingUpdateRequest",
+        message_type: Literal["PostProcessingUpdateRequest"] = ...,
         response_model: type[api.PostProcessingUpdateResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
@@ -400,7 +421,7 @@ class PluginAPI(ABC):
         self,
         data: api.SceneColorOverlayInfoRequest,
         *,
-        message_type: str = "SceneColorOverlayInfoRequest",
+        message_type: Literal["SceneColorOverlayInfoRequest"] = ...,
         response_model: type[api.SceneColorOverlayInfoResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
@@ -409,8 +430,6 @@ class PluginAPI(ABC):
 
     # endregion
 
-    # if data is a model, we consider it has msg_t class var
-    # so message_type is optional
     @overload
     async def call_api[M: BaseModel](
         self,
@@ -456,3 +475,69 @@ class PluginAPI(ABC):
         api_version: str = "1.0",
         api_timeout: float | None | EllipsisType = ...,
     ) -> dict[str, Any]: ...
+
+    # region builtin events
+
+    @overload
+    def handle_event[T: event.HotkeyTriggeredEventData](
+        self,
+        event_data_model: type[T],
+        event_name: Literal["HotkeyTriggered"] = ...,
+    ) -> _Deco[[T], _Co[Any]]: ...
+    @overload
+    def handle_event[T: event.ItemEventData](
+        self,
+        event_data_model: type[T],
+        event_name: Literal["Item"] = ...,
+    ) -> _Deco[[T], _Co[Any]]: ...
+    @overload
+    def handle_event[T: event.Live2DCubismEditorConnectedEventData](
+        self,
+        event_data_model: type[T],
+        event_name: Literal["Live2DCubismEditorConnected"] = ...,
+    ) -> _Deco[[T], _Co[Any]]: ...
+    @overload
+    def handle_event[T: event.ModelClickedEventData](
+        self,
+        event_data_model: type[T],
+        event_name: Literal["ModelClicked"] = ...,
+    ) -> _Deco[[T], _Co[Any]]: ...
+    @overload
+    def handle_event[T: event.ModelLoadedEventData](
+        self,
+        event_data_model: type[T],
+        event_name: Literal["ModelLoaded"] = ...,
+    ) -> _Deco[[T], _Co[Any]]: ...
+    @overload
+    def handle_event[T: event.ModelMovedEventData](
+        self,
+        event_data_model: type[T],
+        event_name: Literal["ModelMoved"] = ...,
+    ) -> _Deco[[T], _Co[Any]]: ...
+    @overload
+    def handle_event[T: event.ModelOutlineEventData](
+        self,
+        event_data_model: type[T],
+        event_name: Literal["ModelOutline"] = ...,
+    ) -> _Deco[[T], _Co[Any]]: ...
+    @overload
+    def handle_event[T: event.TestEventData](
+        self,
+        event_data_model: type[T],
+        event_name: Literal["Test"] = ...,
+    ) -> _Deco[[T], _Co[Any]]: ...
+    @overload
+    def handle_event[T: event.TrackingStatusChangedEventData](
+        self,
+        event_data_model: type[T],
+        event_name: Literal["TrackingStatusChanged"] = ...,
+    ) -> _Deco[[T], _Co[Any]]: ...
+
+    # endregion
+
+    @overload
+    def handle_event[T: BaseModel](
+        self,
+        event_data_model: type[T],
+        event_name: str | None = None,
+    ) -> _Deco[[T], _Co[Any]]: ...

@@ -13,7 +13,13 @@ from pydantic import BaseModel
 
 from .errors import APIError, AuthenticationFailedError, ValidationError
 from .request import RequestManager
-from .types import BaseRequest, BaseResponse, get_api_response_model, get_message_type
+from .types import (
+    BaseRequest,
+    BaseResponse,
+    get_api_response_model,
+    get_event_name,
+    get_message_type,
+)
 from .types.api import (
     APIErrorResponse,
     AuthenticationRequest,
@@ -189,6 +195,19 @@ class Plugin(PluginAPI):
             self.event_handlers[event_name] = []
         self.event_handlers[event_name].append(EventHandlerInfo(model, handler))
         return handler
+
+    def _handle_event(
+        self,
+        event_data_model: type[BaseModel],
+        event_name: str | None = None,
+    ):
+        if not event_name:
+            event_name = get_event_name(event_data_model)
+
+        def deco(f: Callable):
+            return self.on_event(event_name, event_data_model, f)
+
+        return deco
 
     def dispatch_handlers[**P, R](
         self,

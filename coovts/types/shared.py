@@ -69,8 +69,22 @@ def get_api_response_model(model: type[BaseModel] | BaseModel) -> type[BaseModel
 def get_message_type(model: type[BaseModel] | BaseModel) -> str:
     if not isinstance(model, type):
         model = type(model)
-    if message_type := getattr(model, "msg_type", None):
-        if isinstance(message_type, str):
-            return message_type
-        raise TypeError(f"Model's 'msg_type' should be a str, not {type(message_type)}")
+    if msg_t := getattr(model, "msg_t", None):
+        if isinstance(msg_t, str):
+            return msg_t
+        raise TypeError(f"Model's 'msg_t' should be a str, not {type(msg_t)}")
     return model.__name__
+
+
+def get_event_name(model: type[BaseModel] | BaseModel) -> str:
+    if not isinstance(model, type):
+        model = type(model)
+    if msg_t := getattr(model, "msg_t", None):
+        if isinstance(msg_t, str):
+            return msg_t
+        raise TypeError(f"Model's 'msg_t' should be a str, not {type(msg_t)}")
+    if model.__name__.endswith("EventData"):
+        return model.__name__[:-4]
+    raise ValueError(
+        f"Cannot find suitable event name for {model}, please define manually",
+    )

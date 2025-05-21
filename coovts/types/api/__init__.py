@@ -17,6 +17,10 @@ from .auth import (
 from .error import (
     APIErrorResponse as APIErrorResponse,
 )
+from .event import (
+    EventSubscriptionRequest as EventSubscriptionRequest,
+    EventSubscriptionResponse as EventSubscriptionResponse,
+)
 from .expression import (
     ExpressionActivationRequest as ExpressionActivationRequest,
     ExpressionActivationResponse as ExpressionActivationResponse,
