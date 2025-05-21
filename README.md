@@ -12,13 +12,12 @@ Another library for making VTube Studio plugins with Python.
 
 ## 📖 Introduction
 
-This project is in early development, please refer to the source code to figure out how to use.
+If you want to know how to use this, please refer to [`examples/basic.py`](./examples/basic.py)  
+For advanced usage, please deep dive into the source code.
 
-Basically, create a `Plugin` instance (please refer to `plugin.py`), and subscribe events.  
-Use `Plugin.call_api` method to send requests to VTS.  
-There are just a few models defined, so if there's a model not defined, please define it yourself.
-
-Last, if you think this project is good, thanks for your use and feel free to contribute 😊  
+This project is in early development.  
+If you think this project is good, thanks for your use and feel free to contribute. 😊  
+If you encountered any problems, open a issue, or reach me via the contact methods below.  
 I might be not very active on it.
 
 ## 💿 Install
@@ -40,4 +39,6 @@ pip install coovts
 
 ## 📝 Update Log
 
-Oops, theres none yet.
+### 0.1.0.alpha2
+
+- Refactored project, complete missing data models, made better type hints
