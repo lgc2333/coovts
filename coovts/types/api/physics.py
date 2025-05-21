@@ -1,16 +1,11 @@
-from typing import Annotated, ClassVar
+from typing import Annotated
 
 from pydantic import BaseModel, Field
 
-from ..registry import (
-    request_model,
-    request_param_model,
-    response_model,
-    response_param_model,
-)
+from ..shared import with_request_model_config, with_response_model_config
 
 
-@request_param_model
+@with_request_model_config
 class PhysicsOverride(BaseModel):
     id: str
     value: float
@@ -18,7 +13,7 @@ class PhysicsOverride(BaseModel):
     override_seconds: float
 
 
-@response_param_model
+@with_response_model_config
 class PhysicsGroup(BaseModel):
     group_id: Annotated[str, Field(alias="groupID")]
     group_name: str
@@ -26,14 +21,13 @@ class PhysicsGroup(BaseModel):
     wind_multiplier: float
 
 
-@request_model
+@with_request_model_config
 class GetCurrentModelPhysicsRequest(BaseModel):
-    msg_t: ClassVar[str] = "GetCurrentModelPhysicsRequest"
+    pass
 
 
-@response_model
+@with_response_model_config
 class GetCurrentModelPhysicsResponse(BaseModel):
-    msg_t: ClassVar[str] = "GetCurrentModelPhysicsResponse"
     model_loaded: bool
     model_name: str
     model_id: Annotated[str, Field(alias="modelID")]
@@ -48,13 +42,12 @@ class GetCurrentModelPhysicsResponse(BaseModel):
     physics_groups: list[PhysicsGroup]
 
 
-@request_model
+@with_request_model_config
 class SetCurrentModelPhysicsRequest(BaseModel):
-    msg_t: ClassVar[str] = "SetCurrentModelPhysicsRequest"
     strength_overrides: list[PhysicsOverride] = []
     wind_overrides: list[PhysicsOverride] = []
 
 
-@response_model
+@with_response_model_config
 class SetCurrentModelPhysicsResponse(BaseModel):
-    msg_t: ClassVar[str] = "SetCurrentModelPhysicsResponse"
+    pass

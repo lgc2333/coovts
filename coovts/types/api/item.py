@@ -1,13 +1,8 @@
-from typing import Annotated, ClassVar, Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field
 
-from ..registry import (
-    request_model,
-    request_param_model,
-    response_model,
-    response_param_model,
-)
+from ..shared import with_request_model_config, with_response_model_config
 
 type FadeMode = Literal[
     "linear",
@@ -27,7 +22,7 @@ type SizeRelativeTo = Literal["RelativeToWorld", "RelativeToCurrentItemSize"]
 type VertexPinType = Literal["Provided", "Center", "Random"]
 
 
-@request_param_model
+@with_request_model_config
 class ItemPinInfo(BaseModel):
     model_id: Annotated[str, Field(alias="modelID")] = ""
     art_mesh_id: Annotated[str, Field(alias="artMeshID")] = ""
@@ -41,7 +36,7 @@ class ItemPinInfo(BaseModel):
     vertex_weight3: float = 0
 
 
-@response_param_model
+@with_response_model_config
 class ItemInstanceInfo(BaseModel):
     file_name: str
     instance_id: Annotated[str, Field(alias="instanceID")]
@@ -62,29 +57,28 @@ class ItemInstanceInfo(BaseModel):
     from_workshop: bool
 
 
-@response_param_model
+@with_response_model_config
 class ItemFileInfo(BaseModel):
     file_name: str
     type: str
     loaded_count: int
 
 
-@response_param_model
+@with_response_model_config
 class UnloadedItem(BaseModel):
     instance_id: Annotated[str, Field(alias="instanceID")]
     file_name: str
 
 
-@response_param_model
+@with_response_model_config
 class ItemMoveResult(BaseModel):
     item_instance_id: Annotated[str, Field(alias="itemInstanceID")]
     success: bool
     error_id: Annotated[int, Field(alias="errorID")]
 
 
-@request_model
+@with_request_model_config
 class ItemListRequest(BaseModel):
-    msg_t: ClassVar[str] = "ItemListRequest"
     include_available_spots: bool = False
     include_item_instances_in_scene: bool = False
     include_available_item_files: bool = False
@@ -92,9 +86,8 @@ class ItemListRequest(BaseModel):
     only_items_with_instance_id: str | None = None
 
 
-@response_model
+@with_response_model_config
 class ItemListResponse(BaseModel):
-    msg_t: ClassVar[str] = "ItemListResponse"
     items_in_scene_count: int
     total_items_allowed_count: int
     can_load_items_right_now: bool
@@ -103,9 +96,8 @@ class ItemListResponse(BaseModel):
     available_item_files: list[ItemFileInfo] = []
 
 
-@request_model
+@with_request_model_config
 class ItemLoadRequest(BaseModel):
-    msg_t: ClassVar[str] = "ItemLoadRequest"
     file_name: str
     position_x: float
     position_y: float
@@ -125,21 +117,18 @@ class ItemLoadRequest(BaseModel):
     custom_data_ask_timer: float = -1
 
 
-@response_model
+@with_response_model_config
 class ItemLoadResponse(BaseModel):
-    msg_t: ClassVar[str] = "ItemLoadResponse"
     instance_id: Annotated[str, Field(alias="instanceID")]
     file_name: str
 
     class Response(BaseModel):
-        msg_t: ClassVar[str] = "ItemLoadResponse"
         instance_id: Annotated[str, Field(alias="instanceID")]
         file_name: str
 
 
-@request_model
+@with_request_model_config
 class ItemUnloadRequest(BaseModel):
-    msg_t: ClassVar[str] = "ItemUnloadRequest"
     unload_all_in_scene: bool = False
     unload_all_loaded_by_this_plugin: bool = False
     allow_unloading_items_loaded_by_user_or_other_plugins: bool = True
@@ -147,15 +136,13 @@ class ItemUnloadRequest(BaseModel):
     file_names: list[str] = []
 
 
-@response_model
+@with_response_model_config
 class ItemUnloadResponse(BaseModel):
-    msg_t: ClassVar[str] = "ItemUnloadResponse"
     unloaded_items: list[UnloadedItem]
 
 
-@request_model
+@with_request_model_config
 class ItemAnimationControlRequest(BaseModel):
-    msg_t: ClassVar[str] = "ItemAnimationControlRequest"
     item_instance_id: Annotated[str, Field(alias="itemInstanceID")]
     framerate: float = -1
     frame: int = -1
@@ -167,9 +154,8 @@ class ItemAnimationControlRequest(BaseModel):
     animation_play_state: bool = True
 
 
-@response_model
+@with_response_model_config
 class ItemAnimationControlResponse(BaseModel):
-    msg_t: ClassVar[str] = "ItemAnimationControlResponse"
     frame: int
     animation_playing: bool
 
@@ -188,21 +174,18 @@ class ItemMoveInfo(BaseModel):
     user_can_stop: bool = True
 
 
-@request_model
+@with_request_model_config
 class ItemMoveRequest(BaseModel):
-    msg_t: ClassVar[str] = "ItemMoveRequest"
     items_to_move: list[ItemMoveInfo]
 
 
-@response_model
+@with_response_model_config
 class ItemMoveResponse(BaseModel):
-    msg_t: ClassVar[str] = "ItemMoveResponse"
     moved_items: list[ItemMoveResult]
 
 
-@request_model
+@with_request_model_config
 class ItemPinRequest(BaseModel):
-    msg_t: ClassVar[str] = "ItemPinRequest"
     pin: bool
     item_instance_id: Annotated[str, Field(alias="itemInstanceID")]
     angle_relative_to: AngleRelativeTo = "RelativeToWorld"
@@ -211,9 +194,8 @@ class ItemPinRequest(BaseModel):
     pin_info: ItemPinInfo
 
 
-@response_model
+@with_response_model_config
 class ItemPinResponse(BaseModel):
-    msg_t: ClassVar[str] = "ItemPinResponse"
     is_pinned: bool
     item_instance_id: Annotated[str, Field(alias="itemInstanceID")]
     item_file_name: str

@@ -1,11 +1,11 @@
-from typing import Annotated, ClassVar
+from typing import Annotated
 
 from pydantic import BaseModel, Field
 
-from ..registry import request_model, response_model, response_param_model
+from ..shared import with_request_model_config, with_response_model_config
 
 
-@response_param_model
+@with_response_model_config
 class ModelPosition(BaseModel):
     position_x: float
     position_y: float
@@ -13,7 +13,7 @@ class ModelPosition(BaseModel):
     size: float
 
 
-@response_param_model
+@with_response_model_config
 class ModelInfo(BaseModel):
     model_loaded: bool
     model_name: str
@@ -22,14 +22,13 @@ class ModelInfo(BaseModel):
     vts_model_icon_name: str
 
 
-@request_model
+@with_request_model_config
 class CurrentModelRequest(BaseModel):
-    msg_t: ClassVar[str] = "CurrentModelRequest"
+    pass
 
 
-@response_model
+@with_response_model_config
 class CurrentModelResponse(BaseModel):
-    msg_t: ClassVar[str] = "CurrentModelResponse"
     model_loaded: bool
     model_name: str
     model_id: Annotated[str, Field(alias="modelID")]
@@ -46,33 +45,29 @@ class CurrentModelResponse(BaseModel):
     model_position: ModelPosition
 
 
-@request_model
+@with_request_model_config
 class AvailableModelsRequest(BaseModel):
-    msg_t: ClassVar[str] = "AvailableModelsRequest"
+    pass
 
 
-@response_model
+@with_response_model_config
 class AvailableModelsResponse(BaseModel):
-    msg_t: ClassVar[str] = "AvailableModelsResponse"
     number_of_models: int
     available_models: list[ModelInfo]
 
 
-@request_model
+@with_request_model_config
 class ModelLoadRequest(BaseModel):
-    msg_t: ClassVar[str] = "ModelLoadRequest"
     model_id: Annotated[str, Field(alias="modelID")]
 
 
-@response_model
+@with_response_model_config
 class ModelLoadResponse(BaseModel):
-    msg_t: ClassVar[str] = "ModelLoadResponse"
     model_id: Annotated[str, Field(alias="modelID")]
 
 
-@request_model
+@with_request_model_config
 class MoveModelRequest(BaseModel):
-    msg_t: ClassVar[str] = "MoveModelRequest"
     time_in_seconds: float
     values_are_relative_to_model: bool
     position_x: float | None = None
@@ -81,6 +76,6 @@ class MoveModelRequest(BaseModel):
     size: float | None = None
 
 
-@response_model
+@with_response_model_config
 class MoveModelResponse(BaseModel):
-    msg_t: ClassVar[str] = "MoveModelResponse"
+    pass

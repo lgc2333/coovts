@@ -1,11 +1,11 @@
-from typing import Annotated, ClassVar
+from typing import Annotated
 
 from pydantic import BaseModel, Field
 
-from ..registry import request_model, response_model, response_param_model
+from ..shared import with_request_model_config, with_response_model_config
 
 
-@response_param_model
+@with_response_model_config
 class HotkeyInfo(BaseModel):
     name: str
     type: str
@@ -16,9 +16,8 @@ class HotkeyInfo(BaseModel):
     on_screen_button_id: Annotated[int, Field(alias="onScreenButtonID")]
 
 
-@request_model
+@with_request_model_config
 class HotkeysInCurrentModelRequest(BaseModel):
-    msg_t: ClassVar[str] = "HotkeysInCurrentModelRequest"
     model_id: Annotated[str | None, Field(alias="modelID")] = None
     live2d_item_file_name: Annotated[
         str | None,
@@ -26,23 +25,20 @@ class HotkeysInCurrentModelRequest(BaseModel):
     ] = None
 
 
-@response_model
+@with_response_model_config
 class HotkeysInCurrentModelResponse(BaseModel):
-    msg_t: ClassVar[str] = "HotkeysInCurrentModelResponse"
     model_loaded: bool
     model_name: str
     model_id: Annotated[str, Field(alias="modelID")]
     available_hotkeys: list[HotkeyInfo]
 
 
-@request_model
+@with_request_model_config
 class HotkeyTriggerRequest(BaseModel):
-    msg_t: ClassVar[str] = "HotkeyTriggerRequest"
     hotkey_id: Annotated[str, Field(alias="hotkeyID")]
     item_instance_id: Annotated[str | None, Field(alias="itemInstanceID")] = None
 
 
-@response_model
+@with_response_model_config
 class HotkeyTriggerResponse(BaseModel):
-    msg_t: ClassVar[str] = "HotkeyTriggerResponse"
     hotkey_id: Annotated[str, Field(alias="hotkeyID")]

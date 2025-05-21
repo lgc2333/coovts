@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, ClassVar, override
 
-from .types.response import APIErrorData, AuthenticationResponseData
+from .types.api import APIErrorResponse, AuthenticationResponse
 
 if TYPE_CHECKING:
     from pydantic import BaseModel
@@ -17,7 +17,7 @@ class RequestError(VTSError):
 class APIError(RequestError):
     message_type: ClassVar[str] = "APIError"
 
-    def __init__(self, data: APIErrorData) -> None:
+    def __init__(self, data: APIErrorResponse) -> None:
         self.data = data
 
     @override
@@ -43,7 +43,7 @@ class ValidationError(RequestError):
 
 
 class AuthenticationFailedError(RequestError):
-    def __init__(self, data: AuthenticationResponseData) -> None:
+    def __init__(self, data: AuthenticationResponse) -> None:
         self.data = data
 
     @override

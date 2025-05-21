@@ -1,23 +1,23 @@
-from typing import Annotated, ClassVar
+from typing import Annotated
 
 from pydantic import BaseModel, Field
 
-from ..registry import request_model, response_model, response_param_model
+from ..shared import with_request_model_config, with_response_model_config
 
 
-@response_param_model
+@with_response_model_config
 class ExpressionParameter(BaseModel):
     name: str
     value: float
 
 
-@response_param_model
+@with_response_model_config
 class HotkeyRef(BaseModel):
     name: str
     id: str
 
 
-@response_param_model
+@with_response_model_config
 class ExpressionInfo(BaseModel):
     name: str
     file: str
@@ -29,30 +29,27 @@ class ExpressionInfo(BaseModel):
     parameters: list[ExpressionParameter] = []
 
 
-@request_model
+@with_request_model_config
 class ExpressionStateRequest(BaseModel):
-    msg_t: ClassVar[str] = "ExpressionStateRequest"
     details: bool = True
     expression_file: str | None = None
 
 
-@response_model
+@with_response_model_config
 class ExpressionStateResponse(BaseModel):
-    msg_t: ClassVar[str] = "ExpressionStateResponse"
     model_loaded: bool
     model_name: str
     model_id: Annotated[str, Field(alias="modelID")]
     expressions: list[ExpressionInfo]
 
 
-@request_model
+@with_request_model_config
 class ExpressionActivationRequest(BaseModel):
-    msg_t: ClassVar[str] = "ExpressionActivationRequest"
     expression_file: str
     fade_time: float = 0.25
     active: bool
 
 
-@response_model
+@with_response_model_config
 class ExpressionActivationResponse(BaseModel):
-    msg_t: ClassVar[str] = "ExpressionActivationResponse"
+    pass

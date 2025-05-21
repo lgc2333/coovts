@@ -1,13 +1,12 @@
-from typing import Annotated, ClassVar
+from typing import Annotated
 
 from pydantic import BaseModel, Field
 
-from ..registry import request_model, response_model
+from ..shared import with_request_model_config, with_response_model_config
 
 
-@request_model
+@with_request_model_config
 class NDIConfigRequest(BaseModel):
-    msg_t: ClassVar[str] = "NDIConfigRequest"
     set_new_config: bool
     ndi_active: bool = True
     use_ndi5: bool = True
@@ -16,9 +15,8 @@ class NDIConfigRequest(BaseModel):
     custom_height_ndi: Annotated[int, Field(alias="customHeightNDI")] = -1
 
 
-@response_model
+@with_response_model_config
 class NDIConfigResponse(BaseModel):
-    msg_t: ClassVar[str] = "NDIConfigResponse"
     set_new_config: bool
     ndi_active: bool
     use_ndi5: bool

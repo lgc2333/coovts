@@ -1,22 +1,15 @@
-from typing import ClassVar
-
 from pydantic import BaseModel
 
-from ..registry import (
-    request_model,
-    request_param_model,
-    response_model,
-    response_param_model,
-)
+from ..shared import with_request_model_config, with_response_model_config
 
 
-@request_param_model
+@with_request_model_config
 class ConfigValue(BaseModel):
     config_id: str
     config_value: str
 
 
-@response_param_model
+@with_response_model_config
 class EffectConfigEntry(BaseModel):
     internal_id: str
     enum_id: str
@@ -42,7 +35,7 @@ class EffectConfigEntry(BaseModel):
     scene_item_default: str
 
 
-@response_param_model
+@with_response_model_config
 class PostProcessingEffect(BaseModel):
     internal_id: str
     enum_id: str
@@ -52,17 +45,15 @@ class PostProcessingEffect(BaseModel):
     config_entries: list[EffectConfigEntry]
 
 
-@request_model
+@with_request_model_config
 class PostProcessingListRequest(BaseModel):
-    msg_t: ClassVar[str] = "PostProcessingListRequest"
     fill_post_processing_presets_array: bool = True
     fill_post_processing_effects_array: bool = True
     effect_id_filter: list[str] = []
 
 
-@response_model
+@with_response_model_config
 class PostProcessingListResponse(BaseModel):
-    msg_t: ClassVar[str] = "PostProcessingListResponse"
     post_processing_supported: bool
     post_processing_active: bool
     can_send_post_processing_update_request_right_now: bool
@@ -79,9 +70,8 @@ class PostProcessingListResponse(BaseModel):
     post_processing_presets: list[str] = []
 
 
-@request_model
+@with_request_model_config
 class PostProcessingUpdateRequest(BaseModel):
-    msg_t: ClassVar[str] = "PostProcessingUpdateRequest"
     post_processing_on: bool
     set_post_processing_preset: bool = False
     set_post_processing_values: bool = False
@@ -94,9 +84,8 @@ class PostProcessingUpdateRequest(BaseModel):
     post_processing_values: list[ConfigValue] = []
 
 
-@response_model
+@with_response_model_config
 class PostProcessingUpdateResponse(BaseModel):
-    msg_t: ClassVar[str] = "PostProcessingUpdateResponse"
     post_processing_active: bool
     preset_is_active: bool
     active_preset: str

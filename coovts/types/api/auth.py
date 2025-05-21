@@ -1,35 +1,29 @@
-from typing import ClassVar
-
 from pydantic import BaseModel
 
-from ..registry import request_model, response_model
+from ..shared import with_request_model_config, with_response_model_config
 
 
-@request_model
+@with_request_model_config
 class AuthenticationTokenRequest(BaseModel):
-    msg_t: ClassVar[str] = "AuthenticationTokenRequest"
     plugin_name: str
     plugin_developer: str
     plugin_icon: str | None = None
     """128x128 PNG or JPG base64"""
 
 
-@response_model
+@with_response_model_config
 class AuthenticationTokenResponse(BaseModel):
-    msg_t: ClassVar[str] = "AuthenticationTokenResponse"
     authentication_token: str
 
 
-@request_model
+@with_request_model_config
 class AuthenticationRequest(BaseModel):
-    msg_t: ClassVar[str] = "AuthenticationRequest"
     plugin_name: str
     plugin_developer: str
     authentication_token: str
 
 
-@response_model
+@with_response_model_config
 class AuthenticationResponse(BaseModel):
-    msg_t: ClassVar[str] = "AuthenticationResponse"
     authenticated: bool
     reason: str

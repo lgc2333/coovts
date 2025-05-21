@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from enum import Enum, auto
 from pathlib import Path
 from types import CoroutineType, EllipsisType
-from typing import TYPE_CHECKING, Any, Literal, overload
+from typing import TYPE_CHECKING, Any
 
 import websockets as ws
 from cookit.loguru import warning_suppress
@@ -13,17 +13,13 @@ from pydantic import BaseModel
 
 from .errors import APIError, AuthenticationFailedError, ValidationError
 from .request import RequestManager
-from .types.request import (
-    AuthenticationRequestData,
-    AuthenticationTokenRequestData,
-    BaseRequest,
+from .types import BaseRequest, BaseResponse, get_api_response_model, get_message_type
+from .types.api import (
+    APIErrorResponse,
+    AuthenticationRequest,
+    AuthenticationTokenRequest,
 )
-from .types.response import (
-    APIErrorData,
-    AuthenticationResponseData,
-    AuthenticationTokenResponseData,
-    BaseResponse,
-)
+from .types.plugin_api import PluginAPI
 from .utils import run_sync
 
 if TYPE_CHECKING:
@@ -77,7 +73,7 @@ class PluginState(Enum):
     AUTHENTICATED = auto()
 
 
-class Plugin:
+class Plugin(PluginAPI):
     def __init__(
         self,
         plugin_name: str,
@@ -242,7 +238,7 @@ class Plugin:
             fut = self.req_manager.pop(resp.request_id)
             try:
                 data: BaseModel | dict[str, Any] = validate_data(
-                    APIErrorData if is_err else fut.model,
+                    APIErrorResponse if is_err else fut.model,
                 )
             except Exception as e:
                 err = ValidationError(raw, fut.model)
@@ -251,7 +247,7 @@ class Plugin:
             else:
                 if is_err:
                     if TYPE_CHECKING:
-                        assert isinstance(data, APIErrorData)
+                        assert isinstance(data, APIErrorResponse)
                     self.dispatch_handlers(
                         [run_sync(fut.future.set_exception)],
                         APIError(data),
@@ -345,45 +341,40 @@ class Plugin:
 
             await task
 
-    async def run(self):
+    def run(self):
         if self._run_task and not self._run_task.done():
             raise RuntimeError("Already running")
         self._run_task = asyncio.create_task(self._run())
         return self._run_task
 
-    @overload
-    async def call_api[M: BaseModel](
+    async def _call_api(
         self,
-        message_type: str,
-        response_data_model: type[M],
-        data: Any = None,
+        data: Any,
+        *,
+        message_type: str | None = None,
+        response_model: type[BaseModel] | None | EllipsisType = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
         api_timeout: float | None | EllipsisType = ...,
-    ) -> M: ...
-    @overload
-    async def call_api[M: BaseModel](
-        self,
-        message_type: str,
-        response_data_model: Literal[None] = None,
-        data: Any = None,
-        api_name: str = "VTubeStudioPublicAPI",
-        api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
-    ) -> dict[str, Any]: ...
-    async def call_api[M: BaseModel](
-        self,
-        message_type: str,
-        response_data_model: type[M] | None = None,
-        data: Any = None,
-        api_name: str = "VTubeStudioPublicAPI",
-        api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
-    ) -> M | dict[str, Any]:
+    ) -> Any:
         req_timeout = self.api_timeout if api_timeout is ... else api_timeout
 
+        if not message_type:
+            if not isinstance(data, BaseModel):
+                raise TypeError(
+                    "'message_type' is required when 'data' is not a model",
+                )
+            message_type = get_message_type(data)
+
+        if response_model is ...:
+            if not isinstance(data, BaseModel):
+                raise TypeError(
+                    "'response_model' is required when 'data' is not a model",
+                )
+            response_model = get_api_response_model(data)
+
         client = self.ensure_client()
-        req_id = self.req_manager.acquire_next_request(response_data_model)
+        req_id = self.req_manager.acquire_next_request(response_model)
         request = BaseRequest(
             api_name=api_name,
             api_version=api_version,
@@ -402,9 +393,7 @@ class Plugin:
 
         if not self.authentication_token:
             token_data = await self.call_api(
-                "AuthenticationTokenRequest",
-                AuthenticationTokenResponseData,
-                AuthenticationTokenRequestData(
+                AuthenticationTokenRequest(
                     plugin_name=self.plugin_name,
                     plugin_developer=self.plugin_developer,
                     plugin_icon=self.plugin_icon,
@@ -417,9 +406,7 @@ class Plugin:
             )
 
         data = await self.call_api(
-            "AuthenticationRequest",
-            AuthenticationResponseData,
-            AuthenticationRequestData(
+            AuthenticationRequest(
                 plugin_name=self.plugin_name,
                 plugin_developer=self.plugin_developer,
                 authentication_token=self.authentication_token,

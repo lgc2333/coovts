@@ -1,31 +1,27 @@
-from typing import ClassVar
-
 from pydantic import BaseModel
 
-from ..registry import request_model, response_model
+from ..shared import with_request_model_config, with_response_model_config
 
 
-@request_model
+@with_request_model_config
 class APIStateRequest(BaseModel):
-    msg_t: ClassVar[str] = "APIStateRequest"
+    pass
 
 
-@response_model
+@with_response_model_config
 class APIStateResponse(BaseModel):
-    msg_t: ClassVar[str] = "APIStateResponse"
     active: bool
     v_tube_studio_version: str
     current_session_authenticated: bool
 
 
-@request_model
+@with_request_model_config
 class StatisticsRequest(BaseModel):
-    msg_t: ClassVar[str] = "StatisticsRequest"
+    pass
 
 
-@response_model
+@with_response_model_config
 class StatisticsResponse(BaseModel):
-    msg_t: ClassVar[str] = "StatisticsResponse"
     uptime: int
     framerate: int
     v_tube_studio_version: str
@@ -37,14 +33,13 @@ class StatisticsResponse(BaseModel):
     window_is_fullscreen: bool
 
 
-@request_model
+@with_request_model_config
 class VTSFolderInfoRequest(BaseModel):
-    msg_t: ClassVar[str] = "VTSFolderInfoRequest"
+    pass
 
 
-@response_model
+@with_response_model_config
 class VTSFolderInfoResponse(BaseModel):
-    msg_t: ClassVar[str] = "VTSFolderInfoResponse"
     models: str
     backgrounds: str
     items: str

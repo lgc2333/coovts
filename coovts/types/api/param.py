@@ -1,25 +1,20 @@
-from typing import Annotated, ClassVar, Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field
 
-from ..registry import (
-    request_model,
-    request_param_model,
-    response_model,
-    response_param_model,
-)
+from ..shared import with_request_model_config, with_response_model_config
 
 type ParameterMode = Literal["set", "add"]
 
 
-@request_param_model
+@with_request_model_config
 class ParameterValue(BaseModel):
     id: str
     value: float
     weight: float = 1.0
 
 
-@response_param_model
+@with_response_model_config
 class InputParameter(BaseModel):
     name: str
     added_by: str
@@ -29,7 +24,7 @@ class InputParameter(BaseModel):
     default_value: float
 
 
-@response_param_model
+@with_response_model_config
 class Live2DParameter(BaseModel):
     name: str
     value: float
@@ -38,25 +33,23 @@ class Live2DParameter(BaseModel):
     default_value: float
 
 
-@request_model
+@with_request_model_config
 class FaceFoundRequest(BaseModel):
-    msg_t: ClassVar[str] = "FaceFoundRequest"
+    pass
 
 
-@response_model
+@with_response_model_config
 class FaceFoundResponse(BaseModel):
-    msg_t: ClassVar[str] = "FaceFoundResponse"
     found: bool
 
 
-@request_model
+@with_request_model_config
 class InputParameterListRequest(BaseModel):
-    msg_t: ClassVar[str] = "InputParameterListRequest"
+    pass
 
 
-@response_model
+@with_response_model_config
 class InputParameterListResponse(BaseModel):
-    msg_t: ClassVar[str] = "InputParameterListResponse"
     model_loaded: bool
     model_name: str
     model_id: Annotated[str, Field(alias="modelID")]
@@ -64,34 +57,31 @@ class InputParameterListResponse(BaseModel):
     default_parameters: list[InputParameter]
 
 
-@request_model
+@with_request_model_config
 class ParameterValueRequest(BaseModel):
-    msg_t: ClassVar[str] = "ParameterValueRequest"
     name: str
 
 
-@response_model
+@with_response_model_config
 class ParameterValueResponse(InputParameter):
-    msg_t: ClassVar[str] = "ParameterValueResponse"
+    pass
 
 
-@request_model
+@with_request_model_config
 class Live2DParameterListRequest(BaseModel):
-    msg_t: ClassVar[str] = "Live2DParameterListRequest"
+    pass
 
 
-@response_model
+@with_response_model_config
 class Live2DParameterListResponse(BaseModel):
-    msg_t: ClassVar[str] = "Live2DParameterListResponse"
     model_loaded: bool
     model_name: str
     model_id: Annotated[str, Field(alias="modelID")]
     parameters: list[Live2DParameter]
 
 
-@request_model
+@with_request_model_config
 class ParameterCreationRequest(BaseModel):
-    msg_t: ClassVar[str] = "ParameterCreationRequest"
     parameter_name: str
     explanation: str = ""
     min: float
@@ -99,32 +89,28 @@ class ParameterCreationRequest(BaseModel):
     default_value: float
 
 
-@response_model
+@with_response_model_config
 class ParameterCreationResponse(BaseModel):
-    msg_t: ClassVar[str] = "ParameterCreationResponse"
     parameter_name: str
 
 
-@request_model
+@with_request_model_config
 class ParameterDeletionRequest(BaseModel):
-    msg_t: ClassVar[str] = "ParameterDeletionRequest"
     parameter_name: str
 
 
-@response_model
+@with_response_model_config
 class ParameterDeletionResponse(BaseModel):
-    msg_t: ClassVar[str] = "ParameterDeletionResponse"
     parameter_name: str
 
 
-@request_model
+@with_request_model_config
 class InjectParameterDataRequest(BaseModel):
-    msg_t: ClassVar[str] = "InjectParameterDataRequest"
     face_found: bool = False
     mode: ParameterMode = "set"
     parameter_values: list[ParameterValue]
 
 
-@response_model
+@with_response_model_config
 class InjectParameterDataResponse(BaseModel):
-    msg_t: ClassVar[str] = "InjectParameterDataResponse"
+    pass

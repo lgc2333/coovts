@@ -1,11 +1,9 @@
-from typing import ClassVar
-
 from pydantic import BaseModel
 
-from ..registry import request_model, response_model, response_param_model
+from ..shared import with_request_model_config, with_response_model_config
 
 
-@response_param_model
+@with_response_model_config
 class CapturePartColor(BaseModel):
     active: bool
     color_r: int
@@ -13,14 +11,13 @@ class CapturePartColor(BaseModel):
     color_b: int
 
 
-@request_model
+@with_request_model_config
 class SceneColorOverlayInfoRequest(BaseModel):
-    msg_t: ClassVar[str] = "SceneColorOverlayInfoRequest"
+    pass
 
 
-@response_model
+@with_response_model_config
 class SceneColorOverlayInfoResponse(BaseModel):
-    msg_t: ClassVar[str] = "SceneColorOverlayInfoResponse"
     active: bool
     items_included: bool
     is_window_capture: bool

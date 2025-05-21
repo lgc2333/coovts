@@ -1,11 +1,3 @@
-# /// script
-# requires-python = ">=3.12"
-# dependencies = [
-#     "coovts",
-#     "loguru",
-# ]
-# ///
-
 import asyncio
 import sys
 from pathlib import Path

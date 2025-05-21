@@ -1,12 +1,11 @@
-from typing import Annotated, ClassVar
+from typing import Annotated
 
 from pydantic import BaseModel, Field
 
-from ..registry import response_model
+from ..shared import with_response_model_config
 
 
-@response_model
+@with_response_model_config
 class APIErrorResponse(BaseModel):
-    msg_t: ClassVar[str] = "APIError"
     error_id: Annotated[int, Field(alias="errorID")]
     message: str

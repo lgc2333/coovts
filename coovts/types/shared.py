@@ -14,7 +14,11 @@ response_model_config = ConfigDict(
 )
 
 
-@model_with_model_config(request_model_config)
+with_request_model_config = model_with_model_config(request_model_config)
+with_response_model_config = model_with_model_config(response_model_config)
+
+
+@with_request_model_config
 class BaseRequest(BaseModel):
     api_name: str = "VTubeStudioPublicAPI"
     api_version: str = "1.0"
@@ -23,7 +27,7 @@ class BaseRequest(BaseModel):
     data: Any
 
 
-@model_with_model_config(response_model_config)
+@with_response_model_config
 class BaseResponse(BaseModel):
     api_name: str
     api_version: str = "1.0"
@@ -32,3 +36,41 @@ class BaseResponse(BaseModel):
     request_id: Annotated[str | None, Field(alias="requestID")]
     message_type: str
     data: Any
+
+
+def get_api_response_model(model: type[BaseModel] | BaseModel) -> type[BaseModel]:
+    if not isinstance(model, type):
+        model = type(model)
+
+    if resp_m := getattr(model, "resp_m", None):
+        if issubclass(resp_m, BaseModel):
+            return resp_m
+        raise TypeError(f"Model's 'resp_m' should be a BaseModel, not {type(resp_m)}")
+
+    from . import api
+
+    if resp_t := getattr(model, "resp_t", None):
+        if not isinstance(resp_t, str):
+            raise TypeError(f"Model's 'resp_t' should be a str, not {type(resp_t)}")
+        if resp_m := getattr(api, resp_t, None):
+            return resp_m
+        raise ValueError(f"Model's resp_t '{resp_t}' not found in api module")
+
+    if model.__name__.endswith("Request"):
+        resp_t = f"{model.__name__[:-7]}Response"
+        if resp_t and (resp_m := getattr(api, resp_t, None)):
+            return resp_m
+
+    raise ValueError(
+        f"Cannot find suitable response model for {model}, please define manually",
+    )
+
+
+def get_message_type(model: type[BaseModel] | BaseModel) -> str:
+    if not isinstance(model, type):
+        model = type(model)
+    if message_type := getattr(model, "msg_type", None):
+        if isinstance(message_type, str):
+            return message_type
+        raise TypeError(f"Model's 'msg_type' should be a str, not {type(message_type)}")
+    return model.__name__
