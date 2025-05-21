@@ -2,46 +2,32 @@ from typing import Annotated, ClassVar, Literal
 
 from pydantic import BaseModel, Field
 
-from ..registry import request_model, response_model
+from ..registry import (
+    request_model,
+    request_param_model,
+    response_model,
+    response_param_model,
+)
+
+type FadeMode = Literal[
+    "linear",
+    "easeIn",
+    "easeOut",
+    "easeBoth",
+    "overshoot",
+    "zip",
+]
+type AngleRelativeTo = Literal[
+    "RelativeToWorld",
+    "RelativeToCurrentItemRotation",
+    "RelativeToModel",
+    "RelativeToPinPosition",
+]
+type SizeRelativeTo = Literal["RelativeToWorld", "RelativeToCurrentItemSize"]
+type VertexPinType = Literal["Provided", "Center", "Random"]
 
 
-class ItemInstanceInfo(BaseModel):
-    file_name: str
-    instance_id: Annotated[str, Field(alias="instanceID")]
-    order: int
-    type: str
-    censored: bool
-    flipped: bool
-    locked: bool
-    smoothing: float
-    framerate: float
-    frame_count: Annotated[int, Field(alias="frameCount")]
-    current_frame: int
-    pinned_to_model: bool
-    pinned_model_id: Annotated[str, Field(alias="pinnedModelID")]
-    pinned_art_mesh_id: Annotated[str, Field(alias="pinnedArtMeshID")]
-    group_name: str
-    scene_name: str
-    from_workshop: bool
-
-
-class ItemFileInfo(BaseModel):
-    file_name: str
-    type: str
-    loaded_count: int
-
-
-class UnloadedItem(BaseModel):
-    instance_id: Annotated[str, Field(alias="instanceID")]
-    file_name: str
-
-
-class ItemMoveResult(BaseModel):
-    item_instance_id: Annotated[str, Field(alias="itemInstanceID")]
-    success: bool
-    error_id: Annotated[int, Field(alias="errorID")]
-
-
+@request_param_model
 class ItemPinInfo(BaseModel):
     model_id: Annotated[str, Field(alias="modelID")] = ""
     art_mesh_id: Annotated[str, Field(alias="artMeshID")] = ""
@@ -53,6 +39,47 @@ class ItemPinInfo(BaseModel):
     vertex_weight1: float = 0
     vertex_weight2: float = 0
     vertex_weight3: float = 0
+
+
+@response_param_model
+class ItemInstanceInfo(BaseModel):
+    file_name: str
+    instance_id: Annotated[str, Field(alias="instanceID")]
+    order: int
+    type: str
+    censored: bool
+    flipped: bool
+    locked: bool
+    smoothing: float
+    framerate: float
+    frame_count: int
+    current_frame: int
+    pinned_to_model: bool
+    pinned_model_id: Annotated[str, Field(alias="pinnedModelID")]
+    pinned_art_mesh_id: Annotated[str, Field(alias="pinnedArtMeshID")]
+    group_name: str
+    scene_name: str
+    from_workshop: bool
+
+
+@response_param_model
+class ItemFileInfo(BaseModel):
+    file_name: str
+    type: str
+    loaded_count: int
+
+
+@response_param_model
+class UnloadedItem(BaseModel):
+    instance_id: Annotated[str, Field(alias="instanceID")]
+    file_name: str
+
+
+@response_param_model
+class ItemMoveResult(BaseModel):
+    item_instance_id: Annotated[str, Field(alias="itemInstanceID")]
+    success: bool
+    error_id: Annotated[int, Field(alias="errorID")]
 
 
 @request_model
@@ -103,6 +130,7 @@ class ItemLoadResponse(BaseModel):
     msg_t: ClassVar[str] = "ItemLoadResponse"
     instance_id: Annotated[str, Field(alias="instanceID")]
     file_name: str
+
     class Response(BaseModel):
         msg_t: ClassVar[str] = "ItemLoadResponse"
         instance_id: Annotated[str, Field(alias="instanceID")]
@@ -149,14 +177,7 @@ class ItemAnimationControlResponse(BaseModel):
 class ItemMoveInfo(BaseModel):
     item_instance_id: Annotated[str, Field(alias="itemInstanceID")]
     time_in_seconds: float
-    fade_mode: Literal[
-        "linear",
-        "easeIn",
-        "easeOut",
-        "easeBoth",
-        "overshoot",
-        "zip",
-    ] = "linear"
+    fade_mode: FadeMode = "linear"
     position_x: float = -1000
     position_y: float = -1000
     size: float = -1000
@@ -184,16 +205,9 @@ class ItemPinRequest(BaseModel):
     msg_t: ClassVar[str] = "ItemPinRequest"
     pin: bool
     item_instance_id: Annotated[str, Field(alias="itemInstanceID")]
-    angle_relative_to: Literal[
-        "RelativeToWorld",
-        "RelativeToCurrentItemRotation",
-        "RelativeToModel",
-        "RelativeToPinPosition",
-    ] = "RelativeToWorld"
-    size_relative_to: Literal["RelativeToWorld", "RelativeToCurrentItemSize"] = (
-        "RelativeToWorld"
-    )
-    vertex_pin_type: Literal["Provided", "Center", "Random"] = "Center"
+    angle_relative_to: AngleRelativeTo = "RelativeToWorld"
+    size_relative_to: SizeRelativeTo = "RelativeToWorld"
+    vertex_pin_type: VertexPinType = "Center"
     pin_info: ItemPinInfo
 
 

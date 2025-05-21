@@ -1,10 +1,11 @@
-from typing import Annotated, ClassVar
+from typing import ClassVar
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
-from ..registry import request_model, response_model
+from ..registry import request_model, response_model, response_param_model
 
 
+@response_param_model
 class CapturePartColor(BaseModel):
     active: bool
     color_r: int
@@ -26,12 +27,12 @@ class SceneColorOverlayInfoResponse(BaseModel):
     base_brightness: int
     color_boost: int
     smoothing: int
-    color_overlay_r: Annotated[int, Field(alias="colorOverlayR")]
-    color_overlay_g: Annotated[int, Field(alias="colorOverlayG")]
-    color_overlay_b: Annotated[int, Field(alias="colorOverlayB")]
-    color_avg_r: Annotated[int, Field(alias="colorAvgR")]
-    color_avg_g: Annotated[int, Field(alias="colorAvgG")]
-    color_avg_b: Annotated[int, Field(alias="colorAvgB")]
+    color_overlay_r: int
+    color_overlay_g: int
+    color_overlay_b: int
+    color_avg_r: int
+    color_avg_g: int
+    color_avg_b: int
     left_capture_part: CapturePartColor
     middle_capture_part: CapturePartColor
     right_capture_part: CapturePartColor

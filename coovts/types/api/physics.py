@@ -2,21 +2,28 @@ from typing import Annotated, ClassVar
 
 from pydantic import BaseModel, Field
 
-from ..registry import request_model, response_model
+from ..registry import (
+    request_model,
+    request_param_model,
+    response_model,
+    response_param_model,
+)
 
 
-class PhysicsGroup(BaseModel):
-    group_id: Annotated[str, Field(alias="groupID")]
-    group_name: str
-    strength_multiplier: float
-    wind_multiplier: float
-
-
+@request_param_model
 class PhysicsOverride(BaseModel):
     id: str
     value: float
     set_base_value: bool
     override_seconds: float
+
+
+@response_param_model
+class PhysicsGroup(BaseModel):
+    group_id: Annotated[str, Field(alias="groupID")]
+    group_name: str
+    strength_multiplier: float
+    wind_multiplier: float
 
 
 @request_model

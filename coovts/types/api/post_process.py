@@ -2,9 +2,21 @@ from typing import ClassVar
 
 from pydantic import BaseModel
 
-from ..registry import request_model, response_model
+from ..registry import (
+    request_model,
+    request_param_model,
+    response_model,
+    response_param_model,
+)
 
 
+@request_param_model
+class ConfigValue(BaseModel):
+    config_id: str
+    config_value: str
+
+
+@response_param_model
 class EffectConfigEntry(BaseModel):
     internal_id: str
     enum_id: str
@@ -30,6 +42,7 @@ class EffectConfigEntry(BaseModel):
     scene_item_default: str
 
 
+@response_param_model
 class PostProcessingEffect(BaseModel):
     internal_id: str
     enum_id: str
@@ -37,11 +50,6 @@ class PostProcessingEffect(BaseModel):
     effect_is_active: bool
     effect_is_restricted: bool
     config_entries: list[EffectConfigEntry]
-
-
-class ConfigValue(BaseModel):
-    config_id: str
-    config_value: str
 
 
 @request_model

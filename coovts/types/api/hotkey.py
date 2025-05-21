@@ -2,9 +2,10 @@ from typing import Annotated, ClassVar
 
 from pydantic import BaseModel, Field
 
-from ..registry import request_model, response_model
+from ..registry import request_model, response_model, response_param_model
 
 
+@response_param_model
 class HotkeyInfo(BaseModel):
     name: str
     type: str

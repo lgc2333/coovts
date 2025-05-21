@@ -2,9 +2,15 @@ from typing import ClassVar
 
 from pydantic import BaseModel
 
-from ..registry import request_model, response_model
+from ..registry import (
+    request_model,
+    request_param_model,
+    response_model,
+    response_param_model,
+)
 
 
+@response_param_model
 class ColorData(BaseModel):
     color_r: int
     color_g: int
@@ -13,6 +19,7 @@ class ColorData(BaseModel):
     mix_with_scene_lighting_color: float = 1.0
 
 
+@request_param_model
 class ArtMeshMatcher(BaseModel):
     tint_all: bool = False
     art_mesh_number: list[int] = []

@@ -2,9 +2,24 @@ from typing import Annotated, ClassVar, Literal
 
 from pydantic import BaseModel, Field
 
-from ..registry import request_model, response_model
+from ..registry import (
+    request_model,
+    request_param_model,
+    response_model,
+    response_param_model,
+)
+
+type ParameterMode = Literal["set", "add"]
 
 
+@request_param_model
+class ParameterValue(BaseModel):
+    id: str
+    value: float
+    weight: float = 1.0
+
+
+@response_param_model
 class InputParameter(BaseModel):
     name: str
     added_by: str
@@ -14,18 +29,13 @@ class InputParameter(BaseModel):
     default_value: float
 
 
+@response_param_model
 class Live2DParameter(BaseModel):
     name: str
     value: float
     min: float
     max: float
     default_value: float
-
-
-class ParameterValue(BaseModel):
-    id: str
-    value: float
-    weight: float = 1.0
 
 
 @request_model
@@ -111,7 +121,7 @@ class ParameterDeletionResponse(BaseModel):
 class InjectParameterDataRequest(BaseModel):
     msg_t: ClassVar[str] = "InjectParameterDataRequest"
     face_found: bool = False
-    mode: Literal["set", "add"] = "set"
+    mode: ParameterMode = "set"
     parameter_values: list[ParameterValue]
 
 

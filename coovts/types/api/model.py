@@ -2,9 +2,10 @@ from typing import Annotated, ClassVar
 
 from pydantic import BaseModel, Field
 
-from ..registry import request_model, response_model
+from ..registry import request_model, response_model, response_param_model
 
 
+@response_param_model
 class ModelPosition(BaseModel):
     position_x: float
     position_y: float
@@ -12,6 +13,7 @@ class ModelPosition(BaseModel):
     size: float
 
 
+@response_param_model
 class ModelInfo(BaseModel):
     model_loaded: bool
     model_name: str

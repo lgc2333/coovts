@@ -2,19 +2,22 @@ from typing import Annotated, ClassVar
 
 from pydantic import BaseModel, Field
 
-from ..registry import request_model, response_model
+from ..registry import request_model, response_model, response_param_model
 
 
+@response_param_model
 class ExpressionParameter(BaseModel):
     name: str
     value: float
 
 
+@response_param_model
 class HotkeyRef(BaseModel):
     name: str
     id: str
 
 
+@response_param_model
 class ExpressionInfo(BaseModel):
     name: str
     file: str

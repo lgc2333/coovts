@@ -21,6 +21,7 @@ class APIDataModelCollector:
 
 
 models = APIDataModelCollector()
+event_configs = APIDataModelCollector()
 
 
 def request_model[T: type[BaseModel]](m: T) -> T:
@@ -29,3 +30,11 @@ def request_model[T: type[BaseModel]](m: T) -> T:
 
 def response_model[T: type[BaseModel]](m: T) -> T:
     return models(model_with_model_config(response_model_config)(m))
+
+
+def event_config_model[T: type[BaseModel]](m: T) -> T:
+    return event_configs(model_with_model_config(request_model_config)(m))
+
+
+request_param_model = model_with_model_config(request_model_config)
+response_param_model = model_with_model_config(response_model_config)
