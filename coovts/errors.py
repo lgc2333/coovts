@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, ClassVar, override
 
-from .types.response import APIErrorResponseData, AuthenticationResponseData
+from .types.response import APIErrorData, AuthenticationResponseData
 
 if TYPE_CHECKING:
     from pydantic import BaseModel
@@ -17,7 +17,7 @@ class RequestError(VTSError):
 class APIError(RequestError):
     message_type: ClassVar[str] = "APIError"
 
-    def __init__(self, data: APIErrorResponseData) -> None:
+    def __init__(self, data: APIErrorData) -> None:
         self.data = data
 
     @override
@@ -30,12 +30,16 @@ class NetworkError(RequestError):
 
 
 class ValidationError(RequestError):
-    def __init__(self, raw: str | bytes, model: type["BaseModel"]) -> None:
+    def __init__(
+        self,
+        raw: str | bytes,
+        model: type["BaseModel"] | None = None,
+    ) -> None:
         self.raw = raw
         self.model = model
 
     def __str__(self) -> str:
-        return f"Returned data cannot validate to {self.model.__name__}"
+        return f"Returned data cannot validate to {self.model and self.model.__name__}"
 
 
 class AuthenticationFailedError(RequestError):

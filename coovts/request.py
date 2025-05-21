@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 @dataclass
 class ResponseInfo[M: BaseModel]:
-    model: type[M]
+    model: type[M] | None = None
     future: Future[M] = field(default_factory=Future)
 
 
@@ -21,16 +21,17 @@ class RequestManager:
     def has_id(self, req_id: str) -> bool:
         return req_id in self.id_signals
 
-    def acquire_request(self, req_id: str, model: type[BaseModel]):
-        if self.id_counter in self.id_signals:
+    def acquire_request(self, req_id: str, model: type[BaseModel] | None = None):
+        if req_id in self.id_signals:
             raise RuntimeError("ID already in use")
         self.id_signals[req_id] = ResponseInfo(model=model)
 
-    def acquire_next_request(self, model: type[BaseModel]) -> str:
+    def acquire_next_request(self, model: type[BaseModel] | None = None) -> str:
         if self.id_counter >= self.id_counter_max:
             self.id_counter = 0
         self.id_counter += 1
-        id_str = str(self.id_counter)
+        while (id_str := str(self.id_counter)) in self.id_signals:
+            self.id_counter += 1
         self.acquire_request(id_str, model)
         return id_str
 

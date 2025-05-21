@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from enum import Enum, auto
 from pathlib import Path
 from types import CoroutineType, EllipsisType
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal, overload
 
 import websockets as ws
 from cookit.loguru import warning_suppress
@@ -19,7 +19,7 @@ from .types.request import (
     BaseRequest,
 )
 from .types.response import (
-    APIErrorResponseData,
+    APIErrorData,
     AuthenticationResponseData,
     AuthenticationTokenResponseData,
     BaseResponse,
@@ -224,7 +224,11 @@ class Plugin:
 
         instance_cache: dict[type[BaseModel], BaseModel] = {}
 
-        def validate_data[T: BaseModel](model: type[T]) -> T:
+        def validate_data[T: BaseModel](
+            model: type[T] | None = None,
+        ) -> T | dict[str, Any]:
+            if not model:
+                return resp.data
             if model not in instance_cache:
                 data = model.model_validate(resp.data)
                 instance_cache[model] = data
@@ -237,19 +241,23 @@ class Plugin:
         if resp.request_id and self.req_manager.has_id(resp.request_id):
             fut = self.req_manager.pop(resp.request_id)
             try:
-                data = validate_data(APIErrorResponseData if is_err else fut.model)
+                data: BaseModel | dict[str, Any] = validate_data(
+                    APIErrorData if is_err else fut.model,
+                )
             except Exception as e:
                 err = ValidationError(raw, fut.model)
                 err.__cause__ = e
-                self.dispatch_handlers([run_sync(fut.future.set_exception)], err)
+                fut.future.set_exception(err)
             else:
                 if is_err:
+                    if TYPE_CHECKING:
+                        assert isinstance(data, APIErrorData)
                     self.dispatch_handlers(
                         [run_sync(fut.future.set_exception)],
                         APIError(data),
                     )
                 else:
-                    self.dispatch_handlers([run_sync(fut.future.set_result)], data)
+                    fut.future.set_result(data)
 
         if resp.message_type in self.event_handlers:
             for handler_info in self.event_handlers[resp.message_type]:
@@ -343,6 +351,7 @@ class Plugin:
         self._run_task = asyncio.create_task(self._run())
         return self._run_task
 
+    @overload
     async def call_api[M: BaseModel](
         self,
         message_type: str,
@@ -351,7 +360,26 @@ class Plugin:
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
         api_timeout: float | None | EllipsisType = ...,
-    ) -> M:
+    ) -> M: ...
+    @overload
+    async def call_api[M: BaseModel](
+        self,
+        message_type: str,
+        response_data_model: Literal[None] = None,
+        data: Any = None,
+        api_name: str = "VTubeStudioPublicAPI",
+        api_version: str = "1.0",
+        api_timeout: float | None | EllipsisType = ...,
+    ) -> dict[str, Any]: ...
+    async def call_api[M: BaseModel](
+        self,
+        message_type: str,
+        response_data_model: type[M] | None = None,
+        data: Any = None,
+        api_name: str = "VTubeStudioPublicAPI",
+        api_version: str = "1.0",
+        api_timeout: float | None | EllipsisType = ...,
+    ) -> M | dict[str, Any]:
         req_timeout = self.api_timeout if api_timeout is ... else api_timeout
 
         client = self.ensure_client()
