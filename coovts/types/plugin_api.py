@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
 
+# base API class for intellisense
 class PluginAPI(ABC):
     @abstractmethod
     def _handle_event(self, *args, **kwargs): ...

@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from enum import Enum, auto
 from pathlib import Path
 from types import CoroutineType, EllipsisType
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, overload, override
 
 import websockets as ws
 from cookit.loguru import warning_suppress
@@ -196,6 +196,7 @@ class Plugin(PluginAPI):
         self.event_handlers[event_name].append(EventHandlerInfo(model, handler))
         return handler
 
+    @override
     def _handle_event(
         self,
         event_data_model: type[BaseModel],
@@ -366,6 +367,38 @@ class Plugin(PluginAPI):
         self._run_task = asyncio.create_task(self._run())
         return self._run_task
 
+    @overload
+    async def send_request[M: BaseModel](
+        self,
+        request: BaseRequest,
+        response_model: type[M],
+        api_timeout: float | None | EllipsisType = ...,
+    ) -> M: ...
+    @overload
+    async def send_request(
+        self,
+        request: BaseRequest,
+        response_model: type[BaseModel] | None = None,
+        api_timeout: float | None | EllipsisType = ...,
+    ) -> dict[str, Any]: ...
+    async def send_request(
+        self,
+        request: BaseRequest,
+        response_model: type[BaseModel] | None = None,
+        api_timeout: float | None | EllipsisType = ...,
+    ):
+        req_timeout = self.api_timeout if api_timeout is ... else api_timeout
+
+        req_id = self.req_manager.acquire_next_request(response_model)
+        request.request_id = req_id
+
+        client = self.ensure_client()
+        payload = request.model_dump_json()
+        self.dispatch_handlers(self.before_send_raw_handlers, payload)
+        await client.send(payload)
+        return await self.req_manager.wait_response(req_id, req_timeout, pop=True)
+
+    @override
     async def _call_api(
         self,
         data: Any,
@@ -392,19 +425,17 @@ class Plugin(PluginAPI):
                 )
             response_model = get_api_response_model(data)
 
-        client = self.ensure_client()
-        req_id = self.req_manager.acquire_next_request(response_model)
         request = BaseRequest(
             api_name=api_name,
             api_version=api_version,
-            request_id=req_id,
             message_type=message_type,
             data=data,
         )
-        payload = request.model_dump_json()
-        self.dispatch_handlers(self.before_send_raw_handlers, payload)
-        await client.send(payload)
-        return await self.req_manager.wait_response(req_id, req_timeout, pop=True)
+        return await self.send_request(
+            request,
+            response_model=response_model,
+            api_timeout=req_timeout,
+        )
 
     async def authenticate(self):
         if self.authenticated:
