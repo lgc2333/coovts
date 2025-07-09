@@ -33,7 +33,7 @@ pip install coovts
 ## 📞 Contacts
 
 - Telegram: [@lgc2333](https://t.me/lgc2333) / [@stupmbot](https://t.me/stupmbot)
-- QQ: 3076823485 / Group: [1105946125](https://jq.qq.com/?_wv=1027&k=Z3n1MpEp)
+- QQ: 3076823485 / Group: [168603371](https://qm.qq.com/q/EikuZ5sP4G)
 - Email: [lgc2333@126.com](mailto:lgc2333@126.com)
 - Discord: [lgc2333](https://discordapp.com/users/810486152401256448) (Not active)
 
