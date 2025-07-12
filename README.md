@@ -12,6 +12,8 @@ Another library for making VTube Studio plugins with Python.
 
 ## 📖 Introduction
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/lgc2333/coovts)
+
 If you want to know how to use this, please refer to [`examples/basic.py`](./examples/basic.py)  
 For advanced usage, please deep dive into the source code.
 
