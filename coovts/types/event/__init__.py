@@ -7,6 +7,8 @@ from .event import (
     ItemEventData as ItemEventData,
     Live2DCubismEditorConnectedEventConfig as Live2DCubismEditorConnectedEventConfig,
     Live2DCubismEditorConnectedEventData as Live2DCubismEditorConnectedEventData,
+    ModelAnimationEventConfig as ModelAnimationEventConfig,
+    ModelAnimationEventData as ModelAnimationEventData,
     ModelClickedEventConfig as ModelClickedEventConfig,
     ModelClickedEventData as ModelClickedEventData,
     ModelLoadedEventConfig as ModelLoadedEventConfig,

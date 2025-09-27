@@ -164,3 +164,22 @@ class Live2DCubismEditorConnectedEventData(BaseModel):
     trying_to_connect: bool
     connected: bool
     should_send_parameters: bool
+
+
+@with_request_model_config
+class ModelAnimationEventConfig(BaseModel):
+    ignore_live2d_items: bool = False
+    ignore_idle_animations: bool = False
+
+
+@with_response_model_config
+class ModelAnimationEventData(BaseModel):
+    animation_event_type: str
+    animation_event_time: float
+    animation_event_data: str
+    animation_name: str
+    animation_length: float
+    is_idle_animation: bool
+    model_id: str | None = None
+    model_name: str
+    is_live2d_item: bool

@@ -85,6 +85,8 @@ def get_event_name(model: type[BaseModel] | BaseModel) -> str:
         raise TypeError(f"Model's 'msg_t' should be a str, not {type(msg_t)}")
     if model.__name__.endswith("EventData"):
         return model.__name__[:-4]
+    if model.__name__.endswith("EventConfig"):
+        return model.__name__[:-6]
     raise ValueError(
         f"Cannot find suitable event name for {model}, please define manually",
     )
