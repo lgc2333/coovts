@@ -36,7 +36,7 @@ type C[T] = CoroutineType[Any, Any, T]
 type ConnectingHandler = Callable[[], C[Any]]
 type ConnectedHandler = Callable[[], C[Any]]
 type ConnectFailedHandler = Callable[[Exception], C[Any]]
-type ConnectionClosedHandler = Callable[[Exception], C[Any]]
+type ConnectionClosedHandler = Callable[[BaseException], C[Any]]
 type ParseDataErrorHandler = Callable[[str | bytes, Exception], C[Any]]
 type AuthenticationTokenGotHandler = Callable[[str], C[Any]]
 type AuthenticatedHandler = Callable[[], C[Any]]
@@ -288,7 +288,7 @@ class Plugin(PluginAPI):
         while True:
             try:
                 await self._recv(client)
-            except Exception as e:
+            except (Exception, asyncio.CancelledError) as e:
                 self.client = None
                 self.authenticated = False
                 self.dispatch_handlers(self.connection_closed_handlers, e)
