@@ -16,7 +16,7 @@ coovts/
   types/
     shared.py          wire envelope + name-convention resolvers
     api/               VTS API request/response models
-    event/             inbound event models
+    event/             inbound event models (reuses wire models from api/)
     plugin_api.py      runtime ABC
     plugin_api.pyi     GENERATED — never hand-edit
 scripts/

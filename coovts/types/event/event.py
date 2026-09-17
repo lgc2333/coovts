@@ -2,6 +2,7 @@ from typing import Annotated
 
 from pydantic import BaseModel, Field
 
+from ..api.model import ModelPosition
 from ..shared import with_request_model_config, with_response_model_config
 
 
@@ -59,14 +60,6 @@ class HotkeyTriggeredEventData(BaseModel):
     model_id: Annotated[str, Field(alias="modelID")]
     model_name: str
     is_live2d_item: bool
-
-
-@with_response_model_config
-class ModelPosition(BaseModel):
-    position_x: float
-    position_y: float
-    size: float
-    rotation: float
 
 
 @with_request_model_config
