@@ -2,8 +2,12 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
-from coovts.types import api, event, get_api_response_model, get_message_type
-from coovts.types.shared import get_event_name
+from coovts.types import (
+    api,
+    event,
+    get_api_response_model,
+    get_message_type,
+)
 
 FILE_HEAD = """\
 from abc import ABC, abstractmethod
@@ -25,16 +29,15 @@ class PluginAPI(ABC):
         data: Any,
         *,
         message_type: str | None = None,
-        response_model: type[BaseModel] | None | EllipsisType = ...,
+        response_model: type[BaseModel] | EllipsisType | None = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> Any: ...
     @abstractmethod
     def _handle_event[T: BaseModel](
         self,
         event_data_model: type[T],
-        event_name: str | None = None,
     ) -> _Deco[[T], _Co[Any]]: ...
 
     # region builtin apis
@@ -50,7 +53,7 @@ API_TEMPLATE = """
         response_model: type[api.{resp}] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.{resp}: ..."""
 
 API_REST = """
@@ -66,7 +69,7 @@ API_REST = """
         response_model: type[M],
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> M: ...
     @overload
     async def call_api(
@@ -77,7 +80,7 @@ API_REST = """
         response_model: None = None,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> dict[str, Any]: ...
     # otherwise message_type is required
     @overload
@@ -89,7 +92,7 @@ API_REST = """
         response_model: type[M],
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> M: ...
     @overload
     async def call_api(
@@ -100,7 +103,7 @@ API_REST = """
         response_model: None = None,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> dict[str, Any]: ...
 """
 
@@ -113,7 +116,6 @@ EVENT_TEMPLATE = """
     def handle_event[T: event.{model}](
         self,
         event_data_model: type[T],
-        event_name: Literal["{name}"] = ...,
     ) -> _Deco[[T], _Co[Any]]: ..."""
 
 EVENT_TAIL = """
@@ -124,13 +126,12 @@ EVENT_TAIL = """
     def handle_event[T: BaseModel](
         self,
         event_data_model: type[T],
-        event_name: str | None = None,
     ) -> _Deco[[T], _Co[Any]]: ...
 """
 
 PYI_PATH = Path(__file__).parent.parent / "coovts" / "types" / "plugin_api.pyi"
 
-with PYI_PATH.open("w", encoding="u8") as f:
+with PYI_PATH.open("w", encoding="u8", newline="\n") as f:
     f.write(FILE_HEAD)
     for name, model in api.__dict__.items():
         if not name.endswith("Request"):
@@ -152,7 +153,6 @@ with PYI_PATH.open("w", encoding="u8") as f:
         assert issubclass(model, BaseModel)
         f.write(
             EVENT_TEMPLATE.format(
-                name=get_event_name(model),
                 model=model.__name__,
             ),
         )

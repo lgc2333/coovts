@@ -17,16 +17,15 @@ class PluginAPI(ABC):
         data: Any,
         *,
         message_type: str | None = None,
-        response_model: type[BaseModel] | None | EllipsisType = ...,
+        response_model: type[BaseModel] | EllipsisType | None = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> Any: ...
     @abstractmethod
     def _handle_event[T: BaseModel](
         self,
         event_data_model: type[T],
-        event_name: str | None = None,
     ) -> _Deco[[T], _Co[Any]]: ...
 
     # region builtin apis
@@ -40,7 +39,7 @@ class PluginAPI(ABC):
         response_model: type[api.ArtMeshListResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.ArtMeshListResponse: ...
     @overload
     async def call_api(
@@ -51,7 +50,7 @@ class PluginAPI(ABC):
         response_model: type[api.ArtMeshSelectionResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.ArtMeshSelectionResponse: ...
     @overload
     async def call_api(
@@ -62,7 +61,7 @@ class PluginAPI(ABC):
         response_model: type[api.ColorTintResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.ColorTintResponse: ...
     @overload
     async def call_api(
@@ -73,7 +72,7 @@ class PluginAPI(ABC):
         response_model: type[api.AuthenticationResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.AuthenticationResponse: ...
     @overload
     async def call_api(
@@ -84,7 +83,7 @@ class PluginAPI(ABC):
         response_model: type[api.AuthenticationTokenResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.AuthenticationTokenResponse: ...
     @overload
     async def call_api(
@@ -95,7 +94,7 @@ class PluginAPI(ABC):
         response_model: type[api.EventSubscriptionResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.EventSubscriptionResponse: ...
     @overload
     async def call_api(
@@ -106,7 +105,7 @@ class PluginAPI(ABC):
         response_model: type[api.ExpressionActivationResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.ExpressionActivationResponse: ...
     @overload
     async def call_api(
@@ -117,7 +116,7 @@ class PluginAPI(ABC):
         response_model: type[api.ExpressionStateResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.ExpressionStateResponse: ...
     @overload
     async def call_api(
@@ -128,7 +127,7 @@ class PluginAPI(ABC):
         response_model: type[api.HotkeysInCurrentModelResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.HotkeysInCurrentModelResponse: ...
     @overload
     async def call_api(
@@ -139,7 +138,7 @@ class PluginAPI(ABC):
         response_model: type[api.HotkeyTriggerResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.HotkeyTriggerResponse: ...
     @overload
     async def call_api(
@@ -150,7 +149,7 @@ class PluginAPI(ABC):
         response_model: type[api.APIStateResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.APIStateResponse: ...
     @overload
     async def call_api(
@@ -161,7 +160,7 @@ class PluginAPI(ABC):
         response_model: type[api.StatisticsResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.StatisticsResponse: ...
     @overload
     async def call_api(
@@ -172,7 +171,7 @@ class PluginAPI(ABC):
         response_model: type[api.VTSFolderInfoResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.VTSFolderInfoResponse: ...
     @overload
     async def call_api(
@@ -183,7 +182,7 @@ class PluginAPI(ABC):
         response_model: type[api.ItemAnimationControlResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.ItemAnimationControlResponse: ...
     @overload
     async def call_api(
@@ -194,7 +193,7 @@ class PluginAPI(ABC):
         response_model: type[api.ItemListResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.ItemListResponse: ...
     @overload
     async def call_api(
@@ -205,7 +204,7 @@ class PluginAPI(ABC):
         response_model: type[api.ItemLoadResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.ItemLoadResponse: ...
     @overload
     async def call_api(
@@ -216,7 +215,7 @@ class PluginAPI(ABC):
         response_model: type[api.ItemMoveResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.ItemMoveResponse: ...
     @overload
     async def call_api(
@@ -227,7 +226,7 @@ class PluginAPI(ABC):
         response_model: type[api.ItemPinResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.ItemPinResponse: ...
     @overload
     async def call_api(
@@ -238,7 +237,7 @@ class PluginAPI(ABC):
         response_model: type[api.ItemUnloadResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.ItemUnloadResponse: ...
     @overload
     async def call_api(
@@ -249,7 +248,7 @@ class PluginAPI(ABC):
         response_model: type[api.AvailableModelsResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.AvailableModelsResponse: ...
     @overload
     async def call_api(
@@ -260,7 +259,7 @@ class PluginAPI(ABC):
         response_model: type[api.CurrentModelResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.CurrentModelResponse: ...
     @overload
     async def call_api(
@@ -271,7 +270,7 @@ class PluginAPI(ABC):
         response_model: type[api.ModelLoadResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.ModelLoadResponse: ...
     @overload
     async def call_api(
@@ -282,7 +281,7 @@ class PluginAPI(ABC):
         response_model: type[api.MoveModelResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.MoveModelResponse: ...
     @overload
     async def call_api(
@@ -293,7 +292,7 @@ class PluginAPI(ABC):
         response_model: type[api.NDIConfigResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.NDIConfigResponse: ...
     @overload
     async def call_api(
@@ -304,7 +303,7 @@ class PluginAPI(ABC):
         response_model: type[api.FaceFoundResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.FaceFoundResponse: ...
     @overload
     async def call_api(
@@ -315,7 +314,7 @@ class PluginAPI(ABC):
         response_model: type[api.InjectParameterDataResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.InjectParameterDataResponse: ...
     @overload
     async def call_api(
@@ -326,7 +325,7 @@ class PluginAPI(ABC):
         response_model: type[api.InputParameterListResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.InputParameterListResponse: ...
     @overload
     async def call_api(
@@ -337,7 +336,7 @@ class PluginAPI(ABC):
         response_model: type[api.Live2DParameterListResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.Live2DParameterListResponse: ...
     @overload
     async def call_api(
@@ -348,7 +347,7 @@ class PluginAPI(ABC):
         response_model: type[api.ParameterCreationResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.ParameterCreationResponse: ...
     @overload
     async def call_api(
@@ -359,7 +358,7 @@ class PluginAPI(ABC):
         response_model: type[api.ParameterDeletionResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.ParameterDeletionResponse: ...
     @overload
     async def call_api(
@@ -370,7 +369,7 @@ class PluginAPI(ABC):
         response_model: type[api.ParameterValueResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.ParameterValueResponse: ...
     @overload
     async def call_api(
@@ -381,7 +380,7 @@ class PluginAPI(ABC):
         response_model: type[api.GetCurrentModelPhysicsResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.GetCurrentModelPhysicsResponse: ...
     @overload
     async def call_api(
@@ -392,7 +391,7 @@ class PluginAPI(ABC):
         response_model: type[api.SetCurrentModelPhysicsResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.SetCurrentModelPhysicsResponse: ...
     @overload
     async def call_api(
@@ -403,7 +402,7 @@ class PluginAPI(ABC):
         response_model: type[api.PostProcessingListResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.PostProcessingListResponse: ...
     @overload
     async def call_api(
@@ -414,7 +413,7 @@ class PluginAPI(ABC):
         response_model: type[api.PostProcessingUpdateResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.PostProcessingUpdateResponse: ...
     @overload
     async def call_api(
@@ -425,7 +424,7 @@ class PluginAPI(ABC):
         response_model: type[api.SceneColorOverlayInfoResponse] = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> api.SceneColorOverlayInfoResponse: ...
 
     # endregion
@@ -439,7 +438,7 @@ class PluginAPI(ABC):
         response_model: type[M],
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> M: ...
     @overload
     async def call_api(
@@ -450,7 +449,7 @@ class PluginAPI(ABC):
         response_model: None = None,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> dict[str, Any]: ...
     # otherwise message_type is required
     @overload
@@ -462,7 +461,7 @@ class PluginAPI(ABC):
         response_model: type[M],
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> M: ...
     @overload
     async def call_api(
@@ -473,7 +472,7 @@ class PluginAPI(ABC):
         response_model: None = None,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> dict[str, Any]: ...
 
     # region builtin events
@@ -482,55 +481,51 @@ class PluginAPI(ABC):
     def handle_event[T: event.HotkeyTriggeredEventData](
         self,
         event_data_model: type[T],
-        event_name: Literal["HotkeyTriggered"] = ...,
     ) -> _Deco[[T], _Co[Any]]: ...
     @overload
     def handle_event[T: event.ItemEventData](
         self,
         event_data_model: type[T],
-        event_name: Literal["Item"] = ...,
     ) -> _Deco[[T], _Co[Any]]: ...
     @overload
     def handle_event[T: event.Live2DCubismEditorConnectedEventData](
         self,
         event_data_model: type[T],
-        event_name: Literal["Live2DCubismEditorConnected"] = ...,
+    ) -> _Deco[[T], _Co[Any]]: ...
+    @overload
+    def handle_event[T: event.ModelAnimationEventData](
+        self,
+        event_data_model: type[T],
     ) -> _Deco[[T], _Co[Any]]: ...
     @overload
     def handle_event[T: event.ModelClickedEventData](
         self,
         event_data_model: type[T],
-        event_name: Literal["ModelClicked"] = ...,
     ) -> _Deco[[T], _Co[Any]]: ...
     @overload
     def handle_event[T: event.ModelLoadedEventData](
         self,
         event_data_model: type[T],
-        event_name: Literal["ModelLoaded"] = ...,
     ) -> _Deco[[T], _Co[Any]]: ...
     @overload
     def handle_event[T: event.ModelMovedEventData](
         self,
         event_data_model: type[T],
-        event_name: Literal["ModelMoved"] = ...,
     ) -> _Deco[[T], _Co[Any]]: ...
     @overload
     def handle_event[T: event.ModelOutlineEventData](
         self,
         event_data_model: type[T],
-        event_name: Literal["ModelOutline"] = ...,
     ) -> _Deco[[T], _Co[Any]]: ...
     @overload
     def handle_event[T: event.TestEventData](
         self,
         event_data_model: type[T],
-        event_name: Literal["Test"] = ...,
     ) -> _Deco[[T], _Co[Any]]: ...
     @overload
     def handle_event[T: event.TrackingStatusChangedEventData](
         self,
         event_data_model: type[T],
-        event_name: Literal["TrackingStatusChanged"] = ...,
     ) -> _Deco[[T], _Co[Any]]: ...
 
     # endregion
@@ -539,5 +534,4 @@ class PluginAPI(ABC):
     def handle_event[T: BaseModel](
         self,
         event_data_model: type[T],
-        event_name: str | None = None,
     ) -> _Deco[[T], _Co[Any]]: ...
