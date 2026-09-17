@@ -43,7 +43,10 @@ class TrackingStatusChangedEventData(BaseModel):
 @with_request_model_config
 class HotkeyTriggeredEventConfig(BaseModel):
     only_for_action: str | None = None
-    ignore_hotkeys_triggered_by_api: bool = False
+    ignore_hotkeys_triggered_by_api: Annotated[
+        bool,
+        Field(alias="ignoreHotkeysTriggeredByAPI"),
+    ] = False
 
 
 @with_response_model_config
@@ -52,7 +55,7 @@ class HotkeyTriggeredEventData(BaseModel):
     hotkey_name: str
     hotkey_action: str
     hotkey_file: str
-    hotkey_triggered_by_api: bool
+    hotkey_triggered_by_api: Annotated[bool, Field(alias="hotkeyTriggeredByAPI")]
     model_id: Annotated[str, Field(alias="modelID")]
     model_name: str
     is_live2d_item: bool
@@ -141,7 +144,7 @@ class ModelClickedEventData(BaseModel):
 class ItemEventConfig(BaseModel):
     item_instance_ids: Annotated[
         list[str] | None,
-        Field(alias="item_instance_ids"),
+        Field(alias="itemInstanceIDs"),
     ] = None
     item_file_names: list[str] | None = None
 
@@ -180,6 +183,6 @@ class ModelAnimationEventData(BaseModel):
     animation_name: str
     animation_length: float
     is_idle_animation: bool
-    model_id: str | None = None
+    model_id: Annotated[str | None, Field(alias="modelID")] = None
     model_name: str
     is_live2d_item: bool

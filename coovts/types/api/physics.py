@@ -34,7 +34,7 @@ class GetCurrentModelPhysicsResponse(BaseModel):
     model_has_physics: bool
     physics_switched_on: bool
     using_legacy_physics: bool
-    physics_fps_setting: int
+    physics_fps_setting: Annotated[int, Field(alias="physicsFPSSetting")]
     base_strength: int
     base_wind: int
     api_physics_override_active: bool

@@ -1,18 +1,20 @@
-from pydantic import BaseModel
+from typing import Annotated
+
+from pydantic import BaseModel, Field
 
 from ..shared import with_request_model_config, with_response_model_config
 
 
 @with_request_model_config
 class ConfigValue(BaseModel):
-    config_id: str
+    config_id: Annotated[str, Field(alias="configID")]
     config_value: str
 
 
 @with_response_model_config
 class EffectConfigEntry(BaseModel):
-    internal_id: str
-    enum_id: str
+    internal_id: Annotated[str, Field(alias="internalID")]
+    enum_id: Annotated[str, Field(alias="enumID")]
     explanation: str
     type: str
     activation_config: bool
@@ -37,8 +39,8 @@ class EffectConfigEntry(BaseModel):
 
 @with_response_model_config
 class PostProcessingEffect(BaseModel):
-    internal_id: str
-    enum_id: str
+    internal_id: Annotated[str, Field(alias="internalID")]
+    enum_id: Annotated[str, Field(alias="enumID")]
     explanation: str
     effect_is_active: bool
     effect_is_restricted: bool
@@ -49,7 +51,7 @@ class PostProcessingEffect(BaseModel):
 class PostProcessingListRequest(BaseModel):
     fill_post_processing_presets_array: bool = True
     fill_post_processing_effects_array: bool = True
-    effect_id_filter: list[str] = []
+    effect_id_filter: Annotated[list[str], Field(alias="effectIDFilter")] = []
 
 
 @with_response_model_config

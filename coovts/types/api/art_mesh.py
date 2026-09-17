@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from ..shared import with_request_model_config, with_response_model_config
 
 
-@with_response_model_config
+@with_request_model_config
 class ColorData(BaseModel):
     color_r: int
     color_g: int

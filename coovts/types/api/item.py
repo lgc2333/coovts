@@ -28,9 +28,9 @@ class ItemPinInfo(BaseModel):
     art_mesh_id: Annotated[str, Field(alias="artMeshID")] = ""
     angle: float
     size: float
-    vertex_id1: int = 0
-    vertex_id2: int = 0
-    vertex_id3: int = 0
+    vertex_id1: Annotated[int, Field(alias="vertexID1")] = 0
+    vertex_id2: Annotated[int, Field(alias="vertexID2")] = 0
+    vertex_id3: Annotated[int, Field(alias="vertexID3")] = 0
     vertex_weight1: float = 0
     vertex_weight2: float = 0
     vertex_weight3: float = 0
@@ -83,7 +83,10 @@ class ItemListRequest(BaseModel):
     include_item_instances_in_scene: bool = False
     include_available_item_files: bool = False
     only_items_with_file_name: str | None = None
-    only_items_with_instance_id: str | None = None
+    only_items_with_instance_id: Annotated[
+        str | None,
+        Field(alias="onlyItemsWithInstanceID"),
+    ] = None
 
 
 @with_response_model_config
@@ -122,10 +125,6 @@ class ItemLoadResponse(BaseModel):
     instance_id: Annotated[str, Field(alias="instanceID")]
     file_name: str
 
-    class Response(BaseModel):
-        instance_id: Annotated[str, Field(alias="instanceID")]
-        file_name: str
-
 
 @with_request_model_config
 class ItemUnloadRequest(BaseModel):
@@ -160,6 +159,7 @@ class ItemAnimationControlResponse(BaseModel):
     animation_playing: bool
 
 
+@with_request_model_config
 class ItemMoveInfo(BaseModel):
     item_instance_id: Annotated[str, Field(alias="itemInstanceID")]
     time_in_seconds: float
