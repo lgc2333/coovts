@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 from pydantic import BaseModel
 
-from .errors import APIError, ValidationError
+from .errors import APIError, NetworkError, ValidationError
 from .types.api import APIErrorResponse
 
 
@@ -66,9 +66,15 @@ class RequestManager:
         """Forget a request nobody is waiting for anymore."""
         self.pending.pop(req_id, None)
 
-    def reset(self) -> None:
+    def reset(self, pending_error: str | None = None) -> None:
+        """Forget every pending request, failing the ones still waiting if asked to."""
         self.id_counter = 0
         pending = self.pending.copy()
         self.pending.clear()
         for request in pending.values():
-            request.future.cancel()
+            if request.future.done():
+                continue
+            if pending_error is None:
+                request.future.cancel()
+            else:
+                request.future.set_exception(NetworkError(pending_error))

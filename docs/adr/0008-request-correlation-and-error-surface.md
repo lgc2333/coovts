@@ -9,16 +9,20 @@ consumed exactly once: the table entry is popped on match and discarded afterwar
 duplicate is dropped. The default timeout is 30 seconds; `0` and `None` both mean "wait forever".
 
 Only request-scoped failures are exceptions. `ValidationError` (the payload did not decode to the
-expected model) and `APIError` (VTS refused the request) are raised at the `await`; connection
-loss, envelope parse failures, connect failures, authentication transport failures and handler
-crashes are reported through hooks instead. That split is the reason there is no exception type for
-a lost connection and no `on_disconnected` callback.
+expected model) and `APIError` (VTS refused the request) are raised at the `await`, and a request
+whose connection dies before the answer arrives fails with `NetworkError` — the same error used
+when a call is attempted with no connection. Envelope parse failures, connect failures,
+authentication transport failures and handler crashes stay on the hook side, so hooks keep carrying
+the transport's own exception (a `ConnectionClosed` still exposes its close code) while `await`
+sites only ever see library types. That split is also why there is no `on_disconnected` callback.
 
 ## Consequences
 
-- A disconnect cancels every pending request, so an awaited call raises `asyncio.CancelledError`
-  rather than a `VTSError` subclass. The library does not retry or re-send: the caller decides
-  whether a lost call is worth repeating.
+- A disconnect fails every pending request with `NetworkError`, and does so the moment the receive
+  loop notices — not when the next reconnect attempt starts. The library does not retry or re-send:
+  the caller decides whether a lost call is worth repeating.
+- `stop()` is the one disconnect that cancels instead of failing, so a shutdown raises
+  `asyncio.CancelledError` — the ordinary asyncio signal for "your task is being torn down".
 - `api_timeout=0` means "forever" rather than "immediately" — a deliberate special case, since a
   caller who wants no deadline should not have to say `None` differently from `0`.
 - The id counter is per connection and resets on disconnect; ids are never reused within a

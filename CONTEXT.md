@@ -39,7 +39,7 @@ _Avoid_: Correlation ID, UUID, Sequence number
 
 **Pending request**:
 An outbound API request that has been sent and whose response has not arrived. Pending requests do
-not survive a disconnect: they are cancelled, never resumed, retried or re-sent.
+not survive a disconnect: they fail with a network error, never being resumed, retried or re-sent.
 _Avoid_: In-flight call, Awaiting future
 
 **API timeout**:
@@ -125,5 +125,6 @@ _Avoid_: Callback, Notification, Signal, Message
 
 **API error**:
 A failed request reported by VTS itself, carrying an error ID and a message. Distinct from a
-connection-level failure, which is reported through a hook instead.
+connection-level failure, which reaches a hook, and from a network error, which reaches whoever was
+awaiting the request.
 _Avoid_: Exception, Failure

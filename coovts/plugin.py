@@ -10,8 +10,9 @@ from typing import TYPE_CHECKING, Any, overload, override
 import websockets as ws
 from cookit.loguru import warning_suppress
 from pydantic import BaseModel
+from websockets.exceptions import WebSocketException
 
-from .errors import APIError, AuthenticationFailedError
+from .errors import APIError, AuthenticationFailedError, NetworkError
 from .request import RequestManager
 from .types import (
     BaseRequest,
@@ -41,6 +42,7 @@ type RecvRawHandler = Callable[[str | bytes], C[Any]]
 type BeforeSendRawHandler = Callable[[str], C[Any]]
 
 DEFAULT_ENDPOINT = "ws://localhost:8001"
+CONNECTION_LOST_MESSAGE = "Connection to VTube Studio was lost"
 
 
 @dataclass
@@ -173,7 +175,7 @@ class Plugin(PluginAPI):
 
     def ensure_client(self) -> ws.ClientConnection:
         if not self.client:
-            raise RuntimeError("Client is not connected")
+            raise NetworkError("Not connected to VTube Studio")
         return self.client
 
     def _handle_raw(self, raw: str | bytes) -> None:
@@ -215,17 +217,18 @@ class Plugin(PluginAPI):
                 self._state = (
                     PluginState.STOPPED if self.stopped else PluginState.DISCONNECTED
                 )
+                self.req_manager.reset(CONNECTION_LOST_MESSAGE)
                 self.dispatch_handlers(self.on_connection_closed, e)
                 await asyncio.sleep(self.reconnect_delay)
                 break
 
-    async def _disconnect(self):
+    async def _disconnect(self, pending_error: str | None):
         client = self.client
         task = self._recv_task
         self.client = None
         self._recv_task = None
         self._state = PluginState.STOPPED if self.stopped else PluginState.DISCONNECTED
-        self.req_manager.reset()
+        self.req_manager.reset(pending_error)
         if client and (client.close_code is None):
             await client.close()
         if task and (not task.done()):
@@ -235,7 +238,7 @@ class Plugin(PluginAPI):
         if self._state is PluginState.CONNECTING:
             raise RuntimeError("Already connecting")
 
-        await self._disconnect()
+        await self._disconnect(CONNECTION_LOST_MESSAGE)
 
         self._state = PluginState.CONNECTING
         self.dispatch_handlers(self.on_connecting)
@@ -252,7 +255,7 @@ class Plugin(PluginAPI):
 
     async def stop(self):
         self.stopped = True
-        await self._disconnect()
+        await self._disconnect(None)
         if self._run_task:
             self._run_task.cancel()
         self._run_task = None
@@ -280,7 +283,7 @@ class Plugin(PluginAPI):
                     break
                 self.dispatch_handlers(self.on_authenticate_failed, e)
                 with warning_suppress("Disconnect failed"):
-                    await self._disconnect()
+                    await self._disconnect(CONNECTION_LOST_MESSAGE)
                 await asyncio.sleep(self.reconnect_delay)
                 continue
 
@@ -321,7 +324,10 @@ class Plugin(PluginAPI):
         payload = request.model_dump_json()
         self.dispatch_handlers(self.on_before_send_raw, payload)
         try:
-            await client.send(payload)
+            try:
+                await client.send(payload)
+            except (WebSocketException, OSError) as e:
+                raise NetworkError(CONNECTION_LOST_MESSAGE) from e
             return await pending.result(req_timeout)
         finally:
             self.req_manager.discard(pending.req_id)
