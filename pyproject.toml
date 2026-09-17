@@ -1,23 +1,19 @@
 [project]
 name = "coovts"
 dynamic = ["version"]
-description = "Another library for making VTube Studio plugins with Python"
+description = "Another type rich library for making VTube Studio plugins with Python"
 authors = [{ name = "LgCookie", email = "lgc2333@126.com" }]
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "cookit[pydantic]>=0.11.6",
+    "loguru>=0.7.3",
+    "cookit[loguru,pydantic]>=0.11.6",
     "pydantic>=2.11.4",
     "websockets>=15.0.1",
 ]
 
 [dependency-groups]
-dev = [
-    "basedpyright>=1.29.1",
-    "hatchling>=1.27.0",
-    "loguru>=0.7.3",
-    "ruff>=0.11.10",
-]
+dev = ["basedpyright>=1.29.1", "hatchling>=1.27.0", "ruff>=0.11.10"]
 
 [build-system]
 requires = ["hatchling"]
@@ -26,12 +22,23 @@ build-backend = "hatchling.build"
 [tool.hatch.version]
 path = "coovts/__init__.py"
 
+[tool.poe.tasks]
+lint.cmd = "ruff check"
+lint-fix.cmd = "ruff check --fix --unsafe-fixes"
+check.cmd = "basedpyright"
+format.cmd = "ruff format"
+test.cmd = "pytest"
+gen-api.cmd = "uv run python scripts/generate_plugin_api.py"
+
 [tool.basedpyright]
 pythonVersion = "3.12"
 typeCheckingMode = "standard"
+exclude = ["**/node_modules", "**/.venv", "temp"]
 
 [tool.ruff]
 target-version = "py312"
+respect-gitignore = false
+extend-exclude = ["temp"]
 
 [tool.ruff.format]
 docstring-code-format = true
@@ -41,9 +48,9 @@ line-ending = "lf"
 ignore = [
     "B008",
     "B905",
-    # "COM812",
+    "COM812",
     "E501",
-    "F821",    # conflict with pyright
+    "F821",
     "FBT001",
     "FBT002",
     "ISC001",
@@ -118,6 +125,10 @@ select = [
 
 [tool.ruff.lint.per-file-ignores]
 "scripts/**/*" = ["INP001"]
+"**/tests*/**" = [
+    # "INP001", # no __init__.py
+    "ARG001", # arg not used
+]
 
 [tool.ruff.lint.isort]
 combine-as-imports = true
@@ -133,6 +144,10 @@ exempt-modules = [
     "typing_extensions",
     "collections",
     "pathlib",
-    "nonebot",
-    "nonebot_plugin_alconna",
 ]
+
+[tool.pytest.ini_options]
+addopts = ["--ignore=private/references", "--ignore=temp"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
