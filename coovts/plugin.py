@@ -1,6 +1,6 @@
 import asyncio
 import base64
-from collections.abc import Callable
+from collections.abc import Callable, Iterable, Iterator
 from dataclasses import dataclass
 from enum import Enum, auto
 from pathlib import Path
@@ -11,7 +11,7 @@ import websockets as ws
 from cookit.loguru import warning_suppress
 from pydantic import BaseModel
 
-from .errors import APIError, AuthenticationFailedError, ValidationError
+from .errors import APIError, AuthenticationFailedError
 from .request import RequestManager
 from .types import (
     BaseRequest,
@@ -20,13 +20,8 @@ from .types import (
     get_event_name,
     get_message_type,
 )
-from .types.api import (
-    APIErrorResponse,
-    AuthenticationRequest,
-    AuthenticationTokenRequest,
-)
+from .types.api import AuthenticationRequest, AuthenticationTokenRequest
 from .types.plugin_api import PluginAPI
-from .utils import run_sync
 
 if TYPE_CHECKING:
     from asyncio import Task
@@ -36,7 +31,7 @@ type C[T] = CoroutineType[Any, Any, T]
 type ConnectingHandler = Callable[[], C[Any]]
 type ConnectedHandler = Callable[[], C[Any]]
 type ConnectFailedHandler = Callable[[Exception], C[Any]]
-type ConnectionClosedHandler = Callable[[BaseException], C[Any]]
+type ConnectionClosedHandler = Callable[[Exception], C[Any]]
 type ParseDataErrorHandler = Callable[[str | bytes, Exception], C[Any]]
 type AuthenticationTokenGotHandler = Callable[[str], C[Any]]
 type AuthenticatedHandler = Callable[[], C[Any]]
@@ -54,9 +49,23 @@ class EventHandlerInfo[T: BaseModel]:
     handler: Callable[[T], Any]
 
 
+class Hook[T]:
+    """Registers the handlers of one lifecycle hook."""
+
+    def __init__(self) -> None:
+        self._handlers: list[T] = []
+
+    def __call__(self, handler: T) -> T:
+        self._handlers.append(handler)
+        return handler
+
+    def __iter__(self) -> Iterator[T]:
+        return iter(self._handlers)
+
+
 def dispatch_handlers[**P, R](
-    handlers: list[Callable[P, C[R]]],
-    run_failed_handlers: list[HandlerRunFailedHandler] | None = None,
+    handlers: Iterable[Callable[P, C[R]]],
+    run_failed_handlers: Iterable[HandlerRunFailedHandler] | None = None,
     *args: P.args,
     **kwargs: P.kwargs,
 ) -> list["Task[R | Exception]"] | None:
@@ -98,25 +107,24 @@ class Plugin(PluginAPI):
         self.api_timeout = api_timeout
         self.reconnect_delay = reconnect_delay
 
-        self.connecting_handlers: list[ConnectingHandler] = []
-        self.connected_handlers: list[ConnectedHandler] = []
-        self.connect_failed_handlers: list[ConnectFailedHandler] = []
-        self.connection_closed_handlers: list[ConnectionClosedHandler] = []
-        self.parse_data_error_handlers: list[ParseDataErrorHandler] = []
-        self.authentication_token_got_handlers: list[AuthenticationTokenGotHandler] = []
-        self.authenticated_handlers: list[AuthenticatedHandler] = []
-        self.authenticate_failed_handlers: list[AuthenticationFailedHandler] = []
-        self.handler_run_failed_handlers: list[HandlerRunFailedHandler] = []
-        self.recv_raw_handlers: list[RecvRawHandler] = []
-        self.before_send_raw_handlers: list[BeforeSendRawHandler] = []
+        self.on_connecting: Hook[ConnectingHandler] = Hook()
+        self.on_connected: Hook[ConnectedHandler] = Hook()
+        self.on_connect_failed: Hook[ConnectFailedHandler] = Hook()
+        self.on_connection_closed: Hook[ConnectionClosedHandler] = Hook()
+        self.on_parse_data_error: Hook[ParseDataErrorHandler] = Hook()
+        self.on_authentication_token_got: Hook[AuthenticationTokenGotHandler] = Hook()
+        self.on_authenticated: Hook[AuthenticatedHandler] = Hook()
+        self.on_authenticate_failed: Hook[AuthenticationFailedHandler] = Hook()
+        self.on_handler_run_failed: Hook[HandlerRunFailedHandler] = Hook()
+        self.on_recv_raw: Hook[RecvRawHandler] = Hook()
+        self.on_before_send_raw: Hook[BeforeSendRawHandler] = Hook()
         self.event_handlers: dict[str, list[EventHandlerInfo]] = {}
 
         self.client: ws.ClientConnection | None = None
-        self.connecting = False
-        self.authenticated = False
         self.stopped = True
         self.req_manager = RequestManager()
 
+        self._state = PluginState.STOPPED
         self._recv_task: Task | None = None
         self._run_task: Task | None = None
 
@@ -130,168 +138,84 @@ class Plugin(PluginAPI):
 
     @property
     def state(self) -> PluginState:
-        if self.client:
-            if self.authenticated:
-                return PluginState.AUTHENTICATED
-            return PluginState.AUTHENTICATING
-        if self.connecting:
-            return PluginState.CONNECTING
-        return PluginState.DISCONNECTED
+        return self._state
 
-    def on_connecting[T: ConnectingHandler](self, handler: T) -> T:
-        self.connecting_handlers.append(handler)
-        return handler
-
-    def on_connected[T: ConnectedHandler](self, handler: T) -> T:
-        self.connected_handlers.append(handler)
-        return handler
-
-    def on_connect_failed[T: ConnectFailedHandler](self, handler: T) -> T:
-        self.connect_failed_handlers.append(handler)
-        return handler
-
-    def on_connection_closed[T: ConnectionClosedHandler](self, handler: T) -> T:
-        self.connection_closed_handlers.append(handler)
-        return handler
-
-    def on_parse_data_error[T: ParseDataErrorHandler](self, handler: T) -> T:
-        self.parse_data_error_handlers.append(handler)
-        return handler
-
-    def on_authentication_token_got[T: AuthenticationTokenGotHandler](
+    def _register_event[T: BaseModel, H: Callable[[BaseModel], Any]](
         self,
-        handler: T,
-    ) -> T:
-        self.authentication_token_got_handlers.append(handler)
-        return handler
-
-    def on_authenticated[T: AuthenticatedHandler](self, handler: T) -> T:
-        self.authenticated_handlers.append(handler)
-        return handler
-
-    def on_authenticate_failed[T: AuthenticationFailedHandler](self, handler: T) -> T:
-        self.authenticate_failed_handlers.append(handler)
-        return handler
-
-    def on_handler_run_failed[T: HandlerRunFailedHandler](self, handler: T) -> T:
-        self.handler_run_failed_handlers.append(handler)
-        return handler
-
-    def on_recv_raw[T: RecvRawHandler](self, handler: T) -> T:
-        self.recv_raw_handlers.append(handler)
-        return handler
-
-    def on_before_send_raw[T: BeforeSendRawHandler](self, handler: T) -> T:
-        self.before_send_raw_handlers.append(handler)
-        return handler
-
-    def on_event[T: BaseModel, H: Callable[[BaseModel], Any]](
-        self,
-        event_name: str,
         model: type[T],
         handler: H,
     ) -> H:
-        if event_name not in self.event_handlers:
-            self.event_handlers[event_name] = []
-        self.event_handlers[event_name].append(EventHandlerInfo(model, handler))
+        event_name = get_event_name(model)
+        self.event_handlers.setdefault(event_name, []).append(
+            EventHandlerInfo(model, handler),
+        )
         return handler
 
     @override
-    def _handle_event(
-        self,
-        event_data_model: type[BaseModel],
-        event_name: str | None = None,
-    ):
-        if not event_name:
-            event_name = get_event_name(event_data_model)
-
+    def _handle_event(self, event_data_model: type[BaseModel]):
         def deco(f: Callable):
-            return self.on_event(event_name, event_data_model, f)
+            return self._register_event(event_data_model, f)
 
         return deco
 
     def dispatch_handlers[**P, R](
         self,
-        handlers: list[Callable[P, C[R]]],
+        handlers: Iterable[Callable[P, C[R]]],
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> list["Task[R | Exception]"] | None:
         return dispatch_handlers(
             handlers,
-            self.handler_run_failed_handlers,
+            self.on_handler_run_failed,
             *args,
             **kwargs,
         )
 
-    def ensure_client(self):
+    def ensure_client(self) -> ws.ClientConnection:
         if not self.client:
             raise RuntimeError("Client is not connected")
         return self.client
 
-    async def _recv(self, client: ws.ClientConnection):
-        raw = await client.recv()
-        self.dispatch_handlers(self.recv_raw_handlers, raw)
+    def _handle_raw(self, raw: str | bytes) -> None:
+        self.dispatch_handlers(self.on_recv_raw, raw)
 
         try:
             resp = BaseResponse.model_validate_json(raw)
         except Exception as e:
-            self.dispatch_handlers(self.parse_data_error_handlers, raw, e)
+            self.dispatch_handlers(self.on_parse_data_error, raw, e)
             return
 
-        instance_cache: dict[type[BaseModel], BaseModel] = {}
-
-        def validate_data[T: BaseModel](
-            model: type[T] | None = None,
-        ) -> T | dict[str, Any]:
-            if not model:
-                return resp.data
-            if model not in instance_cache:
-                data = model.model_validate(resp.data)
-                instance_cache[model] = data
-            else:
-                data = instance_cache[model]
-            return data
-
-        is_err = resp.message_type == APIError.message_type
-
-        if resp.request_id and self.req_manager.has_id(resp.request_id):
-            fut = self.req_manager.pop(resp.request_id)
-            try:
-                data: BaseModel | dict[str, Any] = validate_data(
-                    APIErrorResponse if is_err else fut.model,
-                )
-            except Exception as e:
-                err = ValidationError(raw, fut.model)
-                err.__cause__ = e
-                fut.future.set_exception(err)
-            else:
-                if is_err:
-                    if TYPE_CHECKING:
-                        assert isinstance(data, APIErrorResponse)
-                    self.dispatch_handlers(
-                        [run_sync(fut.future.set_exception)],
-                        APIError(data),
-                    )
-                else:
-                    fut.future.set_result(data)
+        if resp.request_id and (pending := self.req_manager.take(resp.request_id)):
+            pending.resolve(
+                raw,
+                resp.data,
+                is_error=resp.message_type == APIError.message_type,
+            )
 
         if resp.message_type in self.event_handlers:
             for handler_info in self.event_handlers[resp.message_type]:
                 try:
-                    data = validate_data(handler_info.model)
+                    data = handler_info.model.model_validate(resp.data)
                 except Exception as e:
-                    self.dispatch_handlers(self.parse_data_error_handlers, raw, e)
+                    self.dispatch_handlers(self.on_parse_data_error, raw, e)
                 else:
                     self.dispatch_handlers([handler_info.handler], data)
+
+    async def _recv(self, client: ws.ClientConnection):
+        self._handle_raw(await client.recv())
 
     async def _recv_loop(self, client: ws.ClientConnection):
         while True:
             try:
                 await self._recv(client)
-            except (Exception, asyncio.CancelledError) as e:
+            except asyncio.CancelledError:
+                raise
+            except Exception as e:
                 self.client = None
-                self.authenticated = False
-                self.dispatch_handlers(self.connection_closed_handlers, e)
+                self._state = (
+                    PluginState.STOPPED if self.stopped else PluginState.DISCONNECTED
+                )
+                self.dispatch_handlers(self.on_connection_closed, e)
                 await asyncio.sleep(self.reconnect_delay)
                 break
 
@@ -300,29 +224,29 @@ class Plugin(PluginAPI):
         task = self._recv_task
         self.client = None
         self._recv_task = None
-        self.connecting = False
-        self.authenticated = False
+        self._state = PluginState.STOPPED if self.stopped else PluginState.DISCONNECTED
         self.req_manager.reset()
-        self.req_manager = RequestManager()
         if client and (client.close_code is None):
             await client.close()
         if task and (not task.done()):
             task.cancel()
 
     async def reconnect(self):
-        await self._disconnect()
-
-        if self.connecting:
+        if self._state is PluginState.CONNECTING:
             raise RuntimeError("Already connecting")
 
-        self.connecting = True
-        self.dispatch_handlers(self.connecting_handlers)
+        await self._disconnect()
+
+        self._state = PluginState.CONNECTING
+        self.dispatch_handlers(self.on_connecting)
         try:
             self.client = await ws.connect(self.endpoint)
-        finally:
-            self.connecting = False
+        except BaseException:
+            self._state = PluginState.DISCONNECTED
+            raise
 
-        self.dispatch_handlers(self.connected_handlers)
+        self._state = PluginState.AUTHENTICATING
+        self.dispatch_handlers(self.on_connected)
         self._recv_task = asyncio.create_task(self._recv_loop(self.client))
         return self._recv_task
 
@@ -337,6 +261,7 @@ class Plugin(PluginAPI):
         if not self.stopped:
             return
         self.stopped = False
+        self._state = PluginState.DISCONNECTED
 
         while not self.stopped:
             try:
@@ -344,7 +269,7 @@ class Plugin(PluginAPI):
             except Exception as e:
                 if self.stopped:
                     break
-                self.dispatch_handlers(self.connect_failed_handlers, e)
+                self.dispatch_handlers(self.on_connect_failed, e)
                 await asyncio.sleep(self.reconnect_delay)
                 continue
 
@@ -353,7 +278,7 @@ class Plugin(PluginAPI):
             except Exception as e:
                 if self.stopped:
                     break
-                self.dispatch_handlers(self.authenticate_failed_handlers, e)
+                self.dispatch_handlers(self.on_authenticate_failed, e)
                 with warning_suppress("Disconnect failed"):
                     await self._disconnect()
                 await asyncio.sleep(self.reconnect_delay)
@@ -372,31 +297,34 @@ class Plugin(PluginAPI):
         self,
         request: BaseRequest,
         response_model: type[M],
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> M: ...
     @overload
     async def send_request(
         self,
         request: BaseRequest,
         response_model: type[BaseModel] | None = None,
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> dict[str, Any]: ...
     async def send_request(
         self,
         request: BaseRequest,
         response_model: type[BaseModel] | None = None,
-        api_timeout: float | None | EllipsisType = ...,
-    ):
+        api_timeout: float | EllipsisType | None = ...,
+    ) -> Any:
         req_timeout = self.api_timeout if api_timeout is ... else api_timeout
 
-        req_id = self.req_manager.acquire_next_request(response_model)
-        request.request_id = req_id
-
         client = self.ensure_client()
+        pending = self.req_manager.start(response_model)
+        request.request_id = pending.req_id
+
         payload = request.model_dump_json()
-        self.dispatch_handlers(self.before_send_raw_handlers, payload)
-        await client.send(payload)
-        return await self.req_manager.wait_response(req_id, req_timeout, pop=True)
+        self.dispatch_handlers(self.on_before_send_raw, payload)
+        try:
+            await client.send(payload)
+            return await pending.result(req_timeout)
+        finally:
+            self.req_manager.discard(pending.req_id)
 
     @override
     async def _call_api(
@@ -404,10 +332,10 @@ class Plugin(PluginAPI):
         data: Any,
         *,
         message_type: str | None = None,
-        response_model: type[BaseModel] | None | EllipsisType = ...,
+        response_model: type[BaseModel] | EllipsisType | None = ...,
         api_name: str = "VTubeStudioPublicAPI",
         api_version: str = "1.0",
-        api_timeout: float | None | EllipsisType = ...,
+        api_timeout: float | EllipsisType | None = ...,
     ) -> Any:
         req_timeout = self.api_timeout if api_timeout is ... else api_timeout
 
@@ -438,7 +366,7 @@ class Plugin(PluginAPI):
         )
 
     async def authenticate(self):
-        if self.authenticated:
+        if self._state is PluginState.AUTHENTICATED:
             return
 
         if not self.authentication_token:
@@ -451,7 +379,7 @@ class Plugin(PluginAPI):
             )
             self.authentication_token = token_data.authentication_token
             self.dispatch_handlers(
-                self.authentication_token_got_handlers,
+                self.on_authentication_token_got,
                 token_data.authentication_token,
             )
 
@@ -465,5 +393,5 @@ class Plugin(PluginAPI):
         if not data.authenticated:
             self.authentication_token = None
             raise AuthenticationFailedError(data)
-        self.authenticated = True
-        self.dispatch_handlers(self.authenticated_handlers)
+        self._state = PluginState.AUTHENTICATED
+        self.dispatch_handlers(self.on_authenticated)

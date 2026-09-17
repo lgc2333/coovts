@@ -1,14 +1,40 @@
 from asyncio import Future, wait_for
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
 from pydantic import BaseModel
 
+from .errors import APIError, ValidationError
+from .types.api import APIErrorResponse
+
 
 @dataclass
-class ResponseInfo[M: BaseModel]:
+class PendingRequest[M: BaseModel]:
+    req_id: str
     model: type[M] | None = None
     future: Future[M] = field(default_factory=Future)
+
+    def resolve(self, raw: str | bytes, data: Any, *, is_error: bool) -> None:
+        model: type[BaseModel] | None = APIErrorResponse if is_error else self.model
+        try:
+            result = data if model is None else model.model_validate(data)
+        except Exception as e:
+            err = ValidationError(raw, model)
+            err.__cause__ = e
+            self.future.set_exception(err)
+            return
+
+        if is_error:
+            if TYPE_CHECKING:
+                assert isinstance(result, APIErrorResponse)
+            self.future.set_exception(APIError(result))
+        else:
+            self.future.set_result(cast("M", result))
+
+    async def result(self, timeout: float | None = None) -> M:  # noqa: ASYNC109
+        if timeout == 0:
+            timeout = None
+        return await wait_for(self.future, timeout)
 
 
 class RequestManager:
@@ -16,45 +42,33 @@ class RequestManager:
         self.id_counter_max = id_counter_max
 
         self.id_counter = 0
-        self.id_signals: dict[str, ResponseInfo] = {}
+        self.pending: dict[str, PendingRequest] = {}
 
-    def has_id(self, req_id: str) -> bool:
-        return req_id in self.id_signals
-
-    def acquire_request(self, req_id: str, model: type[BaseModel] | None = None):
-        if req_id in self.id_signals:
-            raise RuntimeError("ID already in use")
-        self.id_signals[req_id] = ResponseInfo(model=model)
-
-    def acquire_next_request(self, model: type[BaseModel] | None = None) -> str:
+    def _next_id(self) -> str:
         if self.id_counter >= self.id_counter_max:
             self.id_counter = 0
         self.id_counter += 1
-        while (id_str := str(self.id_counter)) in self.id_signals:
+        while (req_id := str(self.id_counter)) in self.pending:
             self.id_counter += 1
-        self.acquire_request(id_str, model)
-        return id_str
+        return req_id
 
-    async def wait_response(
-        self,
-        req_id: str,
-        timeout: float | None = 30,  # noqa: ASYNC109
-        pop: bool = True,
-    ) -> Any:
-        if timeout == 0:
-            timeout = None
-        try:
-            return await wait_for(self.id_signals[req_id].future, timeout)
-        finally:
-            if pop and self.has_id(req_id):
-                self.pop(req_id)
+    def start[M: BaseModel](self, model: type[M] | None = None) -> PendingRequest[M]:
+        """Register a request that is waiting for its response."""
+        pending = PendingRequest(self._next_id(), model)
+        self.pending[pending.req_id] = pending
+        return pending
 
-    def pop(self, req_id: str) -> ResponseInfo:
-        return self.id_signals.pop(req_id)
+    def take(self, req_id: str) -> PendingRequest | None:
+        """Remove and return the request registered under `req_id`, if any."""
+        return self.pending.pop(req_id, None)
+
+    def discard(self, req_id: str) -> None:
+        """Forget a request nobody is waiting for anymore."""
+        self.pending.pop(req_id, None)
 
     def reset(self) -> None:
         self.id_counter = 0
-        signals = self.id_signals.copy()
-        self.id_signals.clear()
-        for signal in signals.values():
-            signal.future.cancel()
+        pending = self.pending.copy()
+        self.pending.clear()
+        for request in pending.values():
+            request.future.cancel()
