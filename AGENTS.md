@@ -50,10 +50,8 @@ Only `poe` runs on the project venv; use `uv run` / `uv run --with` for anything
 ### Docs Rules
 
 - `CONTEXT.md` is the domain glossary: canonical terms and one-line definitions, nothing else.
-- `docs/adr/` holds one file per decision, numbered; add one when a decision is hard to reverse and
-  would look arbitrary without the reason.
-- Follow the `domain-modeling` skill for both (install it from GitHub `mattpocock/skills` if
-  missing), and write in English like everywhere else here.
+- `docs/adr/` holds one file per decision, numbered; add one when a decision is hard to reverse and would look arbitrary without the reason.
+- Follow the `domain-modeling` skill for both (install it from GitHub `mattpocock/skills` if missing), and write in English like everywhere else here.
 
 ### Structure Rules
 
