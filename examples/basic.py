@@ -9,7 +9,7 @@ from loguru import logger
 AUTH_TOKEN_FILE = Path(__file__).parent / "auth_token.txt"
 plugin = Plugin(
     "Example Plugin",
-    "LgCookie",
+    "LgCuwukii",
     Path(__file__).parent / "icon.png",
     authentication_token=(
         AUTH_TOKEN_FILE.read_text().strip() if AUTH_TOKEN_FILE.exists() else None
