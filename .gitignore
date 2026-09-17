@@ -282,4 +282,9 @@ pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python,visualstudiocode,intellij+all
 
+# Agent scratch space
+temp/
+
+private/
+
 auth_token.txt
