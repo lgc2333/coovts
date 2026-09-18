@@ -396,6 +396,17 @@ class PluginAPI(ABC):
     @overload
     async def call_api(
         self,
+        data: api.PermissionRequest,
+        *,
+        message_type: Literal["PermissionRequest"] = ...,
+        response_model: type[api.PermissionResponse] = ...,
+        api_name: str = "VTubeStudioPublicAPI",
+        api_version: str = "1.0",
+        api_timeout: float | EllipsisType | None = ...,
+    ) -> api.PermissionResponse: ...
+    @overload
+    async def call_api(
+        self,
         data: api.GetCurrentModelPhysicsRequest,
         *,
         message_type: Literal["GetCurrentModelPhysicsRequest"] = ...,
@@ -500,6 +511,26 @@ class PluginAPI(ABC):
     # region builtin events
 
     @overload
+    def handle_event[T: event.ArtMeshOutlineEventData](
+        self,
+        event_data_model: type[T],
+    ) -> _Deco[[T], _Co[Any]]: ...
+    @overload
+    def handle_event[T: event.ArtMeshTrackingEventData](
+        self,
+        event_data_model: type[T],
+    ) -> _Deco[[T], _Co[Any]]: ...
+    @overload
+    def handle_event[T: event.BackgroundChangedEventData](
+        self,
+        event_data_model: type[T],
+    ) -> _Deco[[T], _Co[Any]]: ...
+    @overload
+    def handle_event[T: event.ExpressionToggledEventData](
+        self,
+        event_data_model: type[T],
+    ) -> _Deco[[T], _Co[Any]]: ...
+    @overload
     def handle_event[T: event.HotkeyTriggeredEventData](
         self,
         event_data_model: type[T],
@@ -525,6 +556,11 @@ class PluginAPI(ABC):
         event_data_model: type[T],
     ) -> _Deco[[T], _Co[Any]]: ...
     @overload
+    def handle_event[T: event.ModelConfigChangedEventData](
+        self,
+        event_data_model: type[T],
+    ) -> _Deco[[T], _Co[Any]]: ...
+    @overload
     def handle_event[T: event.ModelLoadedEventData](
         self,
         event_data_model: type[T],
@@ -536,6 +572,11 @@ class PluginAPI(ABC):
     ) -> _Deco[[T], _Co[Any]]: ...
     @overload
     def handle_event[T: event.ModelOutlineEventData](
+        self,
+        event_data_model: type[T],
+    ) -> _Deco[[T], _Co[Any]]: ...
+    @overload
+    def handle_event[T: event.PostProcessingEventData](
         self,
         event_data_model: type[T],
     ) -> _Deco[[T], _Co[Any]]: ...

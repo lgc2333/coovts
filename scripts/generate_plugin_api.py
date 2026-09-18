@@ -162,6 +162,24 @@ def render() -> str:
     return "".join(parts)
 
 
+def stats() -> str:
+    """Describe the surface the stub is generated from."""
+    api_models = [
+        value
+        for value in api.__dict__.values()
+        if isinstance(value, type) and issubclass(value, BaseModel)
+    ]
+    requests = [name for name in api.__dict__ if name.endswith("Request")]
+    events = [name for name in event.__dict__ if name.endswith("EventData")]
+    event_models = [
+        name for name in event.__dict__ if name.endswith(("EventData", "EventConfig"))
+    ]
+    return (
+        f"{len(requests)} call_api overloads from {len(api_models)} api models, "
+        f"{len(events)} handle_event overloads from {len(event_models)} event models"
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Generate the typed PluginAPI stub.")
     parser.add_argument(
@@ -169,9 +187,15 @@ def main() -> int:
         action="store_true",
         help="report drift instead of writing the stub",
     )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="render and report the covered surface without writing the stub",
+    )
     args = parser.parse_args()
 
     content = render()
+    print(stats())
 
     if args.check:
         current = PYI_PATH.read_text(encoding="u8") if PYI_PATH.exists() else ""
@@ -187,6 +211,9 @@ def main() -> int:
         print("".join(islice(diff, 40)), end="")
         print(f"{PYI_PATH.name} is out of date, run `poe gen-api`", file=sys.stderr)
         return 1
+
+    if args.dry_run:
+        return 0
 
     tmp_path = PYI_PATH.with_name(f"{PYI_PATH.name}.tmp")
     tmp_path.write_text(content, encoding="u8", newline="\n")
