@@ -6,10 +6,10 @@
 untyped public forwarders (`call_api`, `handle_event`). `Plugin` implements the seams and inherits
 the forwarders, so the runtime carries no per-request code; all typing lives in
 `coovts/types/plugin_api.pyi`, generated from the request and event models by
-`scripts/generate_plugin_api.py` (36 typed `call_api` overloads plus 4 generic ones, 10 typed
+`scripts/generate_plugin_api.py` (38 typed `call_api` overloads plus 4 generic ones, 10 typed
 `handle_event` overloads plus 1 generic one).
 
-Writing 40 overloads by hand in the runtime class would be code that can disagree with the models
+Writing 42 overloads by hand in the runtime class would be code that can disagree with the models
 it describes. Generating the stub from the models means the type surface cannot drift from what the
 runtime resolves, and the runtime stays small enough to read in one sitting.
 
@@ -20,5 +20,7 @@ runtime resolves, and the runtime stays small enough to read in one sitting.
 - Generation walks the `api` and `event` package namespaces, so a new model module that is not
   re-exported from the package `__init__` produces no overload *and* is unresolvable at runtime
   (see ADR-0001).
-- Nothing verifies the stub against the models: there is no test that regenerates it and compares,
-  so drift is caught only when a user's type checker disagrees with the runtime.
+- Drift is a red build, not a user's surprise: the generator has a `--check` mode that renders the
+  stub in memory and fails on any difference from the file on disk, and CI runs it on every push.
+  It writes atomically for the same reason — a crash halfway through rendering must not leave a
+  truncated stub behind.

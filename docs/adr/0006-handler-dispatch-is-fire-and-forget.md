@@ -17,7 +17,8 @@ other event and delay every response, including the ones the same application is
   next one started.
 - Failures are invisible at the call site: a `raise` inside a handler produces a hook call, not an
   exception in `run()`. Without an `on_handler_run_failed` handler the exception is dropped.
-- `stop()` does not cancel in-flight handlers; a handler still running when the application exits
-  is the application's problem.
+- `stop()` cancels every in-flight handler and awaits it, so a handler must tolerate cancellation:
+  a shutdown inside a handler arrives as `asyncio.CancelledError`, and a handler that swallows or
+  blocks on it delays the application's exit.
 - There is no backpressure: a handler that lags behind the event rate accumulates tasks instead of
   slowing the stream.

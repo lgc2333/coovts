@@ -43,8 +43,8 @@ not survive a disconnect: they fail with a network error, never being resumed, r
 _Avoid_: In-flight call, Awaiting future
 
 **API timeout**:
-The deadline, per request, after which a pending request is abandoned. A timeout of `0` or `None`
-means "wait forever", not "fail immediately".
+The deadline, per request, after which a pending request is abandoned; an expired request raises
+`RequestTimeout`. A timeout of `0` or `None` means "wait forever", not "fail immediately".
 _Avoid_: Deadline, TTL
 
 ### Wire layer

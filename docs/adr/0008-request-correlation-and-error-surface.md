@@ -9,9 +9,10 @@ consumed exactly once: the table entry is popped on match and discarded afterwar
 duplicate is dropped. The default timeout is 30 seconds; `0` and `None` both mean "wait forever".
 
 Only request-scoped failures are exceptions. `ValidationError` (the payload did not decode to the
-expected model) and `APIError` (VTS refused the request) are raised at the `await`, and a request
-whose connection dies before the answer arrives fails with `NetworkError` — the same error used
-when a call is attempted with no connection. Envelope parse failures, connect failures,
+expected model), `APIError` (VTS refused the request) and `RequestTimeout` (the deadline expired
+before the answer arrived) are raised at the `await`, and a request whose connection dies before
+the answer arrives fails with `NetworkError` — the same error used when a call is attempted with
+no connection. Envelope parse failures, connect failures,
 authentication transport failures and handler crashes stay on the hook side, so hooks keep carrying
 the transport's own exception (a `ConnectionClosed` still exposes its close code) while `await`
 sites only ever see library types. That split is also why there is no `on_disconnected` callback.
@@ -25,5 +26,8 @@ sites only ever see library types. That split is also why there is no `on_discon
   `asyncio.CancelledError` — the ordinary asyncio signal for "your task is being torn down".
 - `api_timeout=0` means "forever" rather than "immediately" — a deliberate special case, since a
   caller who wants no deadline should not have to say `None` differently from `0`.
+- `RequestTimeout` subclasses the builtin `TimeoutError` and therefore `OSError`, so `except OSError`
+  also catches an expired request — which is why the `client.send()` wrapper in `plugin.py` stays
+  narrow: it wraps only the send, never the await of the response.
 - The id counter is per connection and resets on disconnect; ids are never reused within a
   connection but say nothing across connections.
