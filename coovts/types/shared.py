@@ -3,7 +3,7 @@ from typing import Annotated, Any
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
 
-wire_model_config = ConfigDict(
+vts_base_model_config = ConfigDict(
     alias_generator=to_camel,
     validate_by_alias=False,
     serialize_by_alias=True,
@@ -22,7 +22,7 @@ validation by hand (`by_alias=True`): see `Plugin._handle_raw`, `Plugin._call_ap
 class VTSBaseModel(BaseModel):
     """Base class of every model that mirrors a VTube Studio payload."""
 
-    model_config = wire_model_config
+    model_config = vts_base_model_config
 
 
 class BaseRequest(VTSBaseModel):

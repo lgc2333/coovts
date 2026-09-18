@@ -4,7 +4,7 @@
 
 **Supersedes**: ADR-0002 (validation is asymmetric)
 
-Every payload model inherits `VTSBaseModel`, whose only job is `wire_model_config`: camelCase
+Every payload model inherits `VTSBaseModel`, whose only job is `vts_base_model_config`: camelCase
 aliases generated from the field names, `validate_by_alias=False` and `serialize_by_alias=True`.
 One config for the whole library replaces the request/response pair ADR-0002 introduced, so the
 direction a payload travels no longer decides how its model is configured.
@@ -26,7 +26,7 @@ rather than guessed at.
 
 - `with_request_model_config`, `with_response_model_config`, `request_model_config` and
   `response_model_config` are gone; a model is a `VTSBaseModel` subclass, which is also the shape
-  pydantic documents. `VTSBaseModel` and `wire_model_config` take their place on the public surface
+  pydantic documents. `VTSBaseModel` and `vts_base_model_config` take their place on the public surface
   (ADR-0012).
 - Building a payload from its wire keys, or validating one by hand, now needs `by_alias=True`; the
   three boundaries above are where the library passes it. Field names still work there too, since
@@ -34,4 +34,4 @@ rather than guessed at.
 - The configs no longer come from a `cookit` factory, so the dynamically created subclass behind
   every model — and the class metadata pydantic could not keep for it — is gone with them.
 - A model may still set its own `model_config`; pydantic merges it key by key over
-  `wire_model_config`, so an override adds a key instead of dropping the aliases.
+  `vts_base_model_config`, so an override adds a key instead of dropping the aliases.

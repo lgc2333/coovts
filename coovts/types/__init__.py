@@ -6,5 +6,5 @@ from .shared import (
     get_api_response_model as get_api_response_model,
     get_event_name as get_event_name,
     get_message_type as get_message_type,
-    wire_model_config as wire_model_config,
+    vts_base_model_config as vts_base_model_config,
 )
