@@ -20,8 +20,10 @@ hands back `EventSubscriptionResponse`, which is what a dynamic config needs.
 Every declaration is re-sent after each successful authentication, before `on_authenticated` is
 dispatched, so a reconnect cannot lose a subscription and user code can rely on it being live. A
 subscription VTS refuses reaches `on_subscribe_failed` with the registration and the error instead of
-failing the session, because a refusal would otherwise repeat on every reconnect and, for an event
-that only exists on the beta branch, never succeed. Decorating attaches a handler and hands it back
+failing the session — a declaration is re-sent on every authentication, so a refusal has to be
+survivable; one that was awaited instead raises at the await, where a caller can act on it. A refusal
+would otherwise repeat on every reconnect and, for an event that only exists on the beta branch, never
+succeed. Decorating attaches a handler and hands it back
 wrapped, so the function a caller decorated carries `dispose()` of its own event:
 `await on_moved.dispose()` cancels the subscription when a session is up and forgets the
 registration, handlers included. There is no `unsubscribe_event` on the plugin, because the thing a
@@ -43,8 +45,9 @@ handler, so a handler that was never subscribed to can still be disposed of. It 
 overload — a generic method on `Plugin` types it — and naming an event by its wire name is what covers
 what this package does not model: no data model, so no decoding, no validation and no
 `on_parse_data_error`, handlers that get the raw payload, and a subscription that carries an empty
-config unless one is given. The generated overloads are left to `subscribe_event`, whose config type
-differs per event.
+config unless one is given. Decoding is decided per handler, so naming an event that something else
+modelled leaves those handlers decoded and the named ones raw. The generated overloads are left to
+`subscribe_event`, whose config type differs per event.
 
 Alternatives rejected:
 

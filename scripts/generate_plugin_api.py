@@ -21,7 +21,7 @@ from typing import Any, Literal, overload
 
 from pydantic import BaseModel
 
-from ..event import EventRegistration
+from ..event import EventRegistration, RawEventRegistration
 from . import api, event
 
 class PluginAPI(ABC):
@@ -41,7 +41,7 @@ class PluginAPI(ABC):
         self,
         event_data_model: type[BaseModel] | str,
         config: Any = None,
-    ) -> EventRegistration[Any]: ...
+    ) -> EventRegistration[Any] | RawEventRegistration: ...
 
     # region builtin apis
 """
@@ -137,7 +137,7 @@ SUBSCRIPTION_TAIL = """
         self,
         event_data_model: str,
         config: Any | None = None,
-    ) -> EventRegistration[Any]: ...
+    ) -> RawEventRegistration: ...
 """
 
 PYI_PATH = Path(__file__).parent.parent / "coovts" / "types" / "plugin_api.pyi"

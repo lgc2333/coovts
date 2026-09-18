@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from websockets.exceptions import WebSocketException
 
 from .errors import APIError, AuthenticationFailedError, NetworkError
-from .event import EventRegistration, EventSubscriptionRegistry
+from .event import EventRegistration, EventSubscriptionRegistry, RawEventRegistration
 from .request import RequestManager
 from .types import (
     BaseRequest,
@@ -168,24 +168,30 @@ class Plugin(PluginAPI):
         event_data_model: type[T],
     ) -> EventRegistration[T]: ...
     @overload
-    def handle_event(self, event_data_model: str) -> EventRegistration[Any]: ...
+    def handle_event(self, event_data_model: str) -> RawEventRegistration: ...
     def handle_event(
         self,
         event_data_model: type[BaseModel] | str,
-    ) -> EventRegistration[Any]:
+    ) -> EventRegistration[Any] | RawEventRegistration:
         """Register a handler for an event without subscribing to it; decorate with the result.
 
         An event named by its wire name is not decoded, so its handlers get the raw payload.
         """
-        return self.subscriptions.registration(event_data_model)
+        registration = self.subscriptions.registration(event_data_model)
+        if isinstance(event_data_model, str):
+            return RawEventRegistration(registration)
+        return registration
 
     @override
     def _subscribe_event(
         self,
         event_data_model: type[BaseModel] | str,
         config: Any = None,
-    ) -> EventRegistration[Any]:
-        return self.subscriptions.subscribe(event_data_model, config)
+    ) -> EventRegistration[Any] | RawEventRegistration:
+        registration = self.subscriptions.subscribe(event_data_model, config)
+        if isinstance(event_data_model, str):
+            return RawEventRegistration(registration)
+        return registration
 
     async def _send_subscription(
         self,
@@ -234,9 +240,8 @@ class Plugin(PluginAPI):
 
         registration = self.subscriptions.get(resp.message_type)
         if registration is not None:
-            for handler in registration.handlers:
+            for data_model, handler in registration.handlers:
                 try:
-                    data_model = registration.data_model
                     data = (
                         resp.data
                         if data_model is None

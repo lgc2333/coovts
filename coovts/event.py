@@ -51,19 +51,34 @@ class EventRegistration[T: BaseModel]:
         """The model frames are decoded into, or `None` when registered by name."""
         self.config = config
         """Whatever VTS accepts as this event's config, not necessarily a model."""
-        self.handlers: list[Callable[[T], Any]] = []
-        """The handlers attached to this event, in registration order."""
+        self.handlers: list[tuple[type[BaseModel] | None, Callable[[Any], Any]]] = []
+        """The handlers attached to this event, each with the model it decodes frames with."""
 
     def __call__[R](self, handler: Callable[[T], R]) -> DisposableCallable[[T], R]:
-        """Attach a handler and hand it back wrapped, so it can give its own event up."""
-        self.handlers.append(handler)
+        """Attach a handler to this event; the function comes back wrapped."""
+        return cast(
+            "DisposableCallable[[T], R]",
+            self.attach(handler, self.data_model),
+        )
+
+    def attach[R](
+        self,
+        handler: Callable[[Any], R],
+        data_model: type[BaseModel] | None,
+    ) -> DisposableCallable[[Any], R]:
+        """Attach a handler and hand it back wrapped, so it can give its own event up.
+
+        `data_model` is what the frames this handler receives are decoded with; `None` hands it the
+        payload as it arrived.
+        """
+        self.handlers.append((data_model, handler))
 
         @wraps(handler)
-        def wrapper(data: T) -> R:
+        def wrapper(data: Any) -> R:
             return handler(data)
 
         wrapper.dispose = self.dispose  # type: ignore[attr-defined]
-        return cast("DisposableCallable[[T], R]", wrapper)
+        return cast("DisposableCallable[[Any], R]", wrapper)
 
     def __await__(self) -> Generator[Any, Any, "EventSubscriptionResponse"]:
         """Send this subscription now instead of at the next authentication."""
@@ -72,6 +87,29 @@ class EventRegistration[T: BaseModel]:
     async def dispose(self) -> "EventSubscriptionResponse | None":
         """Give this event up: cancel its subscription and forget it, handlers included."""
         return await self._registry.dispose(self)
+
+
+class RawEventRegistration:
+    """The event a plugin named by its wire name: its handlers get the payload as it arrived.
+
+    It is a view of the one `EventRegistration` for that event name, so it gives up the same event
+    the modelled handlers belong to.
+    """
+
+    def __init__(self, registration: EventRegistration[Any]) -> None:
+        self._registration = registration
+
+    def __call__[R](self, handler: Callable[[Any], R]) -> DisposableCallable[[Any], R]:
+        """Attach a handler; the function comes back wrapped, as a modelled registration's does."""
+        return self._registration.attach(handler, None)
+
+    def __await__(self) -> Generator[Any, Any, "EventSubscriptionResponse"]:
+        """Send this subscription now instead of at the next authentication."""
+        return self._registration.__await__()
+
+    async def dispose(self) -> "EventSubscriptionResponse | None":
+        """Give this event up: cancel its subscription and forget it, handlers included."""
+        return await self._registration.dispose()
 
 
 class EventSubscriptionRegistry:

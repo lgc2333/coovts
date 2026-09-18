@@ -4,7 +4,7 @@ from typing import Any, Literal, overload
 
 from pydantic import BaseModel
 
-from ..event import EventRegistration
+from ..event import EventRegistration, RawEventRegistration
 from . import api, event
 
 class PluginAPI(ABC):
@@ -24,7 +24,7 @@ class PluginAPI(ABC):
         self,
         event_data_model: type[BaseModel] | str,
         config: Any = None,
-    ) -> EventRegistration[Any]: ...
+    ) -> EventRegistration[Any] | RawEventRegistration: ...
 
     # region builtin apis
 
@@ -618,4 +618,4 @@ class PluginAPI(ABC):
         self,
         event_data_model: str,
         config: Any | None = None,
-    ) -> EventRegistration[Any]: ...
+    ) -> RawEventRegistration: ...

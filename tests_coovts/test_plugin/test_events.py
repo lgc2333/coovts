@@ -463,6 +463,37 @@ async def test_an_event_named_by_its_wire_name_gets_the_raw_payload(
         await finish(plugin, run_task)
 
 
+async def test_a_named_handler_of_a_modelled_event_gets_the_raw_payload(
+    monkeypatch: "pytest.MonkeyPatch",
+) -> None:
+    """Decoding is per handler: naming an event leaves the handlers that modelled it decoded."""
+    transport = FakeTransport()
+    install_transport(monkeypatch, transport)
+    plugin = make_plugin()
+    connection = transport.connection
+    decoded: list[ModelMovedEventData] = []
+    raw: list[object] = []
+
+    @plugin.subscribe_event(ModelMovedEventData)
+    async def on_moved(data: ModelMovedEventData) -> None:
+        decoded.append(data)
+
+    @plugin.handle_event("ModelMovedEvent")
+    async def on_moved_raw(data: object) -> None:
+        raw.append(data)
+
+    run_task = plugin.run()
+    try:
+        await handshake(plugin, connection)
+        connection.feed(real_frame("ModelMovedEvent"))
+        await spin_until(lambda: bool(decoded) and bool(raw), "both handlers")
+
+        assert raw == [real_payload("ModelMovedEvent")]
+        assert decoded[0].model_id == "6248f9ba0edc401c96de072a3350de3f"
+    finally:
+        await finish(plugin, run_task)
+
+
 async def test_subscribing_by_event_name_sends_the_config_it_was_given(
     monkeypatch: "pytest.MonkeyPatch",
 ) -> None:
@@ -472,7 +503,7 @@ async def test_subscribing_by_event_name_sends_the_config_it_was_given(
     plugin = make_plugin()
     connection = transport.connection
 
-    plugin.subscribe_event(
+    declared = plugin.subscribe_event(
         "ModelOutlineEvent",
         ModelOutlineEventConfig(draw=True),
     )
@@ -487,6 +518,21 @@ async def test_subscribing_by_event_name_sends_the_config_it_was_given(
             "subscribe": True,
             "config": {"draw": True},
         }
+
+        disposing = asyncio.create_task(declared.dispose())
+        await spin_until(lambda: len(connection.sent) >= 4, "cancellation frame")
+        response = sent_frame(connection, 3)
+        assert response["data"]["subscribe"] is False
+        connection.feed(
+            envelope(
+                "EventSubscriptionResponse",
+                {"subscribedEventCount": 0, "subscribedEvents": []},
+                response["requestID"],
+            ),
+        )
+        await asyncio.wait_for(disposing, 1)
+
+        assert plugin.subscriptions.get("ModelOutlineEvent") is None
     finally:
         await finish(plugin, run_task)
 

@@ -49,8 +49,9 @@ event.ModelOutlineEventConfig(draw=True))`. `ArtMeshTrackingEventData`,
   you decorated carries `dispose`, which cancels the subscription and forgets the registration. A
   declaration that has no handler yet is disposed of the same way, off the object `subscribe_event`
   returned.
-- **A refused subscription reaches `on_subscribe_failed`** with the registration and the error.
-  Nothing else is lost: the session stays up, and the next authentication tries again.
+- **A refused declaration reaches `on_subscribe_failed`** with the registration and the error, and
+  nothing else is lost: the session stays up and the next authentication tries again. A subscription
+  you `await`ed instead raises the `APIError` at the await.
 - **A model this package does not model** goes through the generic overload:
   `plugin.subscribe_event(MyEventData, MyConfig())`, whose config is `Any` — a wrong one is not caught
   there, and VTS is the one that refuses it.

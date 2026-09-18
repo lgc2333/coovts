@@ -40,8 +40,8 @@ dispose 它只是停掉分发——它背后没有订阅可以取消。
 - **`await on_moved.dispose()`** 会放弃这个事件：handler 是被包了一层才交回来的，所以你装饰的那个函数身上
   就带着 `dispose`，它会取消订阅并忘掉这个 registration。还没挂 handler 的声明就用 `subscribe_event` 返回
   的对象同样 dispose。
-- **订阅被拒绝会走 `on_subscribe_failed`**，带上 registration 和异常。别的都不会丢：会话继续开着，下次
-  鉴权会再试一次。
+- **声明被拒绝会走 `on_subscribe_failed`**，带上 registration 和异常，其它都不会丢：会话继续开着，下次鉴权
+  会再试一次。而 await 的那次订阅是在 await 处抛 `APIError`。
 - **这个包没有建模的模型**走泛用 overload：`plugin.subscribe_event(MyEventData, MyConfig())`，那里 config 是
   `Any`——传错不会被类型层拦住，拦它的是 VTS。
 - **事件也可以用 wire 名来指名**：`handle_event("ModelMovedEvent")`，或者
