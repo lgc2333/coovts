@@ -14,7 +14,8 @@ coovts/
   request.py           request-id <-> future correlation
   errors.py            exception hierarchy
   log.py               optional loguru shim — logging must not be a hard dependency
-  utils.py             run_sync
+  utils/
+    common.py          run_sync
   py.typed             PEP 561 marker — shipped, do not delete
   types/
     shared.py          wire envelope + name-convention resolvers
@@ -72,7 +73,7 @@ Only `poe` runs on the project venv; use `uv run` / `uv run --with` for anything
 
 - Organize `tests*/` like node `.spec.ts` structure: each source file must have one correspondingly named test module.
 - If the only test file for a module grows too large, it may be split into a directory named after the source module; files inside may use any `test_*.py` names.
-- Reusable test scaffolding — fakes, mocks, transport stubs and shared helpers — lives under `tests*/test_utils/`, one module per concern; test modules import from there instead of redefining it or importing each other.
+- Reusable test scaffolding — fakes, mocks, transport stubs and shared helpers — lives under `tests*/utils/`, one module per concern; test modules import from there instead of redefining it or importing each other.
 
 - Every testcase function should have a short description as its docstring.
 
