@@ -115,6 +115,12 @@ from .param import (
     ParameterValueRequest as ParameterValueRequest,
     ParameterValueResponse as ParameterValueResponse,
 )
+from .permission import (
+    PermissionInfo as PermissionInfo,
+    PermissionName as PermissionName,
+    PermissionRequest as PermissionRequest,
+    PermissionResponse as PermissionResponse,
+)
 from .physics import (
     GetCurrentModelPhysicsRequest as GetCurrentModelPhysicsRequest,
     GetCurrentModelPhysicsResponse as GetCurrentModelPhysicsResponse,
