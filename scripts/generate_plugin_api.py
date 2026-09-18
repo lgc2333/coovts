@@ -1,3 +1,7 @@
+import argparse
+import difflib
+import sys
+from itertools import islice
 from pathlib import Path
 
 from pydantic import BaseModel
@@ -131,29 +135,65 @@ EVENT_TAIL = """
 
 PYI_PATH = Path(__file__).parent.parent / "coovts" / "types" / "plugin_api.pyi"
 
-with PYI_PATH.open("w", encoding="u8", newline="\n") as f:
-    f.write(FILE_HEAD)
+
+def render() -> str:
+    """Build the whole stub as a string."""
+    parts = [FILE_HEAD]
     for name, model in api.__dict__.items():
         if not name.endswith("Request"):
             continue
-        assert issubclass(model, BaseModel)
-        f.write(
+        assert issubclass(model, BaseModel), f"{name} is not a pydantic model"
+        parts.append(
             API_TEMPLATE.format(
                 req=model.__name__,
                 msg_t=get_message_type(model),
                 resp=get_api_response_model(model).__name__,
             ),
         )
-    f.write(API_REST)
+    parts.append(API_REST)
 
-    f.write(EVENT_HEAD)
+    parts.append(EVENT_HEAD)
     for name, model in event.__dict__.items():
         if not name.endswith("EventData"):
             continue
-        assert issubclass(model, BaseModel)
-        f.write(
-            EVENT_TEMPLATE.format(
-                model=model.__name__,
-            ),
+        assert issubclass(model, BaseModel), f"{name} is not a pydantic model"
+        parts.append(EVENT_TEMPLATE.format(model=model.__name__))
+    parts.append(EVENT_TAIL)
+    return "".join(parts)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Generate the typed PluginAPI stub.")
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="report drift instead of writing the stub",
+    )
+    args = parser.parse_args()
+
+    content = render()
+
+    if args.check:
+        current = PYI_PATH.read_text(encoding="u8") if PYI_PATH.exists() else ""
+        if current == content:
+            print(f"{PYI_PATH.name} is up to date")
+            return 0
+        diff = difflib.unified_diff(
+            current.splitlines(keepends=True),
+            content.splitlines(keepends=True),
+            fromfile=f"{PYI_PATH} (on disk)",
+            tofile=f"{PYI_PATH} (generated)",
         )
-    f.write(EVENT_TAIL)
+        print("".join(islice(diff, 40)), end="")
+        print(f"{PYI_PATH.name} is out of date, run `poe gen-api`", file=sys.stderr)
+        return 1
+
+    tmp_path = PYI_PATH.with_name(f"{PYI_PATH.name}.tmp")
+    tmp_path.write_text(content, encoding="u8", newline="\n")
+    tmp_path.replace(PYI_PATH)
+    print(f"wrote {PYI_PATH}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -7,7 +7,7 @@ on:
 
 jobs:
   check:
-    name: Lint and type check
+    name: Lint, type check and test
     runs-on: ubuntu-latest
 
     steps:
@@ -28,5 +28,11 @@ jobs:
       - name: Check formatting
         run: uv run --locked ruff format --check
 
+      - name: Check the generated stub
+        run: uv run --locked python scripts/generate_plugin_api.py --check
+
       - name: Type check
         run: uv run --locked basedpyright
+
+      - name: Test
+        run: uv run --locked pytest

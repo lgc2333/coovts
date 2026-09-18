@@ -33,6 +33,17 @@ class PluginAPI(ABC):
     @overload
     async def call_api(
         self,
+        data: api.ArtMeshAtPositionRequest,
+        *,
+        message_type: Literal["ArtMeshAtPositionRequest"] = ...,
+        response_model: type[api.ArtMeshAtPositionResponse] = ...,
+        api_name: str = "VTubeStudioPublicAPI",
+        api_version: str = "1.0",
+        api_timeout: float | EllipsisType | None = ...,
+    ) -> api.ArtMeshAtPositionResponse: ...
+    @overload
+    async def call_api(
+        self,
         data: api.ArtMeshListRequest,
         *,
         message_type: Literal["ArtMeshListRequest"] = ...,
@@ -228,6 +239,17 @@ class PluginAPI(ABC):
         api_version: str = "1.0",
         api_timeout: float | EllipsisType | None = ...,
     ) -> api.ItemPinResponse: ...
+    @overload
+    async def call_api(
+        self,
+        data: api.ItemSortRequest,
+        *,
+        message_type: Literal["ItemSortRequest"] = ...,
+        response_model: type[api.ItemSortResponse] = ...,
+        api_name: str = "VTubeStudioPublicAPI",
+        api_version: str = "1.0",
+        api_timeout: float | EllipsisType | None = ...,
+    ) -> api.ItemSortResponse: ...
     @overload
     async def call_api(
         self,
