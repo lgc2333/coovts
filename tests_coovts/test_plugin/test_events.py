@@ -537,6 +537,40 @@ async def test_subscribing_by_event_name_sends_the_config_it_was_given(
         await finish(plugin, run_task)
 
 
+async def test_awaiting_a_named_subscription_sends_it_right_away(
+    monkeypatch: "pytest.MonkeyPatch",
+) -> None:
+    """Awaiting a by-name declaration subscribes at once, the way a modelled one does."""
+    transport = FakeTransport()
+    install_transport(monkeypatch, transport)
+    plugin = make_plugin()
+    connection = transport.connection
+
+    run_task = plugin.run()
+    try:
+        await handshake(plugin, connection)
+
+        subscribing = asyncio.ensure_future(
+            plugin.subscribe_event("ModelOutlineEvent", {"draw": True}),
+        )
+        await spin_until(lambda: len(connection.sent) >= 3, "subscription frame")
+        sent = sent_frame(connection, 2)
+        assert sent["data"]["eventName"] == "ModelOutlineEvent"
+
+        connection.feed(
+            envelope(
+                "EventSubscriptionResponse",
+                {"subscribedEventCount": 1, "subscribedEvents": ["ModelOutlineEvent"]},
+                sent["requestID"],
+            ),
+        )
+        response = await asyncio.wait_for(subscribing, 1)
+
+        assert response.subscribed_events == ["ModelOutlineEvent"]
+    finally:
+        await finish(plugin, run_task)
+
+
 async def test_handle_event_alone_subscribes_to_nothing(
     monkeypatch: "pytest.MonkeyPatch",
 ) -> None:
