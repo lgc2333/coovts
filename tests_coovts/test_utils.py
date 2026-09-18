@@ -60,3 +60,17 @@ async def test_run_sync_runs_callable_off_event_loop_thread() -> None:
 
     assert len(seen) == 1
     assert seen[0] != caller_thread
+
+
+def test_raw_str_enum_auto_keeps_the_member_name() -> None:
+    """`auto()` yields the member name verbatim, not the lowercased name `StrEnum` produces."""
+    from enum import auto
+
+    from coovts.utils import RawStrEnum
+
+    class Wire(RawStrEnum):
+        ColorGrading_Strength = auto()
+        ToggleExpression = auto()
+
+    assert Wire.ColorGrading_Strength.value == "ColorGrading_Strength"
+    assert Wire.ToggleExpression == "ToggleExpression"
