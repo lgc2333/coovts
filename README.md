@@ -10,6 +10,14 @@
 
 _✨ Another library for making VTube Studio plugins with Python ✨_
 
+English | [简体中文](README.zh-cn.md)
+
+[![CI](https://github.com/lgc2333/coovts/actions/workflows/ci.yml/badge.svg)](https://github.com/lgc2333/coovts/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/lgc2333/coovts/branch/main/graph/badge.svg)](https://codecov.io/gh/lgc2333/coovts)
+[![PyPI](https://img.shields.io/pypi/v/coovts)](https://pypi.org/project/coovts/)
+[![Python versions](https://img.shields.io/pypi/pyversions/coovts)](https://pypi.org/project/coovts/)
+[![License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
+
 </div>
 
 ## ✨ Features
@@ -22,25 +30,66 @@ _✨ Another library for making VTube Studio plugins with Python ✨_
 
 ## 📖 Introduction
 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/lgc2333/coovts)
+### Style at a glance
 
-If you want to know how to use this, please refer to [`examples/basic.py`](./examples/basic.py)  
-For advanced usage, please deep dive into the source code.
+```python
+import asyncio
 
-This project is in early development.  
-If you think this project is good, thanks for your use and feel free to contribute. 😊  
-If you encountered any problems, open a issue, or reach me via the contact methods below.  
-I might be not very active on it.
+from coovts.plugin import Plugin
+from coovts.types import api, event, get_event_name
+
+# no token yet: VTS asks the user once
+plugin = Plugin("A Creative Plugin Name", "LgCuwukii☆")
+
+
+@plugin.on_authenticated
+async def _():  # runs once per session, reconnects included
+    await plugin.call_api(
+        api.EventSubscriptionRequest(
+            event_name=get_event_name(event.ModelMovedEventData),
+            subscribe=True,
+            config=event.ModelMovedEventConfig(),
+        ),
+    )
+
+
+@plugin.handle_event(event.ModelMovedEventData)
+async def _(data: event.ModelMovedEventData):
+    print(data.model_position)
+
+
+asyncio.run(plugin.run())
+```
+
+### Next
+
+- Read the [guide in detail](./docs/guide/en/README.md)
+- Read [`examples/basic.py`](./examples/basic.py) — the same plugin, with every logging hook filled in
+
+Thanks for using it, and contributions are welcome 😊
 
 ## 💿 Install
 
 You should use at least Python 3.12 to use this library.
 
-I released Alpha version on PyPI, install it with:
+```bash
+pip install coovts[all]
+```
+
+_or_
 
 ```bash
-pip install coovts
+uv add coovts[all]
 ```
+
+The package works without extras; they only add things on top:
+
+- **`log`** — installs `loguru` so the library's diagnostics reach your logs. Without it the library
+  stays quiet, because a plugin author already has a logging setup of their own
+  ([ADR-0011](./docs/adr/0011-dependency-set.md)).
+- **`all`** — every optional extra. Today that is just `log`, and it is what the commands above use.
+
+There is also a `dev` dependency group for working on coovts itself; it never ships with the package.
 
 ## 📞 Contacts
 
@@ -49,8 +98,6 @@ pip install coovts
 - Email: [lgc2333@126.com](mailto:lgc2333@126.com)
 - Discord: [lgc2333](https://discordapp.com/users/810486152401256448) (Not active)
 
-## 📝 Update Log
+## 📝 Changelog
 
-### 0.0.1.alpha2
-
-- Refactored project, complete missing data models, made better type hints
+[CHANGELOG.md](./CHANGELOG.md)

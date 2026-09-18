@@ -5,8 +5,12 @@ Python >= 3.12 library for writing VTube Studio plugins (async WebSocket + Pydan
 ## Project Structure
 
 ```text
+README.md              user-facing intro; README.zh-cn.md mirrors it in Chinese
+CHANGELOG.md           release notes users read (ADR-0012)
 CONTEXT.md             domain glossary — words only, no decisions, no implementation
 docs/adr/              architecture decisions, one per file (see Docs Rules)
+docs/guide/            user-facing guide, en/ with a zh-cn/ mirror (see Docs Rules)
+docs/backlog.md        deferred work — missing, not excluded (see Docs Rules)
 coovts/
   plugin.py            Plugin: connect/auth/recv loops, hooks, event dispatch
   request.py           request-id <-> future correlation
@@ -57,9 +61,15 @@ Only `poe` runs on the project venv; use `uv run` / `uv run --with` for anything
 
 - `CONTEXT.md` is the domain glossary: canonical terms and one-line definitions, nothing else.
 - `docs/adr/` holds one file per decision, numbered; add one when a decision is hard to reverse and would look arbitrary without the reason.
-- Follow the `domain-modeling` skill for both (install it from GitHub `mattpocock/skills` if missing), and write in English like everywhere else here.
+- Follow the `domain-modeling` skill for both (install it from GitHub `mattpocock/skills` if missing), and write in English like everywhere else here — except `docs/guide/zh-cn/`, `README.zh-cn.md` and `CHANGELOG.zh-cn.md`, which mirror their English counterparts for Chinese readers.
+
+- `CHANGELOG.md` is the release notice users read: one section per release, plus an `Unreleased` one while work is pending; `0.0` promises nothing, so the number alone says nothing (ADR-0012). Keep `CHANGELOG.zh-cn.md` in step with it (same versions, same bullets).
+
+- `docs/guide/{en,zh-cn}/` is the user-facing guide: one page per topic, the same pages in both languages, kept in sync (identical code blocks and anchors). It documents only what reading the code cannot tell you — runtime behaviour, failure modes, what is never retried — links `docs/adr/` for reasons, and points at upstream anchors for request/event field semantics instead of copying them.
 
 - `docs/references.md` is the upstream sync record: where each transcribed constant and model came from, plus the current surface counts. Counts live there, never in an ADR.
+
+- `docs/backlog.md` is the deferred work list: one entry per item, each saying what it is and what would trigger building it. No design discussion, and no item presented as excluded — an item moves into an ADR when it is decided against, and off the page once it is built.
 
 ### Structure Rules
 
