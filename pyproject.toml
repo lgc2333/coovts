@@ -4,19 +4,46 @@ dynamic = ["version"]
 description = "Another type rich library for making VTube Studio plugins with Python"
 authors = [{ name = "LgCuwukii", email = "lgc2333@126.com" }]
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.12"
+keywords = ["vtube studio", "vtuber", "live2d", "websocket", "asyncio"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Typing :: Typed",
+]
 dependencies = [
-    "loguru>=0.7.3",
-    "cookit[loguru,pydantic]>=0.11.6",
-    "pydantic>=2.11.4",
-    "websockets>=15.0.1",
+    "cookit[pydantic]>=0.14.0",
+    "pydantic>=2.13.5",
+    "websockets>=17.1",
 ]
 
+[project.optional-dependencies]
+log = ["cookit[loguru]>=0.14.0", "loguru>=0.7.3"]
+all = ["coovts[log]"]
+
+[project.urls]
+Homepage = "https://github.com/lgc2333/coovts"
+Repository = "https://github.com/lgc2333/coovts"
+Issues = "https://github.com/lgc2333/coovts/issues"
+
 [dependency-groups]
-dev = ["basedpyright>=1.29.1", "hatchling>=1.27.0", "ruff>=0.11.10"]
+dev = [
+    "loguru>=0.7.3",
+    "basedpyright>=1.40.1",
+    "hatchling>=1.32.3",
+    "ruff>=0.16.8",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "pytest-cov>=6",
+]
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [tool.hatch.version]
@@ -28,7 +55,10 @@ lint-fix.cmd = "ruff check --fix --unsafe-fixes"
 check.cmd = "basedpyright"
 format.cmd = "ruff format"
 test.cmd = "pytest"
+coverage.cmd = "uv run pytest --cov=coovts --cov-branch --cov-report=term-missing"
+
 gen-api.cmd = "uv run python scripts/generate_plugin_api.py"
+gen-api-check.cmd = "uv run python scripts/generate_plugin_api.py --check"
 
 [tool.basedpyright]
 pythonVersion = "3.12"
