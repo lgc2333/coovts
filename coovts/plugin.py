@@ -22,6 +22,7 @@ from .types import (
     get_message_type,
 )
 from .types.api import AuthenticationRequest, AuthenticationTokenRequest
+from .types.consts import ErrorID
 from .types.plugin_api import PluginAPI
 
 if TYPE_CHECKING:
@@ -43,6 +44,23 @@ type BeforeSendRawHandler = Callable[[str], C[Any]]
 
 DEFAULT_ENDPOINT = "ws://localhost:8001"
 CONNECTION_LOST_MESSAGE = "Connection to VTube Studio was lost"
+
+_FATAL_AUTH_ERROR_IDS: frozenset[ErrorID] = frozenset(
+    {
+        ErrorID.APIAccessDeactivated,
+        ErrorID.JSONInvalid,
+        ErrorID.APINameInvalid,
+        ErrorID.APIVersionInvalid,
+        ErrorID.TokenRequestDenied,
+        ErrorID.TokenRequestPluginNameInvalid,
+        ErrorID.TokenRequestDeveloperNameInvalid,
+        ErrorID.TokenRequestPluginIconInvalid,
+        ErrorID.AuthenticationTokenMissing,
+        ErrorID.AuthenticationPluginNameMissing,
+        ErrorID.AuthenticationPluginDeveloperMissing,
+    },
+)
+"""Authentication refusals that retrying cannot fix. Plugin stops when VTS answers these."""
 
 
 @dataclass
@@ -293,8 +311,12 @@ class Plugin(PluginAPI):
                 if self.stopped:
                     break
                 self.dispatch_handlers(self.on_authenticate_failed, e)
+                if isinstance(e, APIError) and e.data.error_id in _FATAL_AUTH_ERROR_IDS:
+                    self.stopped = True
                 with warning_suppress("Disconnect failed"):
                     await self._disconnect(CONNECTION_LOST_MESSAGE)
+                if self.stopped:
+                    break
                 await asyncio.sleep(self.reconnect_delay)
                 continue
 

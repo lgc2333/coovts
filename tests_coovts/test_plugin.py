@@ -8,7 +8,12 @@ from typing import TYPE_CHECKING, cast
 import pytest
 from websockets.exceptions import ConnectionClosedError
 
-from coovts.errors import AuthenticationFailedError, NetworkError, RequestTimeout
+from coovts.errors import (
+    APIError,
+    AuthenticationFailedError,
+    NetworkError,
+    RequestTimeout,
+)
 from coovts.plugin import Plugin, PluginState, dispatch_handlers
 from coovts.types.api import (
     APIStateRequest,
@@ -16,6 +21,7 @@ from coovts.types.api import (
     MoveModelRequest,
     MoveModelResponse,
 )
+from coovts.types.consts import ErrorID
 from coovts.types.event import ModelLoadedEventData, ModelMovedEventData
 
 from .utils.async_helpers import finish, spin_until, tick
@@ -935,4 +941,88 @@ async def test_parked_handler_does_not_block_the_receive_loop(
         assert not parked.is_set()
     finally:
         parked.set()
+        await finish(plugin, run_task)
+
+
+async def test_authentication_refusal_no_retry_can_fix_stops_the_plugin(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A refusal caused by the plugin's own settings stops it instead of looping forever."""
+    transport = FakeTransport()
+    install_transport(monkeypatch, transport)
+    plugin = make_plugin(authentication_token=TOKEN, reconnect_delay=0.01)
+    connection = transport.connection
+    failures: list[Exception] = []
+
+    @plugin.on_authenticate_failed
+    async def on_failed(error: Exception) -> None:
+        failures.append(error)
+
+    run_task = plugin.run()
+    try:
+        await spin_until(lambda: len(connection.sent) >= 1, "authentication request")
+        request = sent_frame(connection, 0)
+        connection.feed(
+            envelope(
+                "APIError",
+                {"errorID": ErrorID.TokenRequestDenied, "message": "denied"},
+                request["requestID"],
+            ),
+        )
+
+        await asyncio.wait_for(run_task, 5)
+
+        assert len(failures) == 1
+        assert isinstance(failures[0], APIError)
+        assert failures[0].data.error_id == ErrorID.TokenRequestDenied
+        assert plugin.stopped is True
+        assert plugin.state is PluginState.STOPPED
+        assert len(transport.endpoints) == 1
+    finally:
+        await finish(plugin, run_task)
+
+
+async def test_authentication_refusal_a_retry_can_fix_keeps_looping(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A refusal VTS may answer differently next time keeps the supervisor reconnecting."""
+    transport = FakeTransport()
+    install_transport(monkeypatch, transport)
+    plugin = make_plugin(authentication_token=TOKEN, reconnect_delay=0.01)
+    connection = transport.connection
+
+    run_task = plugin.run()
+    try:
+        await spin_until(lambda: len(connection.sent) >= 1, "authentication request")
+        request = sent_frame(connection, 0)
+        connection.feed(
+            envelope(
+                "APIError",
+                {
+                    "errorID": ErrorID.TokenRequestCurrentlyOngoing,
+                    "message": "the request window is open",
+                },
+                request["requestID"],
+            ),
+        )
+
+        await spin_until(
+            lambda: len(connection.sent) >= 2,
+            "second authentication attempt",
+        )
+        assert plugin.stopped is False
+
+        retry = sent_frame(connection, 1)
+        connection.feed(
+            envelope(
+                "AuthenticationResponse",
+                {"authenticated": True, "reason": ""},
+                retry["requestID"],
+            ),
+        )
+        await spin_until(
+            lambda: plugin.state is PluginState.AUTHENTICATED,
+            "authenticated state",
+        )
+    finally:
         await finish(plugin, run_task)
