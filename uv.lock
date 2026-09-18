@@ -74,7 +74,7 @@ log = [
 [package.dev-dependencies]
 dev = [
     { name = "basedpyright" },
-    { name = "coovts", extra = ["log"] },
+    { name = "coovts", extra = ["all"] },
     { name = "hatchling" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -97,7 +97,7 @@ provides-extras = ["all", "log"]
 [package.metadata.requires-dev]
 dev = [
     { name = "basedpyright", specifier = ">=1.40.1" },
-    { name = "coovts", extras = ["log"] },
+    { name = "coovts", extras = ["all"] },
     { name = "hatchling", specifier = ">=1.32.3" },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "pytest-asyncio", specifier = ">=1.4.0" },

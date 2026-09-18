@@ -34,8 +34,7 @@ Issues = "https://github.com/lgc2333/coovts/issues"
 
 [dependency-groups]
 dev = [
-    # the `log` extra has to be installed for the type check to see the optional loguru import
-    "coovts[log]",
+    "coovts[all]",
     "basedpyright>=1.40.1",
     "hatchling>=1.32.3",
     "ruff>=0.16.8",
@@ -79,9 +78,6 @@ line-ending = "lf"
 [tool.ruff.lint]
 ignore = [
     "B008",
-    # mutable defaults are what pydantic list fields look like, and ruff only recognises a base
-    # class literally named `BaseModel`, not `VTSBaseModel`
-    "RUF012",
     "B905",
     "COM812",
     "E501",
@@ -163,6 +159,11 @@ select = [
 "**/tests*/**" = [
     # "INP001", # no __init__.py
     "ARG001", # arg not used
+]
+"coovts/types/{api,event}/**" = [
+    # mutable defaults are what pydantic list fields look like, and ruff only recognises a base
+    # class literally named `BaseModel`, not `VTSBaseModel`
+    "RUF012",
 ]
 
 [tool.ruff.lint.isort]

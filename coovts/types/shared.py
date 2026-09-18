@@ -13,9 +13,9 @@ vts_base_model_config = ConfigDict(
 `validate_by_alias=False` keeps the python field name the only way to *build* a model, and
 `serialize_by_alias=True` makes every dump spell fields the way the wire does — nested models
 included, which is why a request payload can hold a response model without a serializer of its
-own. Frames from VTube Studio are camelCase, so the boundary that reads them asks for alias
-validation by hand (`by_alias=True`): see `Plugin._handle_raw`, `Plugin._call_api` and
-`PendingRequest.result`.
+own. Frames from VTube Studio are camelCase, so reading one asks for alias validation by hand
+(`by_alias=True`): `Plugin._handle_raw` does it for the envelope and for every event payload,
+`PendingRequest.result` for the answer to a call.
 """
 
 

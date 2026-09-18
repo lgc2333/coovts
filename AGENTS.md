@@ -1,8 +1,6 @@
 # coovts AGENTS.md
 
 Python >= 3.12 library for writing VTube Studio plugins (async WebSocket + Pydantic v2).
-Managed with uv; deps in `pyproject.toml` (loguru is the optional `log` extra), errors in
-`coovts/errors.py` and logging in `coovts/log.py`.
 
 ## Project Structure
 

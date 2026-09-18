@@ -5,9 +5,12 @@ on:
   pull_request:
   workflow_dispatch:
 
+env:
+  COVERAGE_PYTHON_VERSION: '3.14'
+
 jobs:
   check:
-    name: Lint, type check and test
+    name: Lint & type check
     runs-on: ubuntu-latest
 
     steps:
@@ -17,7 +20,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v5
 
-      - name: 'Set up Python'
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version-file: 'pyproject.toml'
@@ -34,5 +37,50 @@ jobs:
       - name: Type check
         run: uv run --locked basedpyright
 
-      - name: Test
+  test:
+    name: Test
+
+    strategy:
+      matrix:
+        python-version: ['3.12', '3.13', '3.14']
+        os: [ubuntu-latest] # [ubuntu-latest, windows-latest, macos-latest]
+      fail-fast: false
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@master
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Run pytest with coverage
+        if: matrix.python-version == env.COVERAGE_PYTHON_VERSION
+        shell: bash
+        run: >-
+          uv run --locked pytest
+          --cov=coovts
+          --cov-branch
+          --cov-report=xml:coverage.xml
+          --cov-report=markdown-append:"$GITHUB_STEP_SUMMARY"
+
+      - name: Run Pytest
+        if: matrix.python-version != env.COVERAGE_PYTHON_VERSION
         run: uv run --locked pytest
+
+      - name: Upload coverage to Codecov
+        if: >-
+          !cancelled() &&
+          matrix.python-version == env.COVERAGE_PYTHON_VERSION
+        uses: codecov/codecov-action@v7
+        with:
+          disable_search: true
+          files: coverage.xml
+          flags: unit
+          token: ${{ secrets.CODECOV_TOKEN }}
