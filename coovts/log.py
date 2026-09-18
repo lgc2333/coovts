@@ -12,6 +12,12 @@ else:
     try:
         from loguru import logger as logger
 
+        if True:  # prevent unsorted imports warn
+            from cookit.loguru import (
+                log_exception_warning as log_exception_warning,
+                logged_suppress as logged_suppress,
+                warning_suppress as warning_suppress,
+            )
     except ImportError:
         from contextlib import contextmanager
         from typing import Any
@@ -38,10 +44,3 @@ else:
 
         def log_exception_warning(*_args, **_kwargs):
             pass
-
-    else:
-        from cookit.loguru import (
-            log_exception_warning as log_exception_warning,
-            logged_suppress as logged_suppress,
-            warning_suppress as warning_suppress,
-        )
