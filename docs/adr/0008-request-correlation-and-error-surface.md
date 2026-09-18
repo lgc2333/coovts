@@ -12,10 +12,14 @@ Only request-scoped failures are exceptions. `ValidationError` (the payload did 
 expected model), `APIError` (VTS refused the request) and `RequestTimeout` (the deadline expired
 before the answer arrived) are raised at the `await`, and a request whose connection dies before
 the answer arrives fails with `NetworkError` — the same error used when a call is attempted with
-no connection. Envelope parse failures, connect failures,
-authentication transport failures and handler crashes stay on the hook side, so hooks keep carrying
-the transport's own exception (a `ConnectionClosed` still exposes its close code) while `await`
-sites only ever see library types. That split is also why there is no `on_disconnected` callback.
+no connection. Envelope parse failures, connect failures, authentication transport failures and
+handler crashes stay on the hook side, so hooks keep carrying the transport's own exception (a
+`ConnectionClosed` still exposes its close code) while `await` sites only ever see library types: a
+hook receives whatever the failure was verbatim, so `on_authenticate_failed` may receive a library
+type (`APIError`, `AuthenticationFailedError`) or a transport exception (`ConnectionClosed`) —
+which is exactly why a caller that wants to treat "VTS refused" differently from "the socket died"
+has to check `isinstance(e, APIError)`. That split is also why there is no `on_disconnected`
+callback.
 
 ## Consequences
 

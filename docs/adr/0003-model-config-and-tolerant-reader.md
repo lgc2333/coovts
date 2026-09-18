@@ -5,7 +5,8 @@
 No model declares its own `model_config`. Config arrives through `with_request_model_config` /
 `with_response_model_config`, a `cookit` factory that returns a same-named subclass of the
 decorated class with the config dict set as a whole and nothing merged from a parent. `extra` is
-never set by anyone, so Pydantic's default `extra="ignore"` applies to all 120 models.
+never set by anyone, so Pydantic's default `extra="ignore"` applies to every model (see
+`docs/references.md`).
 
 The tolerant reader is a protocol requirement, not politeness: VTube Studio documents that new
 fields can appear in existing payloads without a version bump, so an inbound frame carrying a field
@@ -21,6 +22,6 @@ we do not know must be decoded, not rejected.
   `type(model).__name__` and reprs look untouched while the class object is not the one written in
   the source file.
 
-The alternatives were per-model `model_config` (120 copies of one policy that must be edited in
-lockstep) and a shared `BaseModel` subclass carrying the config (a library-owned base class in
-every model's MRO, and two parallel hierarchies for the request and response halves).
+The alternatives were per-model `model_config` (one copy of one policy per model, all of which must
+be edited in lockstep) and a shared `BaseModel` subclass carrying the config (a library-owned base
+class in every model's MRO, and two parallel hierarchies for the request and response halves).

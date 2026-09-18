@@ -2,32 +2,28 @@
 
 **Status**: accepted
 
-The request and event models mirror the documented VTube Studio plugin API one to one: all 37
-requests of the official API README are modelled, plus the `EventSubscription` pair (documented in
-the event reference rather than the request list) and 10 of the 16 documented events. Class names
-match the documented `messageType` values wherever the name conventions can produce them, and field
-names match the documented payload keys.
+The request and event models mirror the documented VTube Studio plugin API one to one: every
+request of the official API README is modelled, plus the `EventSubscription` pair (documented in
+the event reference rather than the request list) and every documented event. Class names match the
+documented `messageType` values wherever the name conventions can produce them, and field names
+match the documented payload keys. The current counts are recorded in `docs/references.md`.
 
-Beta-only endpoints are modelled too and say so in their docstring (`ArtMeshAtPosition`). A plugin
-whose feature only exists on the beta branch has no other way to reach it, and a clearly marked
-endpoint costs a reader less than an absent one — the coupling to a branch that can change without a
-stable version bump is a documented risk, not a reason to leave the gap.
+Beta-only endpoints and events are modelled too and say so in their docstring (the
+`ArtMeshAtPosition` request, the `ExpressionToggledEvent`, `ArtMeshTrackingEvent` and
+`ArtMeshOutlineEvent` events). A plugin whose feature only exists on the beta branch has no other
+way to reach it, and a clearly marked endpoint costs a reader less than an absent one — the
+coupling to a branch that can change without a stable version bump is a documented risk, not a
+reason to leave the gap.
 
-Two surfaces stay out of the model set: everything that is not a request/response message pair
-(UDP server discovery, the UDP `VTubeStudioAPIStateBroadcast`), and the permission flow, which is
-"not yet" rather than "never" — it becomes worth doing when a real plugin needs it.
+One surface stays out of the model set: everything that is not a request/response message pair —
+UDP server discovery and the unsolicited UDP `VTubeStudioAPIStateBroadcast`.
 
 ## Consequences
 
-- Six documented events are missing: `ArtMeshOutlineEvent`, `ArtMeshTrackingEvent`,
-  `BackgroundChangedEvent`, `ExpressionToggledEvent`, `ModelConfigChangedEvent` and
-  `PostProcessingEvent`. They were never written rather than deliberately left out, so subscribing
-  to one is not expressible through the typed surface — only by hand through `call_api`.
 - `ArtMeshAtPosition` follows the beta branch, so a change there is a change to a model the library
   ships without a version bump of its own. Against a stable VTS 1.35.10 the request is answered with
-  `APIError` id 7 (`Unknown messageType`), which is what the beta marking warns a caller about.
-- The permission flow is unimplemented, so a plugin cannot ask VTS in advance whether a call will be
-  allowed; a refused call surfaces as an API error at call time.
+  `APIError` id 7 (`Unknown messageType`), and the three beta events the same way with id 950
+  (`Unknown API event type`) — which is what the beta marking warns a caller about.
 - UDP discovery is unimplemented, so the endpoint is configured by hand instead of discovered on port
   47779. The unsolicited `VTubeStudioAPIStateBroadcast` is likewise unmodelled: VTS broadcasts it
   over UDP, which the library never listens on, so it cannot reach a plugin at all; a frame of that

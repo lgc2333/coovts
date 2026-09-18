@@ -6,10 +6,11 @@
 untyped public forwarders (`call_api`, `handle_event`). `Plugin` implements the seams and inherits
 the forwarders, so the runtime carries no per-request code; all typing lives in
 `coovts/types/plugin_api.pyi`, generated from the request and event models by
-`scripts/generate_plugin_api.py` (38 typed `call_api` overloads plus 4 generic ones, 10 typed
-`handle_event` overloads plus 1 generic one).
+`scripts/generate_plugin_api.py` (one typed `call_api` overload per request and one typed
+`handle_event` overload per event, plus a generic one each; the counts live in
+`docs/references.md`).
 
-Writing 42 overloads by hand in the runtime class would be code that can disagree with the models
+Writing every overload by hand in the runtime class would be code that can disagree with the models
 it describes. Generating the stub from the models means the type surface cannot drift from what the
 runtime resolves, and the runtime stays small enough to read in one sitting.
 

@@ -16,11 +16,13 @@ coovts/
   log.py               optional loguru shim — logging must not be a hard dependency
   utils/
     common.py          run_sync
+    enum.py            RawStrEnum: a `StrEnum` whose `auto()` keeps the member name
   py.typed             PEP 561 marker — shipped, do not delete
   types/
     shared.py          wire envelope + name-convention resolvers
     api/               VTS API request/response models
     event/             inbound event models (reuses wire models from api/)
+    consts/            error IDs and wire constant tables transcribed from upstream
     plugin_api.py      runtime ABC
     plugin_api.pyi     GENERATED — never hand-edit
 scripts/
@@ -58,6 +60,7 @@ Only `poe` runs on the project venv; use `uv run` / `uv run --with` for anything
 - `CONTEXT.md` is the domain glossary: canonical terms and one-line definitions, nothing else.
 - `docs/adr/` holds one file per decision, numbered; add one when a decision is hard to reverse and would look arbitrary without the reason.
 - Follow the `domain-modeling` skill for both (install it from GitHub `mattpocock/skills` if missing), and write in English like everywhere else here.
+- `docs/references.md` is the upstream sync record: where each transcribed constant and model came from, plus the current surface counts. Counts live there, never in an ADR.
 
 ### Structure Rules
 
@@ -68,6 +71,10 @@ Only `poe` runs on the project venv; use `uv run` / `uv run --with` for anything
 - Store temp/intermediate files in `temp/<category>/` at the project root. Skills can override this rule.
 
 - `coovts/types/plugin_api.pyi` is generated from `types/api` + `types/event` by `scripts/generate_plugin_api.py`; regenerate instead of editing it.
+
+### Code Flavor Rules
+
+- Model fields and enum members are documented with a docstring written below them, never with a `#` comment.
 
 ### Testing Rules
 

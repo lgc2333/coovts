@@ -6,8 +6,8 @@ Every wire string is computed from a Python class name instead of living in a re
 union: `get_message_type` returns the class name verbatim (the model `AuthenticationRequest` *is*
 the `messageType`), `get_api_response_model` maps `XRequest` to `XResponse`, and `get_event_name`
 maps `XEventData`/`XEventConfig` to `XEvent`. Adding one API therefore means writing one model and
-nothing else, and there is no second list that can drift out of sync with the 38 requests and 10
-events we model.
+nothing else, and there is no second list that can drift out of sync with the API surface we model
+(see `docs/references.md`).
 
 ## Consequences
 

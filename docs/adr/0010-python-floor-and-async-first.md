@@ -8,10 +8,12 @@ syntax throughout — `type X = ...` aliases, `class Hook[T]`, generic functions
 asynchronous: hooks, handlers and `call_api` are all coroutines. `run_sync` is the single bridge
 offered to blocking code, wrapping a synchronous callable into an awaitable executed in an executor.
 
-The subject matter is a long-lived WebSocket connection multiplexing concurrent calls and pushing
-unsolicited events, which has no sane synchronous expression. Rather than ship both an async core
-and a blocking façade that reimplements it, the library commits to one model and lets callers wrap
-individual blocking functions at the edges.
+The choice is partly habit: this library grew out of nonebot2 plugin code, where handlers are
+async. It is also the right fit — a plugin talks to VTube Studio constantly, and async is better
+than sync for frequent I/O — and asynchronous code is inherently easier to write than the
+synchronous multi-threaded equivalent a single shared socket would otherwise need. Rather than ship
+both an async core and a blocking façade that reimplements it, the library commits to one model and
+lets callers wrap individual blocking functions at the edges.
 
 ## Consequences
 
