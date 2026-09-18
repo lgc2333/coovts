@@ -1,6 +1,7 @@
 """Lifecycle of the plugin's connection: failed connects, reconnects and `stop()`."""
 
 import asyncio
+import contextlib
 
 import pytest
 
@@ -63,6 +64,33 @@ async def test_reconnect_while_connecting_is_refused(
         transport.gate.set()
         await asyncio.wait_for(connecting, 1)
         await plugin.stop()
+
+
+async def test_stopping_during_a_connect_leaves_the_plugin_stopped(
+    monkeypatch: "pytest.MonkeyPatch",
+) -> None:
+    """A `stop()` while the socket is being opened ends as `STOPPED`, not as disconnected."""
+    transport = FakeTransport()
+    transport.gate = asyncio.Event()
+    install_transport(monkeypatch, transport)
+    plugin = make_plugin()
+
+    run_task = plugin.run()
+    try:
+        await spin_until(lambda: len(transport.endpoints) == 1, "connect attempt")
+
+        await plugin.stop()
+
+        assert plugin.state is PluginState.STOPPED
+
+        transport.gate.set()
+        with contextlib.suppress(asyncio.CancelledError):
+            await asyncio.wait_for(run_task, 1)
+
+        assert plugin.state is PluginState.STOPPED
+    finally:
+        transport.gate.set()
+        await finish(plugin, run_task)
 
 
 async def test_run_twice_is_refused(monkeypatch: pytest.MonkeyPatch) -> None:

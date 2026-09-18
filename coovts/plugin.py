@@ -295,7 +295,9 @@ class Plugin(PluginAPI):
         try:
             self.client = await ws.connect(self.endpoint)
         except BaseException:
-            self._state = PluginState.DISCONNECTED
+            self._state = (
+                PluginState.STOPPED if self._stopped else PluginState.DISCONNECTED
+            )
             raise
 
         self._state = PluginState.AUTHENTICATING
@@ -305,14 +307,14 @@ class Plugin(PluginAPI):
 
     async def stop(self):
         self._stopped = True
+        if self._run_task:
+            self._run_task.cancel()
         handler_tasks = tuple(self._handler_tasks)
         for task in handler_tasks:
             task.cancel()
         await asyncio.gather(*handler_tasks, return_exceptions=True)
         self._handler_tasks.clear()
         await self._disconnect(None)
-        if self._run_task:
-            self._run_task.cancel()
         self._run_task = None
 
     async def _resubscribe(self) -> None:
