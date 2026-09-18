@@ -21,7 +21,7 @@ from typing import Any, Literal, overload
 
 from pydantic import BaseModel
 
-from ..subscriptions import EventRegistration
+from ..event import EventRegistration
 from . import api, event
 
 class PluginAPI(ABC):

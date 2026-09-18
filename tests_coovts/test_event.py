@@ -3,12 +3,12 @@
 import pytest
 
 from coovts.errors import NetworkError
-from coovts.subscriptions import SubscriptionRegistry, default_event_config
+from coovts.event import EventSubscriptionRegistry, default_event_config
 from coovts.types import event
 from coovts.types.api import EventSubscriptionRequest, EventSubscriptionResponse
 
 
-def make_registry() -> tuple[SubscriptionRegistry, list[EventSubscriptionRequest]]:
+def make_registry() -> tuple[EventSubscriptionRegistry, list[EventSubscriptionRequest]]:
     """A registry whose frames are recorded instead of going to VTube Studio."""
     sent: list[EventSubscriptionRequest] = []
 
@@ -19,7 +19,7 @@ def make_registry() -> tuple[SubscriptionRegistry, list[EventSubscriptionRequest
             subscribed_events=[request.event_name],
         )
 
-    return SubscriptionRegistry(send), sent
+    return EventSubscriptionRegistry(send), sent
 
 
 MOVED = event.ModelMovedEventData(
@@ -177,7 +177,7 @@ async def test_dispose_offline_forgets_the_event_without_failing() -> None:
     ) -> EventSubscriptionResponse:
         raise NetworkError("Not connected to VTube Studio")
 
-    registry = SubscriptionRegistry(no_connection)
+    registry = EventSubscriptionRegistry(no_connection)
     registration = registry.subscribe(event.ModelMovedEventData)
 
     assert await registry.dispose(registration) is None

@@ -14,7 +14,7 @@ docs/backlog.md        deferred work — missing, not excluded (see Docs Rules)
 coovts/
   plugin.py            Plugin: connect/auth/recv loops, hooks, event dispatch
   request.py           request-id <-> future correlation
-  subscriptions.py     the events a plugin registered: config pairing, handlers, re-subscription
+  event.py             the events a plugin registered: config pairing, handlers, re-subscription
   errors.py            exception hierarchy
   utils/
     common.py          run_sync

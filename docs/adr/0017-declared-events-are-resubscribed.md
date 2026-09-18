@@ -34,7 +34,7 @@ model's field defaults. A config that has a required field cannot be defaulted, 
 requires it for exactly those events — the requirement comes from the model's own fields rather than
 from a hand-kept list.
 
-The registry of declarations is a module of its own (`coovts/subscriptions.py`) rather than more
+The registry of declarations is a module of its own (`coovts/event.py`) rather than more
 state inside `Plugin`, the same way request correlation lives in `coovts/request.py`: the plugin
 drives it, but the bookkeeping is not part of the connection.
 

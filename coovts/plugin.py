@@ -11,8 +11,8 @@ from pydantic import BaseModel
 from websockets.exceptions import WebSocketException
 
 from .errors import APIError, AuthenticationFailedError, NetworkError
+from .event import EventRegistration, EventSubscriptionRegistry
 from .request import RequestManager
-from .subscriptions import EventRegistration, SubscriptionRegistry
 from .types import (
     BaseRequest,
     BaseResponse,
@@ -143,7 +143,7 @@ class Plugin(PluginAPI):
         self.client: ws.ClientConnection | None = None
         self.stopped = True
         self.req_manager = RequestManager()
-        self.subscriptions = SubscriptionRegistry(self._send_subscription)
+        self.subscriptions = EventSubscriptionRegistry(self._send_subscription)
 
         self._state = PluginState.STOPPED
         self._recv_task: Task | None = None

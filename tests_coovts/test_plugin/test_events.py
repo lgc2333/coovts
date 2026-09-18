@@ -4,8 +4,8 @@ import asyncio
 from typing import TYPE_CHECKING
 
 from coovts.errors import APIError
+from coovts.event import EventRegistration
 from coovts.plugin import PluginState, dispatch_handlers_inner
-from coovts.subscriptions import EventRegistration
 from coovts.types.api import MoveModelRequest, MoveModelResponse
 from coovts.types.consts import ErrorID
 from coovts.types.event import (

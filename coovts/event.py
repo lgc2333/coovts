@@ -19,7 +19,7 @@ type SubscriptionSender = Callable[
 ]
 
 
-class RegisteredHandler[**P, R](Protocol):
+class DisposableCallable[**P, R](Protocol):
     """A handler `subscribe_event` wrapped: called exactly as it was, plus `dispose`."""
 
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R:
@@ -39,7 +39,7 @@ class EventRegistration[T: BaseModel]:
 
     def __init__(
         self,
-        registry: "SubscriptionRegistry",
+        registry: "EventSubscriptionRegistry",
         event_name: str,
         data_model: type[T] | None,
         config: Any,
@@ -54,7 +54,7 @@ class EventRegistration[T: BaseModel]:
         self.handlers: list[Callable[[T], Any]] = []
         """The handlers attached to this event, in registration order."""
 
-    def __call__[R](self, handler: Callable[[T], R]) -> RegisteredHandler[[T], R]:
+    def __call__[R](self, handler: Callable[[T], R]) -> DisposableCallable[[T], R]:
         """Attach a handler and hand it back wrapped, so it can give its own event up."""
         self.handlers.append(handler)
 
@@ -63,7 +63,7 @@ class EventRegistration[T: BaseModel]:
             return handler(data)
 
         wrapper.dispose = self.dispose  # type: ignore[attr-defined]
-        return cast("RegisteredHandler[[T], R]", wrapper)
+        return cast("DisposableCallable[[T], R]", wrapper)
 
     def __await__(self) -> Generator[Any, Any, "EventSubscriptionResponse"]:
         """Send this subscription now instead of at the next authentication."""
@@ -74,7 +74,7 @@ class EventRegistration[T: BaseModel]:
         return await self._registry.dispose(self)
 
 
-class SubscriptionRegistry:
+class EventSubscriptionRegistry:
     """The events a plugin has registered, one `EventRegistration` per event name."""
 
     def __init__(self, send: SubscriptionSender) -> None:
