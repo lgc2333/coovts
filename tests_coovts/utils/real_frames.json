@@ -1,7 +1,8 @@
 {
   "_note": [
     "Frames captured verbatim from a real VTube Studio 1.35.10 session on Windows",
-    "(2026-09-18) by temp/real_vts/probe.py. Nothing here is hand-written.",
+    "(2026-09-18) by temp/real_vts/probe.py and temp/real_vts/capture_consts.py.",
+    "Nothing here is hand-written.",
     "The AuthenticationTokenResponse frame is omitted: it carries a live token."
   ],
   "frames": [
@@ -44,6 +45,14 @@
     {
       "messageType": "APIError",
       "raw": "{\"apiName\":\"VTubeStudioPublicAPI\",\"apiVersion\":\"1.0\",\"timestamp\":1789721226302,\"messageType\":\"APIError\",\"requestID\":\"25\",\"data\":{\"errorID\":1250,\"message\":\"No item with the given item instance ID is currently loaded.\"}}"
+    },
+    {
+      "messageType": "PermissionResponse",
+      "raw": "{\"apiName\":\"VTubeStudioPublicAPI\",\"apiVersion\":\"1.0\",\"timestamp\":1789743448953,\"messageType\":\"PermissionResponse\",\"requestID\":\"3\",\"data\":{\"grantSuccess\":false,\"requestedPermission\":\"\",\"permissions\":[{\"name\":\"LoadCustomImagesAsItems\",\"granted\":false}]}}"
+    },
+    {
+      "messageType": "APIError",
+      "raw": "{\"apiName\":\"VTubeStudioPublicAPI\",\"apiVersion\":\"1.0\",\"timestamp\":1789743449020,\"messageType\":\"APIError\",\"requestID\":\"20\",\"data\":{\"errorID\":950,\"message\":\"Unknown API event type: ExpressionToggledEvent\"}}"
     }
   ]
 }

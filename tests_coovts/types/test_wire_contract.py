@@ -1,12 +1,17 @@
-"""Namespace-wide invariants over the `coovts.types.api` and `coovts.types.event` models,
-and the decode of frames a real VTube Studio sent."""
+"""Namespace-wide invariants over the `coovts.types.api`, `event` and `consts` members, and the
+decode of frames a real VTube Studio sent."""
 
+import ast
+import importlib
+import inspect
 import json
+import pkgutil
+from types import ModuleType
 
 import pytest
 from pydantic import BaseModel, ValidationError
 
-from coovts.types import api, event
+from coovts.types import api, consts, event
 from coovts.types.shared import (
     BaseResponse,
     get_api_response_model,
@@ -120,6 +125,7 @@ def test_real_error_frames_decode_with_their_ids() -> None:
             "Cannot start authentication process because authentication is currently ongoing."
             " Authentication request window is open in VTube Studio."
         ),
+        950: "Unknown API event type: ExpressionToggledEvent",
         1250: "No item with the given item instance ID is currently loaded.",
     }
 
@@ -128,3 +134,40 @@ def test_real_error_frames_decode_with_their_ids() -> None:
         assert envelope.message_type == "APIError"
         error = api.APIErrorResponse.model_validate(envelope.data)
         assert (error.error_id, error.message) == (error_id, message)
+
+
+def _submodules(package: ModuleType) -> list[ModuleType]:
+    """The package's own submodules, imported."""
+    return [
+        importlib.import_module(f"{package.__name__}.{entry.name}")
+        for entry in pkgutil.iter_modules(package.__path__)
+    ]
+
+
+def _declared_classes(module: ModuleType) -> list[str]:
+    """Names of the public classes a module declares in its own source."""
+    tree = ast.parse(inspect.getsource(module))
+    return [
+        node.name
+        for node in tree.body
+        if isinstance(node, ast.ClassDef) and not node.name.startswith("_")
+    ]
+
+
+@pytest.mark.parametrize(
+    "package", [api, event, consts], ids=["api", "event", "consts"]
+)
+def test_every_declared_class_is_exported_from_its_package(package: ModuleType) -> None:
+    """Each class a submodule declares is the same object as the package attribute of that name.
+
+    The wire-name resolvers and the stub generator both walk the package namespace, so a class a
+    submodule declares but its `__init__` does not re-export is invisible to both (ADR-0001).
+    """
+    missing = [
+        f"{package.__name__}.{name} (declared in {module.__name__})"
+        for module in _submodules(package)
+        for name in _declared_classes(module)
+        if getattr(package, name, None) is not getattr(module, name)
+    ]
+
+    assert not missing
