@@ -8,11 +8,11 @@ from types import CoroutineType, EllipsisType
 from typing import TYPE_CHECKING, Any, overload, override
 
 import websockets as ws
-from cookit.loguru import warning_suppress
 from pydantic import BaseModel
 from websockets.exceptions import WebSocketException
 
 from .errors import APIError, AuthenticationFailedError, NetworkError
+from .log import warning_suppress
 from .request import RequestManager
 from .types import (
     BaseRequest,
@@ -129,6 +129,7 @@ class Plugin(PluginAPI):
         self._state = PluginState.STOPPED
         self._recv_task: Task | None = None
         self._run_task: Task | None = None
+        self._handler_tasks: set[Task[Any]] = set()
 
     @staticmethod
     def prepare_icon(icon: str | bytes | Path) -> str:
@@ -166,12 +167,17 @@ class Plugin(PluginAPI):
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> list["Task[R | Exception]"] | None:
-        return dispatch_handlers(
+        tasks = dispatch_handlers(
             handlers,
             self.on_handler_run_failed,
             *args,
             **kwargs,
         )
+        if tasks is not None:
+            for task in tasks:
+                self._handler_tasks.add(task)
+                task.add_done_callback(self._handler_tasks.discard)
+        return tasks
 
     def ensure_client(self) -> ws.ClientConnection:
         if not self.client:
@@ -255,6 +261,11 @@ class Plugin(PluginAPI):
 
     async def stop(self):
         self.stopped = True
+        handler_tasks = tuple(self._handler_tasks)
+        for task in handler_tasks:
+            task.cancel()
+        await asyncio.gather(*handler_tasks, return_exceptions=True)
+        self._handler_tasks.clear()
         await self._disconnect(None)
         if self._run_task:
             self._run_task.cancel()
