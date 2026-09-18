@@ -58,8 +58,14 @@ def test_event_config_model_pairs_with_its_data_model() -> None:
 def test_unresolvable_event_config_model_raises_value_error() -> None:
     """A model the config convention cannot name raises instead of guessing."""
 
+    class GhostEventData(BaseModel):
+        """Names an event this package has no config model for."""
+
     class NotAnEvent(BaseModel):
-        """Ends in neither a `EventData` nor a `EventConfig` suffix."""
+        """Ends in neither an `EventData` nor an `EventConfig` suffix."""
+
+    with pytest.raises(ValueError):  # noqa: PT011
+        get_event_config_model(GhostEventData)
 
     with pytest.raises(ValueError):  # noqa: PT011
         get_event_config_model(NotAnEvent)
