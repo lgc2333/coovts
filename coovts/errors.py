@@ -29,6 +29,10 @@ class NetworkError(RequestError):
     pass
 
 
+class RequestTimeout(RequestError, TimeoutError):  # noqa: N818
+    pass
+
+
 class ValidationError(RequestError):
     def __init__(
         self,

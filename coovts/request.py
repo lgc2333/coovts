@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 from pydantic import BaseModel
 
-from .errors import APIError, NetworkError, ValidationError
+from .errors import APIError, NetworkError, RequestTimeout, ValidationError
 from .types.api import APIErrorResponse
 
 
@@ -34,7 +34,10 @@ class PendingRequest[M: BaseModel]:
     async def result(self, timeout: float | None = None) -> M:  # noqa: ASYNC109
         if timeout == 0:
             timeout = None
-        return await wait_for(self.future, timeout)
+        try:
+            return await wait_for(self.future, timeout)
+        except TimeoutError as e:
+            raise RequestTimeout(f"Request timed out after {timeout} seconds") from e
 
 
 class RequestManager:
