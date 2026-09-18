@@ -1,4 +1,4 @@
-from . import api as api, event as event
+from . import api as api, consts as consts, event as event
 from .shared import (
     BaseRequest as BaseRequest,
     BaseResponse as BaseResponse,
