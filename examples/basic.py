@@ -6,6 +6,10 @@ from pathlib import Path
 from coovts.plugin import Plugin
 from coovts.types import api, event, get_event_name
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
 logger = logging.getLogger(__name__)
 
 AUTH_TOKEN_FILE = Path(__file__).parent / "auth_token.txt"
@@ -112,10 +116,6 @@ async def _(data: event.ModelMovedEventData):
 
 
 async def main() -> int:
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-    )
     await plugin.run()
     return 0
 
