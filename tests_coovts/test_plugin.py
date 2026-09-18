@@ -14,7 +14,7 @@ from coovts.errors import (
     NetworkError,
     RequestTimeout,
 )
-from coovts.plugin import Plugin, PluginState, dispatch_handlers
+from coovts.plugin import Plugin, PluginState, dispatch_handlers_inner
 from coovts.types.api import (
     APIStateRequest,
     APIStateResponse,
@@ -839,7 +839,7 @@ async def test_dispatch_without_failure_handlers_captures_the_failure() -> None:
     async def explode() -> None:
         raise RuntimeError("boom")
 
-    tasks = dispatch_handlers([explode], None)
+    tasks = dispatch_handlers_inner([explode], None)
     assert tasks is not None
 
     results = await asyncio.gather(*tasks)
@@ -950,7 +950,7 @@ async def test_authentication_refusal_no_retry_can_fix_stops_the_plugin(
     """A refusal caused by the plugin's own settings stops it instead of looping forever."""
     transport = FakeTransport()
     install_transport(monkeypatch, transport)
-    plugin = make_plugin(authentication_token=TOKEN, reconnect_delay=0.01)
+    plugin = make_plugin(authentication_token=TOKEN, reconnect_delay=0)
     connection = transport.connection
     failures: list[Exception] = []
 
@@ -988,7 +988,7 @@ async def test_authentication_refusal_a_retry_can_fix_keeps_looping(
     """A refusal VTS may answer differently next time keeps the supervisor reconnecting."""
     transport = FakeTransport()
     install_transport(monkeypatch, transport)
-    plugin = make_plugin(authentication_token=TOKEN, reconnect_delay=0.01)
+    plugin = make_plugin(authentication_token=TOKEN, reconnect_delay=0)
     connection = transport.connection
 
     run_task = plugin.run()

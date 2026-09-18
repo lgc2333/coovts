@@ -83,7 +83,7 @@ class Hook[T]:
         return iter(self._handlers)
 
 
-def dispatch_handlers[**P, R](
+def dispatch_handlers_inner[**P, R](
     handlers: Iterable[Callable[P, C[R]]],
     run_failed_handlers: Iterable[HandlerRunFailedHandler] | None = None,
     *args: P.args,
@@ -94,7 +94,7 @@ def dispatch_handlers[**P, R](
             return await f(*args, **kwargs)
         except Exception as e:
             if run_failed_handlers:
-                dispatch_handlers(run_failed_handlers, None, e)
+                dispatch_handlers_inner(run_failed_handlers, None, e)
             return e
 
     return [asyncio.create_task(run_task(x)) for x in handlers]
@@ -185,7 +185,7 @@ class Plugin(PluginAPI):
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> list["Task[R | Exception]"] | None:
-        tasks = dispatch_handlers(
+        tasks = dispatch_handlers_inner(
             handlers,
             self.on_handler_run_failed,
             *args,
