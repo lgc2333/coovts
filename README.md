@@ -1,6 +1,16 @@
+<!-- markdownlint-disable MD033 MD036 MD041 -->
+
+<div align="center">
+
+<a href="https://github.com/lgc2333/coovts">
+  <img src="https://raw.githubusercontent.com/lgc2333/coovts/main/assets/coovts.svg" width="315" alt="CooVTS Logo">
+</a>
+
 # CooVTS
 
-Another library for making VTube Studio plugins with Python.
+_✨ Another library for making VTube Studio plugins with Python ✨_
+
+</div>
 
 ## ✨ Features
 
