@@ -1,14 +1,15 @@
-# Handlers run as untracked tasks
+# Handler dispatch is fire-and-forget
 
 **Status**: accepted
 
 `dispatch_handlers` turns every registered handler into its own `create_task` and returns the task
-list to a caller that drops it. A handler's exception is caught inside the task and re-dispatched to
-`on_handler_run_failed`; `BaseException` (cancellation, in particular) escapes that catch. Nothing
-is awaited, nothing is stored, nothing is throttled.
+list to a caller that ignores it. The tasks are held until they complete, which is all `stop()` needs
+to cancel and await them; nothing is awaited per frame and nothing is throttled. A handler's
+exception is caught inside the task and re-dispatched to `on_handler_run_failed`; `BaseException`
+(cancellation, in particular) escapes that catch.
 
-The receive loop must never be blocked by user code: one slow handler would otherwise stall every
-other event and delay every response, including the ones the same application is awaiting.
+Handlers are fire-and-forget by design: the library never bubbles a handler's outcome back to whoever
+dispatched the frame.
 
 ## Consequences
 

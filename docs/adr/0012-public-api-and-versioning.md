@@ -11,8 +11,8 @@ names in the wire packages are public too, because they _are_ the protocol (ADR-
 
 The version is declared exactly once, in `coovts/__init__.py`, because the build reads it from there.
 `0.0` is the unstable line: while the version is `0.0.x` nothing is promised — the number inside it
-says nothing about what a release did, any public symbol may break, and the README changelog is the
-only notice. The unstable line ends at `0.1`, not at `1.0`.
+says nothing about what a release did, any public symbol may break, and `CHANGELOG.md` is the only
+notice. The unstable line ends at `0.1`, not at `1.0`.
 
 From `0.1` on, the number says what a release does: a big refactor bumps the major, a breaking change
 or a big feature bumps the minor, a fix bumps the patch. The scheme follows the frontend habit of

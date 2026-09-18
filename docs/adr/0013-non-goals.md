@@ -14,9 +14,10 @@ already argued in the ADR that made the decision.
   for capabilities or degrade against a pre-`1.0` VTS.
 - VTS state is not mirrored locally. Model and item lists, parameter values and event subscriptions
   are asked for when needed; the connection state machine is the only state the library keeps.
-- UDP server discovery and the unsolicited UDP `VTubeStudioAPIStateBroadcast` stay out of the model
-  set (ADR-0004).
 - In-flight requests are not retried or resumed across a disconnect; a lost call fails and the
   caller decides whether it is worth repeating (ADR-0008).
-- Event handlers get no ordering and no backpressure guarantees: each one runs as an untracked task
-  (ADR-0006).
+- Event handlers get no ordering and no backpressure guarantees: each one runs as its own task, and
+  nobody waits for it (ADR-0006).
+
+UDP server discovery and the unsolicited UDP `VTubeStudioAPIStateBroadcast` are absent from this list
+on purpose: they are not excluded by a decision, they are simply not built yet. See ADR-0004.
