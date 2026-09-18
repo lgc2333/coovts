@@ -265,7 +265,6 @@ async def test_authentication_refusal_no_retry_can_fix_stops_the_plugin(
         assert len(failures) == 1
         assert isinstance(failures[0], APIError)
         assert failures[0].data.error_id == ErrorID.TokenRequestDenied
-        assert plugin.stopped is True
         assert plugin.state is PluginState.STOPPED
         assert len(transport.endpoints) == 1
     finally:
@@ -300,7 +299,6 @@ async def test_authentication_refusal_a_retry_can_fix_keeps_looping(
             lambda: len(connection.sent) >= 2,
             "second authentication attempt",
         )
-        assert plugin.stopped is False
 
         retry = sent_frame(connection, 1)
         connection.feed(

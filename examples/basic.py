@@ -3,7 +3,7 @@ import logging
 import sys
 from pathlib import Path
 
-from coovts.plugin import Plugin
+from coovts.plugin import Plugin, PluginState
 from coovts.types import api, event
 
 logging.basicConfig(
@@ -47,7 +47,7 @@ async def _(e: Exception):
 
 @plugin.on_connection_closed
 async def _(e: Exception):
-    if plugin.stopped:
+    if plugin.state is PluginState.STOPPED:
         return
     logger.error(
         "Connection closed, will retry after %s seconds",

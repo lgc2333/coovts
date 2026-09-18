@@ -58,8 +58,8 @@ flowchart LR
 ## `run()` 与 `stop()`
 
 - `await plugin.run()` 启动 supervisor 任务并返回它。已经在跑时再调会 `RuntimeError`。
-- `await plugin.stop()` 做四件事：置 `stopped`、**取消并等待所有在跑的 handler 任务**、关掉 socket
-  （此时在途请求以 `CancelledError` 结束）、取消 supervisor。
+- `await plugin.stop()` 做四件事：把插件标记为已停止（`plugin.state` 变成 `STOPPED`）、**取消并等待所有在跑的
+  handler 任务**、关掉 socket（此时在途请求以 `CancelledError` 结束）、取消 supervisor。
 - 因此 handler 必须容忍取消：吞掉或阻塞 `CancelledError` 会让整个程序退不出去。见
   [ADR-0006](../../adr/0006-handler-dispatch-is-fire-and-forget.md)。
 - `stop()` 期间断开失败会抛给 `stop()` 的调用方；重连循环自己发起的断开失败则报给

@@ -126,8 +126,6 @@ async def test_dispatch_without_failure_handlers_captures_the_failure() -> None:
         raise RuntimeError("boom")
 
     tasks = dispatch_handlers_inner([explode], None)
-    assert tasks is not None
-
     results = await asyncio.gather(*tasks)
     assert isinstance(results[0], RuntimeError)
 

@@ -18,6 +18,8 @@ minor 就是放破坏性变更的地方（[ADR-0012](./docs/adr/0012-public-api-
 - 删掉日志 shim、`log` / `all` extra 与 `cookit` 依赖：库完全不打日志
   （[ADR-0011](./docs/adr/0011-dependency-set.md)）。
 - 新增 `on_disconnect_failed` hook：库自己发起的断开若关闭失败，就报到这里。
+- `Plugin.stopped` 已移除：supervisor 靠取消来停止，所以停止用 `await plugin.stop()`，状态读
+  `plugin.state`。
 - `call_api` 与 `subscribe_event` 由模型生成到 stub，并加了 CI 检查漂移；`handle_event` 则是 `Plugin`
   上的泛型方法。
 - 加了 pytest 套件，用真实 VTube Studio 的抓包帧回放。

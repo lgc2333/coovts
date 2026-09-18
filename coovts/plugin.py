@@ -87,7 +87,7 @@ def dispatch_handlers_inner[**P, R](
     run_failed_handlers: Iterable[HandlerRunFailedHandler] | None = None,
     *args: P.args,
     **kwargs: P.kwargs,
-) -> list["Task[R | Exception]"] | None:
+) -> list["Task[R | Exception]"]:
     async def run_task(f: Callable[P, C[R]]) -> R | Exception:
         try:
             return await f(*args, **kwargs)
@@ -141,7 +141,7 @@ class Plugin(PluginAPI):
         self.on_before_send_raw: Hook[BeforeSendRawHandler] = Hook()
 
         self.client: ws.ClientConnection | None = None
-        self.stopped = True
+        self._stopped = True
         self.req_manager = RequestManager()
         self.subscriptions = EventSubscriptionRegistry(self._send_subscription)
 
@@ -204,17 +204,16 @@ class Plugin(PluginAPI):
         handlers: Iterable[Callable[P, C[R]]],
         *args: P.args,
         **kwargs: P.kwargs,
-    ) -> list["Task[R | Exception]"] | None:
+    ) -> list["Task[R | Exception]"]:
         tasks = dispatch_handlers_inner(
             handlers,
             self.on_handler_run_failed,
             *args,
             **kwargs,
         )
-        if tasks is not None:
-            for task in tasks:
-                self._handler_tasks.add(task)
-                task.add_done_callback(self._handler_tasks.discard)
+        for task in tasks:
+            self._handler_tasks.add(task)
+            task.add_done_callback(self._handler_tasks.discard)
         return tasks
 
     def ensure_client(self) -> ws.ClientConnection:
@@ -264,7 +263,7 @@ class Plugin(PluginAPI):
             except Exception as e:
                 self.client = None
                 self._state = (
-                    PluginState.STOPPED if self.stopped else PluginState.DISCONNECTED
+                    PluginState.STOPPED if self._stopped else PluginState.DISCONNECTED
                 )
                 self.req_manager.reset(CONNECTION_LOST_MESSAGE)
                 self.dispatch_handlers(self.on_connection_closed, e)
@@ -276,7 +275,7 @@ class Plugin(PluginAPI):
         task = self._recv_task
         self.client = None
         self._recv_task = None
-        self._state = PluginState.STOPPED if self.stopped else PluginState.DISCONNECTED
+        self._state = PluginState.STOPPED if self._stopped else PluginState.DISCONNECTED
         self.req_manager.reset(pending_error)
         try:
             if client and (client.close_code is None):
@@ -305,7 +304,7 @@ class Plugin(PluginAPI):
         return self._recv_task
 
     async def stop(self):
-        self.stopped = True
+        self._stopped = True
         handler_tasks = tuple(self._handler_tasks)
         for task in handler_tasks:
             task.cancel()
@@ -327,17 +326,13 @@ class Plugin(PluginAPI):
                 self.dispatch_handlers(self.on_subscribe_failed, registration, e)
 
     async def _run(self):
-        if not self.stopped:
-            return
-        self.stopped = False
+        self._stopped = False
         self._state = PluginState.DISCONNECTED
 
-        while not self.stopped:
+        while True:
             try:
                 task = await self.reconnect()
             except Exception as e:
-                if self.stopped:
-                    break
                 self.dispatch_handlers(self.on_connect_failed, e)
                 await asyncio.sleep(self.reconnect_delay)
                 continue
@@ -345,11 +340,9 @@ class Plugin(PluginAPI):
             try:
                 await self.authenticate()
             except Exception as e:
-                if self.stopped:
-                    break
                 self.dispatch_handlers(self.on_authenticate_failed, e)
                 if isinstance(e, APIError) and e.data.error_id in _FATAL_AUTH_ERROR_IDS:
-                    self.stopped = True
+                    self._stopped = True
                 try:
                     await self._disconnect(CONNECTION_LOST_MESSAGE)
                 except Exception as disconnect_error:
@@ -357,7 +350,7 @@ class Plugin(PluginAPI):
                         self.on_disconnect_failed,
                         disconnect_error,
                     )
-                if self.stopped:
+                if self._stopped:
                     break
                 await asyncio.sleep(self.reconnect_delay)
                 continue

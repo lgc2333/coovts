@@ -60,9 +60,9 @@ strings, which is how you answer "what did we actually send and receive".
 
 - `await plugin.run()` starts the supervisor task and returns it. Calling it while it is running
   raises `RuntimeError`.
-- `await plugin.stop()` does four things: sets `stopped`, **cancels and awaits every handler still
-  running**, closes the socket (pending requests end as `CancelledError`), and cancels the
-  supervisor.
+- `await plugin.stop()` marks the plugin stopped (`plugin.state` becomes `STOPPED`), **cancels and
+  awaits every handler still running**, closes the socket (pending requests end as
+  `CancelledError`), and cancels the supervisor.
 - So a handler must tolerate cancellation: swallowing or blocking on `CancelledError` keeps the whole
   program from exiting. See [ADR-0006](../../adr/0006-handler-dispatch-is-fire-and-forget.md).
 - A teardown that fails during `stop()` reaches the caller of `stop()`; a disconnect the reconnect

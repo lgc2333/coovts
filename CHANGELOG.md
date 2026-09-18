@@ -26,6 +26,8 @@ on PyPI yet.
   nothing at all ([ADR-0011](./docs/adr/0011-dependency-set.md)).
 - A disconnect the plugin performs on its own reports a refusing close to the new
   `on_disconnect_failed` hook.
+- `Plugin.stopped` is gone: the supervisor stops by being cancelled, so `await plugin.stop()` is the
+  way to stop it and `plugin.state` is what to read.
 - `call_api` and `subscribe_event` are generated into a stub from the models, with CI failing on
   drift; `handle_event` is a generic method on `Plugin`.
 - Added a pytest suite replayed against frames captured from a real VTube Studio.
