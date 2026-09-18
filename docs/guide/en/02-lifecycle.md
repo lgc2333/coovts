@@ -1,0 +1,94 @@
+# Connection and lifecycle
+
+> [简体中文](../zh-cn/02-lifecycle.md)
+
+## The state machine
+
+`plugin.state` is one of five values. The happy path is a straight line, and every failure comes back
+through `DISCONNECTED`, which is the state a plugin waits in before its next attempt:
+
+```mermaid
+flowchart LR
+    STOPPED -->|run| DISCONNECTED
+    DISCONNECTED -->|attempt| CONNECTING
+    CONNECTING -->|connected| AUTHENTICATING
+    AUTHENTICATING -->|authenticated| AUTHENTICATED
+    AUTHENTICATED -.->|anything fails| DISCONNECTED
+```
+
+| From             | What happened                       | To                                            | Hook                     |
+| ---------------- | ----------------------------------- | --------------------------------------------- | ------------------------ |
+| `STOPPED`        | `run()`                             | `DISCONNECTED`                                | —                        |
+| `DISCONNECTED`   | the next attempt starts             | `CONNECTING`                                  | `on_connecting`          |
+| `CONNECTING`     | the socket is up                    | `AUTHENTICATING`                              | `on_connected`           |
+| `CONNECTING`     | connect failed                      | `DISCONNECTED`, retry after `reconnect_delay` | `on_connect_failed`      |
+| `AUTHENTICATING` | authenticated                       | `AUTHENTICATED`                               | `on_authenticated`       |
+| `AUTHENTICATING` | authentication failed               | `DISCONNECTED`, retry after `reconnect_delay` | `on_authenticate_failed` |
+| `AUTHENTICATING` | refused in a way a retry cannot fix | `STOPPED`                                     | `on_authenticate_failed` |
+| `AUTHENTICATED`  | the connection dropped              | `DISCONNECTED`, retry after `reconnect_delay` | `on_connection_closed`   |
+| any              | `stop()`                            | `STOPPED`                                     | —                        |
+
+The one distinction worth remembering is `STOPPED` versus `DISCONNECTED`: the first means "this will
+not come back on its own" (someone called `stop()`, or authentication failed in a way a retry cannot
+fix), the second means "a reconnect is coming". See [When things fail](./05-failures.md).
+
+## The hooks
+
+Every hook is a `Hook` object registered with `@plugin.on_xxx`. A hook takes several handlers and
+**starts** them in registration order; they are tasks, so completion order is not guaranteed.
+
+| Hook                          | Fires when                                                  | Arguments      |
+| ----------------------------- | ----------------------------------------------------------- | -------------- |
+| `on_connecting`               | Before every connect attempt, reconnects included           | —              |
+| `on_connected`                | The socket is up, before authentication                     | —              |
+| `on_connect_failed`           | `connect` failed (a retry follows after a delay)            | `e: Exception` |
+| `on_connection_closed`        | The receive loop ended on an exception                      | `e: Exception` |
+| `on_parse_data_error`         | A frame failed to parse (the envelope, or an event payload) | `raw, e`       |
+| `on_authentication_token_got` | A token was just obtained                                   | `token: str`   |
+| `on_authenticated`            | Authentication succeeded (**once per session**)             | —              |
+| `on_authenticate_failed`      | Authentication failed                                       | `e: Exception` |
+| `on_handler_run_failed`       | One of your handlers raised                                 | `e: Exception` |
+| `on_recv_raw`                 | Any frame arrived, before parsing                           | `raw`          |
+| `on_before_send_raw`          | A request is about to go out                                | `payload: str` |
+
+`on_recv_raw` and `on_before_send_raw` are the packet-capture pair: they hand you the raw JSON
+strings, which is how you answer "what did we actually send and receive".
+
+## `run()` and `stop()`
+
+- `await plugin.run()` starts the supervisor task and returns it. Calling it while it is running
+  raises `RuntimeError`.
+- `await plugin.stop()` does four things: sets `stopped`, **cancels and awaits every handler still
+  running**, closes the socket (pending requests end as `CancelledError`), and cancels the
+  supervisor.
+- So a handler must tolerate cancellation: swallowing or blocking on `CancelledError` keeps the whole
+  program from exiting. See [ADR-0006](../../adr/0006-handler-dispatch-is-fire-and-forget.md).
+- After `stop()` you may `run()` again; it goes through connect and authenticate from the top.
+
+## Reconnect semantics
+
+One supervisor task loops forever: connect, authenticate, receive until the socket fails, wait
+`reconnect_delay`, repeat. **Fixed delay, unlimited attempts, no backoff, no jitter**;
+`reconnect_delay` defaults to 5 seconds. A failed connect and a failed authentication go through the
+same loop, and since an attempt is a loopback call, backoff would buy nothing. The reasoning is in
+[ADR-0007](../../adr/0007-reconnect-is-a-fixed-delay-loop.md).
+
+Two consequences for your code:
+
+1. `on_authenticated` fires **again** after a reconnect, which is why per-session setup lives there.
+2. Requests in flight are never resumed or re-sent; see
+   [Requests](./03-requests.md#what-happens-to-pending-requests-on-a-disconnect).
+
+## Where to put what
+
+| You want to                                   | Put it in                        |
+| --------------------------------------------- | -------------------------------- |
+| Read config, build objects, set up logging    | module level or `main()`         |
+| Subscribe to events, create custom parameters | `on_authenticated` (per session) |
+| Fetch a model or item list once               | `on_authenticated` (per session) |
+| Do work when an event arrives                 | the handler registered for it    |
+| Clean up                                      | after `stop()` returns           |
+
+## Next
+
+[Requests](./03-requests.md) · [Events](./04-events.md) · [When things fail](./05-failures.md)
