@@ -15,7 +15,6 @@ coovts/
   plugin.py            Plugin: connect/auth/recv loops, hooks, event dispatch
   request.py           request-id <-> future correlation
   errors.py            exception hierarchy
-  log.py               optional loguru shim — logging must not be a hard dependency
   utils/
     common.py          run_sync
     enum.py            RawStrEnum: a `StrEnum` whose `auto()` keeps the member name

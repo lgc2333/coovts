@@ -18,14 +18,9 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "cookit[pydantic]>=0.14.1",
     "pydantic>=2.13.5",
     "websockets>=17.1",
 ]
-
-[project.optional-dependencies]
-log = ["cookit[loguru]>=0.14.1", "loguru>=0.7.3"]
-all = ["coovts[log]"]
 
 [project.urls]
 Homepage = "https://github.com/lgc2333/coovts"
@@ -34,7 +29,6 @@ Issues = "https://github.com/lgc2333/coovts/issues"
 
 [dependency-groups]
 dev = [
-    "coovts[all]",
     "basedpyright>=1.40.1",
     "hatchling>=1.32.3",
     "ruff>=0.16.8",
