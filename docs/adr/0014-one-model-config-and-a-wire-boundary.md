@@ -4,6 +4,8 @@
 
 **Supersedes**: ADR-0002 (validation is asymmetric)
 
+**Amends**: ADR-0012 (the public symbols it lists for `coovts.types.shared`)
+
 Every payload model inherits `VTSBaseModel`, whose only job is `vts_base_model_config`: camelCase
 aliases generated from the field names, `validate_by_alias=False` and `serialize_by_alias=True`.
 One config for the whole library replaces the request/response pair ADR-0002 introduced, so the
@@ -26,8 +28,8 @@ rather than guessed at.
 
 - `with_request_model_config`, `with_response_model_config`, `request_model_config` and
   `response_model_config` are gone; a model is a `VTSBaseModel` subclass, which is also the shape
-  pydantic documents. `VTSBaseModel` and `vts_base_model_config` take their place on the public surface
-  (ADR-0012).
+  pydantic documents. ADR-0012's public surface for `coovts.types.shared` therefore reads
+  `VTSBaseModel` and `vts_base_model_config` where it named those config helpers.
 - Building a payload from its wire keys, or validating one by hand, now needs `by_alias=True`; the
   three boundaries above are where the library passes it. Field names still work there too, since
   the config accepts them, which costs nothing: VTube Studio only ever sends aliases.

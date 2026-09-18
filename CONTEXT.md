@@ -47,6 +47,12 @@ The deadline, per request, after which a pending request is abandoned; an expire
 `RequestTimeout`. A timeout of `0` or `None` means "wait forever", not "fail immediately".
 _Avoid_: Deadline, TTL
 
+**Fatal authentication error**:
+An authentication failure that another attempt cannot fix — VTube Studio has already decided (the
+user refused, or the request, plugin or token is invalid). Its counterpart is a transport failure,
+which another attempt may well fix.
+_Avoid_: Auth error, Fatal error
+
 ### Wire layer
 
 **Envelope**:
@@ -87,6 +93,11 @@ _Avoid_: Override, Exception
 The typed signatures of `call_api` and `handle_event`, generated from the request and event models
 into a stub file. Derived from the models, never edited by hand.
 _Avoid_: Stub, Interface, Typing
+
+**Constant table**:
+A table of VTube Studio's own identifiers (error IDs, restricted keys, hotkey actions,
+post-processing effects and their configs), transcribed from its source into `coovts/types/consts`.
+_Avoid_: Constants, Magic values, Lookup
 
 ### VTube Studio (upstream)
 
