@@ -1,6 +1,4 @@
 from .event import (
-    ArtMeshHit as ArtMeshHit,
-    ArtMeshHitInfo as ArtMeshHitInfo,
     HotkeyTriggeredEventConfig as HotkeyTriggeredEventConfig,
     HotkeyTriggeredEventData as HotkeyTriggeredEventData,
     ItemEventConfig as ItemEventConfig,
@@ -18,7 +16,6 @@ from .event import (
     ModelOutlineEventConfig as ModelOutlineEventConfig,
     ModelOutlineEventData as ModelOutlineEventData,
     ModelPosition as ModelPosition,
-    Point2D as Point2D,
     TestEventConfig as TestEventConfig,
     TestEventData as TestEventData,
     TrackingStatusChangedEventConfig as TrackingStatusChangedEventConfig,

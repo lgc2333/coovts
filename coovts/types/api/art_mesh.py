@@ -1,4 +1,6 @@
-from pydantic import BaseModel
+from typing import Annotated
+
+from pydantic import BaseModel, Field
 
 from ..shared import with_request_model_config, with_response_model_config
 
@@ -60,3 +62,53 @@ class ArtMeshSelectionResponse(BaseModel):
     success: bool
     active_art_meshes: list[str]
     inactive_art_meshes: list[str]
+
+
+@with_response_model_config
+class Point2D(BaseModel):
+    x: float
+    y: float
+
+
+@with_response_model_config
+class ArtMeshHitInfo(BaseModel):
+    model_id: Annotated[str, Field(alias="modelID")]
+    art_mesh_id: Annotated[str, Field(alias="artMeshID")]
+    angle: float
+    size: float
+    vertex_id1: Annotated[int, Field(alias="vertexID1")]
+    vertex_id2: Annotated[int, Field(alias="vertexID2")]
+    vertex_id3: Annotated[int, Field(alias="vertexID3")]
+    vertex_weight1: float
+    vertex_weight2: float
+    vertex_weight3: float
+
+
+@with_response_model_config
+class ArtMeshHit(BaseModel):
+    art_mesh_order: int
+    is_masked: bool
+    hit_info: ArtMeshHitInfo
+
+
+@with_request_model_config
+class ArtMeshAtPositionRequest(BaseModel):
+    """Only available on the public beta branch of VTube Studio."""
+
+    x: float
+    y: float
+    visualize: float = 0
+
+
+@with_response_model_config
+class ArtMeshAtPositionResponse(BaseModel):
+    """Only available on the public beta branch of VTube Studio."""
+
+    model_loaded: bool
+    loaded_model_id: Annotated[str, Field(alias="loadedModelID")]
+    loaded_model_name: str
+    model_was_hit: bool
+    checked_position: Point2D
+    window_size: Point2D
+    art_mesh_hit_count: int
+    art_mesh_hits: list[ArtMeshHit]

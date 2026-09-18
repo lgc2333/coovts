@@ -20,6 +20,9 @@ type AngleRelativeTo = Literal[
 ]
 type SizeRelativeTo = Literal["RelativeToWorld", "RelativeToCurrentItemSize"]
 type VertexPinType = Literal["Provided", "Center", "Random"]
+type ItemSortSplitPoint = Literal["Unchanged", "UseArtMeshID"]
+type ItemSortFrontOrder = Literal["Unchanged", "UseArtMeshID", "UseSpecialID"]
+type ItemSortBackOrder = Literal["Unchanged", "UseArtMeshID", "UseSpecialID"]
 
 
 @with_request_model_config
@@ -199,3 +202,33 @@ class ItemPinResponse(BaseModel):
     is_pinned: bool
     item_instance_id: Annotated[str, Field(alias="itemInstanceID")]
     item_file_name: str
+
+
+@with_request_model_config
+class ItemSortRequest(BaseModel):
+    """Sort and pin an item between the layers of the main model.
+
+    The three mode fields decide how `split_at`, `within_model_order_front` and
+    `within_model_order_back` are read: `Unchanged` leaves the matching position alone, so its
+    value field is ignored.
+    """
+
+    item_instance_id: Annotated[str, Field(alias="itemInstanceID")]
+    front_on: bool = False
+    back_on: bool = False
+    set_split_point: ItemSortSplitPoint
+    set_front_order: ItemSortFrontOrder
+    set_back_order: ItemSortBackOrder
+    split_at: str | None = None
+    within_model_order_front: str | None = None
+    within_model_order_back: str | None = None
+
+
+@with_response_model_config
+class ItemSortResponse(BaseModel):
+    item_instance_id: Annotated[str, Field(alias="itemInstanceID")]
+    model_loaded: bool
+    model_id: Annotated[str, Field(alias="modelID")]
+    model_name: str
+    loaded_model_had_requested_front_layer: bool
+    loaded_model_had_requested_back_layer: bool

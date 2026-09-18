@@ -2,6 +2,7 @@ from typing import Annotated
 
 from pydantic import BaseModel, Field
 
+from ..api.art_mesh import ArtMeshHit, Point2D
 from ..api.model import ModelPosition
 from ..shared import with_request_model_config, with_response_model_config
 
@@ -80,39 +81,12 @@ class ModelOutlineEventConfig(BaseModel):
 
 
 @with_response_model_config
-class Point2D(BaseModel):
-    x: float
-    y: float
-
-
-@with_response_model_config
 class ModelOutlineEventData(BaseModel):
     model_name: str
     model_id: Annotated[str, Field(alias="modelID")]
     convex_hull: list[Point2D]
     convex_hull_center: Point2D
     window_size: Point2D
-
-
-@with_response_model_config
-class ArtMeshHitInfo(BaseModel):
-    model_id: Annotated[str, Field(alias="modelID")]
-    art_mesh_id: Annotated[str, Field(alias="artMeshID")]
-    angle: float
-    size: float
-    vertex_id1: Annotated[int, Field(alias="vertexID1")]
-    vertex_id2: Annotated[int, Field(alias="vertexID2")]
-    vertex_id3: Annotated[int, Field(alias="vertexID3")]
-    vertex_weight1: float
-    vertex_weight2: float
-    vertex_weight3: float
-
-
-@with_response_model_config
-class ArtMeshHit(BaseModel):
-    art_mesh_order: int
-    is_masked: bool
-    hit_info: ArtMeshHitInfo
 
 
 @with_request_model_config

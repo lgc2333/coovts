@@ -1,4 +1,8 @@
 from .art_mesh import (
+    ArtMeshAtPositionRequest as ArtMeshAtPositionRequest,
+    ArtMeshAtPositionResponse as ArtMeshAtPositionResponse,
+    ArtMeshHit as ArtMeshHit,
+    ArtMeshHitInfo as ArtMeshHitInfo,
     ArtMeshListRequest as ArtMeshListRequest,
     ArtMeshListResponse as ArtMeshListResponse,
     ArtMeshMatcher as ArtMeshMatcher,
@@ -7,6 +11,7 @@ from .art_mesh import (
     ColorData as ColorData,
     ColorTintRequest as ColorTintRequest,
     ColorTintResponse as ColorTintResponse,
+    Point2D as Point2D,
 )
 from .auth import (
     AuthenticationRequest as AuthenticationRequest,
@@ -46,6 +51,8 @@ from .info import (
     VTSFolderInfoResponse as VTSFolderInfoResponse,
 )
 from .item import (
+    AngleRelativeTo as AngleRelativeTo,
+    FadeMode as FadeMode,
     ItemAnimationControlRequest as ItemAnimationControlRequest,
     ItemAnimationControlResponse as ItemAnimationControlResponse,
     ItemFileInfo as ItemFileInfo,
@@ -61,9 +68,16 @@ from .item import (
     ItemPinInfo as ItemPinInfo,
     ItemPinRequest as ItemPinRequest,
     ItemPinResponse as ItemPinResponse,
+    ItemSortBackOrder as ItemSortBackOrder,
+    ItemSortFrontOrder as ItemSortFrontOrder,
+    ItemSortRequest as ItemSortRequest,
+    ItemSortResponse as ItemSortResponse,
+    ItemSortSplitPoint as ItemSortSplitPoint,
     ItemUnloadRequest as ItemUnloadRequest,
     ItemUnloadResponse as ItemUnloadResponse,
+    SizeRelativeTo as SizeRelativeTo,
     UnloadedItem as UnloadedItem,
+    VertexPinType as VertexPinType,
 )
 from .model import (
     AvailableModelsRequest as AvailableModelsRequest,
@@ -96,6 +110,7 @@ from .param import (
     ParameterCreationResponse as ParameterCreationResponse,
     ParameterDeletionRequest as ParameterDeletionRequest,
     ParameterDeletionResponse as ParameterDeletionResponse,
+    ParameterMode as ParameterMode,
     ParameterValue as ParameterValue,
     ParameterValueRequest as ParameterValueRequest,
     ParameterValueResponse as ParameterValueResponse,
