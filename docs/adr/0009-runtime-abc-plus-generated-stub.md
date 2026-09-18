@@ -19,7 +19,7 @@ runtime resolves, and the runtime stays small enough to read in one sitting.
 - The stub is derived state: regenerate it with `poe gen-api` after touching `types/api` or
   `types/event`, and never edit it by hand.
 - Generation walks the `api` and `event` package namespaces, so a new model module that is not
-  re-exported from the package `__init__` produces no overload *and* is unresolvable at runtime
+  re-exported from the package `__init__` produces no overload _and_ is unresolvable at runtime
   (see ADR-0001).
 - Drift is a red build, not a user's surprise: the generator has a `--check` mode that renders the
   stub in memory and fails on any difference from the file on disk, and CI runs it on every push.

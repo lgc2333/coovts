@@ -8,7 +8,7 @@ every wire model, `websockets` is the transport, and `cookit` supplies `model_wi
 optional `log` extra (which also pulls `cookit[loguru]`), and `coovts/log.py` imports it lazily and
 falls back to a no-op logger when it is missing. There are no version ceilings.
 
-Pydantic is not just a convenience here: the wire layer's behaviour *is* Pydantic's behaviour. The
+Pydantic is not just a convenience here: the wire layer's behaviour _is_ Pydantic's behaviour. The
 asymmetric validation policy of ADR-0002 and the wholesale config injection of ADR-0003 are
 Pydantic v2 features (`validate_by_alias`, `serialize_by_alias`, `ConfigDict` inheritance), and the
 models are the public type surface users read in their editor.

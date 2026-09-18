@@ -24,8 +24,7 @@ UDP server discovery and the unsolicited UDP `VTubeStudioAPIStateBroadcast`.
   ships without a version bump of its own. Against a stable VTS 1.35.10 the request is answered with
   `APIError` id 7 (`Unknown messageType`), and the three beta events the same way with id 950
   (`Unknown API event type`) — which is what the beta marking warns a caller about.
-- UDP discovery is unimplemented, so the endpoint is configured by hand instead of discovered on port
-  47779. The unsolicited `VTubeStudioAPIStateBroadcast` is likewise unmodelled: VTS broadcasts it
+- UDP discovery is unimplemented, so the endpoint is configured by hand instead of discovered on port 47779. The unsolicited `VTubeStudioAPIStateBroadcast` is likewise unmodelled: VTS broadcasts it
   over UDP, which the library never listens on, so it cannot reach a plugin at all; a frame of that
   type sent over the WebSocket by hand would decode as an ordinary envelope and then be dropped like
   any other frame with no handler and no matching request.

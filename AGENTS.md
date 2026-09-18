@@ -75,6 +75,8 @@ Only `poe` runs on the project venv; use `uv run` / `uv run --with` for anything
 
 ### Code Flavor Rules
 
+- Format documentation and structured data with prettier when it is available: `pnpx prettier -cw .`.
+
 - Model fields and enum members are documented with a docstring written below them, never with a `#` comment.
 
 - Payload models inherit `VTSBaseModel` (one shared `wire_model_config`), and frames coming off the wire are validated with `by_alias=True` — the config alone builds models from field names.
