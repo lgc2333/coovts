@@ -12,7 +12,6 @@ from pydantic import BaseModel
 from websockets.exceptions import WebSocketException
 
 from .errors import APIError, AuthenticationFailedError, NetworkError
-from .log import warning_suppress
 from .request import RequestManager
 from .types import (
     BaseRequest,
@@ -34,6 +33,7 @@ type ConnectingHandler = Callable[[], C[Any]]
 type ConnectedHandler = Callable[[], C[Any]]
 type ConnectFailedHandler = Callable[[Exception], C[Any]]
 type ConnectionClosedHandler = Callable[[Exception], C[Any]]
+type DisconnectFailedHandler = Callable[[Exception], C[Any]]
 type ParseDataErrorHandler = Callable[[str | bytes, Exception], C[Any]]
 type AuthenticationTokenGotHandler = Callable[[str], C[Any]]
 type AuthenticatedHandler = Callable[[], C[Any]]
@@ -131,6 +131,7 @@ class Plugin(PluginAPI):
         self.on_connected: Hook[ConnectedHandler] = Hook()
         self.on_connect_failed: Hook[ConnectFailedHandler] = Hook()
         self.on_connection_closed: Hook[ConnectionClosedHandler] = Hook()
+        self.on_disconnect_failed: Hook[DisconnectFailedHandler] = Hook()
         self.on_parse_data_error: Hook[ParseDataErrorHandler] = Hook()
         self.on_authentication_token_got: Hook[AuthenticationTokenGotHandler] = Hook()
         self.on_authenticated: Hook[AuthenticatedHandler] = Hook()
@@ -253,10 +254,12 @@ class Plugin(PluginAPI):
         self._recv_task = None
         self._state = PluginState.STOPPED if self.stopped else PluginState.DISCONNECTED
         self.req_manager.reset(pending_error)
-        if client and (client.close_code is None):
-            await client.close()
-        if task and (not task.done()):
-            task.cancel()
+        try:
+            if client and (client.close_code is None):
+                await client.close()
+        finally:
+            if task and (not task.done()):
+                task.cancel()
 
     async def reconnect(self):
         if self._state is PluginState.CONNECTING:
@@ -313,8 +316,13 @@ class Plugin(PluginAPI):
                 self.dispatch_handlers(self.on_authenticate_failed, e)
                 if isinstance(e, APIError) and e.data.error_id in _FATAL_AUTH_ERROR_IDS:
                     self.stopped = True
-                with warning_suppress("Disconnect failed"):
+                try:
                     await self._disconnect(CONNECTION_LOST_MESSAGE)
+                except Exception as disconnect_error:
+                    self.dispatch_handlers(
+                        self.on_disconnect_failed,
+                        disconnect_error,
+                    )
                 if self.stopped:
                     break
                 await asyncio.sleep(self.reconnect_delay)

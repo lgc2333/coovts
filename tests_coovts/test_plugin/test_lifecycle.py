@@ -5,12 +5,13 @@ import asyncio
 import pytest
 
 from coovts.plugin import PluginState
+from coovts.types.consts import ErrorID
 from coovts.types.event import ModelLoadedEventData
 
 from ..utils.async_helpers import finish, spin_until, tick
-from ..utils.frames import envelope
+from ..utils.frames import envelope, sent_frame
 from ..utils.plugin_fake import FakeTransport, FlakyTransport, install_transport
-from ..utils.plugin_fixtures import handshake, make_plugin
+from ..utils.plugin_fixtures import TOKEN, handshake, make_plugin
 
 
 async def test_failed_connect_reports_transport_error_and_retries(
@@ -110,5 +111,49 @@ async def test_stop_cancels_running_handlers(monkeypatch: pytest.MonkeyPatch) ->
         await asyncio.wait_for(plugin.stop(), 1)
 
         assert cancelled == [True]
+    finally:
+        await finish(plugin, run_task)
+
+
+async def test_failed_disconnect_reaches_its_hook(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A teardown the plugin runs on its own reports a refusing close to `on_disconnect_failed`."""
+    transport = FakeTransport()
+    install_transport(monkeypatch, transport)
+    plugin = make_plugin(authentication_token=TOKEN, reconnect_delay=0)
+    connection = transport.connection
+    failures: list[Exception] = []
+    close_error = OSError("the socket refused to close")
+
+    @plugin.on_disconnect_failed
+    async def on_failed(failure: Exception) -> None:
+        failures.append(failure)
+
+    async def refusing_close() -> None:
+        raise close_error
+
+    run_task = plugin.run()
+    try:
+        await spin_until(lambda: len(connection.sent) >= 1, "authentication request")
+        # the teardown must cancel the running receive task even though the close refused
+        recv_task = plugin._recv_task  # noqa: SLF001
+        monkeypatch.setattr(connection, "close", refusing_close)
+
+        request = sent_frame(connection, 0)
+        connection.feed(
+            envelope(
+                "APIError",
+                {"errorID": ErrorID.TokenRequestDenied, "message": "denied"},
+                request["requestID"],
+            ),
+        )
+
+        await asyncio.wait_for(run_task, 5)
+
+        assert failures == [close_error]
+        assert plugin.state is PluginState.STOPPED
+        assert recv_task is not None
+        await spin_until(recv_task.cancelled, "the receive task to be cancelled")
     finally:
         await finish(plugin, run_task)
