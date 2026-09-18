@@ -17,10 +17,7 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
     "Typing :: Typed",
 ]
-dependencies = [
-    "pydantic>=2.13.5",
-    "websockets>=17.1",
-]
+dependencies = ["pydantic>=2.13.5", "websockets>=17.1"]
 
 [project.urls]
 Homepage = "https://github.com/lgc2333/coovts"
@@ -29,6 +26,7 @@ Issues = "https://github.com/lgc2333/coovts/issues"
 
 [dependency-groups]
 dev = [
+    "loguru>=0.7.3",
     "basedpyright>=1.40.1",
     "hatchling>=1.32.3",
     "ruff>=0.16.8",
