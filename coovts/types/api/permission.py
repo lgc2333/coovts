@@ -5,9 +5,7 @@ https://github.com/DenchiSoft/VTubeStudio/blob/master/Permissions/README.md
 
 from typing import Literal
 
-from pydantic import BaseModel
-
-from ..shared import with_request_model_config, with_response_model_config
+from ..shared import VTSBaseModel
 
 type PermissionName = Literal["LoadCustomImagesAsItems", "ControlNDISettings"]
 """Permission names upstream documents today.
@@ -17,16 +15,14 @@ permission name on the wire stays a plain `str`.
 """
 
 
-@with_request_model_config
-class PermissionRequest(BaseModel):
+class PermissionRequest(VTSBaseModel):
     """Request a permission for this plugin, or only list the ones it already has."""
 
     requested_permission: str = ""
     """Permission to request; an empty string asks for the list without a user popup"""
 
 
-@with_response_model_config
-class PermissionInfo(BaseModel):
+class PermissionInfo(VTSBaseModel):
     """One permission VTube Studio offers, with the grant state of the asking plugin."""
 
     name: str
@@ -35,8 +31,7 @@ class PermissionInfo(BaseModel):
     """Whether this plugin currently has that permission"""
 
 
-@with_response_model_config
-class PermissionResponse(BaseModel):
+class PermissionResponse(VTSBaseModel):
     """All permissions VTube Studio offers, and how a requested permission was answered."""
 
     grant_success: bool = False

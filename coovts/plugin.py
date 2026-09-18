@@ -206,7 +206,7 @@ class Plugin(PluginAPI):
         self.dispatch_handlers(self.on_recv_raw, raw)
 
         try:
-            resp = BaseResponse.model_validate_json(raw)
+            resp = BaseResponse.model_validate_json(raw, by_alias=True)
         except Exception as e:
             self.dispatch_handlers(self.on_parse_data_error, raw, e)
             return
@@ -221,7 +221,7 @@ class Plugin(PluginAPI):
         if resp.message_type in self.event_handlers:
             for handler_info in self.event_handlers[resp.message_type]:
                 try:
-                    data = handler_info.model.model_validate(resp.data)
+                    data = handler_info.model.model_validate(resp.data, by_alias=True)
                 except Exception as e:
                     self.dispatch_handlers(self.on_parse_data_error, raw, e)
                 else:

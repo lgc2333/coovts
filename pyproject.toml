@@ -17,13 +17,13 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "cookit[pydantic]>=0.14.0",
+    "cookit[pydantic]>=0.14.1",
     "pydantic>=2.13.5",
     "websockets>=17.1",
 ]
 
 [project.optional-dependencies]
-log = ["cookit[loguru]>=0.14.0", "loguru>=0.7.3"]
+log = ["cookit[loguru]>=0.14.1", "loguru>=0.7.3"]
 all = ["coovts[log]"]
 
 [project.urls]
@@ -33,7 +33,8 @@ Issues = "https://github.com/lgc2333/coovts/issues"
 
 [dependency-groups]
 dev = [
-    "loguru>=0.7.3",
+    # the `log` extra has to be installed for the type check to see the optional loguru import
+    "coovts[log]",
     "basedpyright>=1.40.1",
     "hatchling>=1.32.3",
     "ruff>=0.16.8",
@@ -77,6 +78,9 @@ line-ending = "lf"
 [tool.ruff.lint]
 ignore = [
     "B008",
+    # mutable defaults are what pydantic list fields look like, and ruff only recognises a base
+    # class literally named `BaseModel`, not `VTSBaseModel`
+    "RUF012",
     "B905",
     "COM812",
     "E501",

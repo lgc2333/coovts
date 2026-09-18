@@ -1,33 +1,29 @@
 from typing import Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
-from ..shared import with_request_model_config, with_response_model_config
+from ..shared import VTSBaseModel
 
 
-@with_request_model_config
-class PhysicsOverride(BaseModel):
+class PhysicsOverride(VTSBaseModel):
     id: str
     value: float
     set_base_value: bool
     override_seconds: float
 
 
-@with_response_model_config
-class PhysicsGroup(BaseModel):
+class PhysicsGroup(VTSBaseModel):
     group_id: Annotated[str, Field(alias="groupID")]
     group_name: str
     strength_multiplier: float
     wind_multiplier: float
 
 
-@with_request_model_config
-class GetCurrentModelPhysicsRequest(BaseModel):
+class GetCurrentModelPhysicsRequest(VTSBaseModel):
     pass
 
 
-@with_response_model_config
-class GetCurrentModelPhysicsResponse(BaseModel):
+class GetCurrentModelPhysicsResponse(VTSBaseModel):
     model_loaded: bool
     model_name: str
     model_id: Annotated[str, Field(alias="modelID")]
@@ -42,12 +38,10 @@ class GetCurrentModelPhysicsResponse(BaseModel):
     physics_groups: list[PhysicsGroup]
 
 
-@with_request_model_config
-class SetCurrentModelPhysicsRequest(BaseModel):
+class SetCurrentModelPhysicsRequest(VTSBaseModel):
     strength_overrides: list[PhysicsOverride] = []
     wind_overrides: list[PhysicsOverride] = []
 
 
-@with_response_model_config
-class SetCurrentModelPhysicsResponse(BaseModel):
+class SetCurrentModelPhysicsResponse(VTSBaseModel):
     pass

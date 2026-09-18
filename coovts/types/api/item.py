@@ -1,8 +1,8 @@
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
-from ..shared import with_request_model_config, with_response_model_config
+from ..shared import VTSBaseModel
 
 type FadeMode = Literal[
     "linear",
@@ -25,8 +25,7 @@ type ItemSortFrontOrder = Literal["Unchanged", "UseArtMeshID", "UseSpecialID"]
 type ItemSortBackOrder = Literal["Unchanged", "UseArtMeshID", "UseSpecialID"]
 
 
-@with_request_model_config
-class ItemPinInfo(BaseModel):
+class ItemPinInfo(VTSBaseModel):
     model_id: Annotated[str, Field(alias="modelID")] = ""
     art_mesh_id: Annotated[str, Field(alias="artMeshID")] = ""
     angle: float
@@ -39,8 +38,7 @@ class ItemPinInfo(BaseModel):
     vertex_weight3: float = 0
 
 
-@with_response_model_config
-class ItemInstanceInfo(BaseModel):
+class ItemInstanceInfo(VTSBaseModel):
     file_name: str
     instance_id: Annotated[str, Field(alias="instanceID")]
     order: int
@@ -60,28 +58,24 @@ class ItemInstanceInfo(BaseModel):
     from_workshop: bool
 
 
-@with_response_model_config
-class ItemFileInfo(BaseModel):
+class ItemFileInfo(VTSBaseModel):
     file_name: str
     type: str
     loaded_count: int
 
 
-@with_response_model_config
-class UnloadedItem(BaseModel):
+class UnloadedItem(VTSBaseModel):
     instance_id: Annotated[str, Field(alias="instanceID")]
     file_name: str
 
 
-@with_response_model_config
-class ItemMoveResult(BaseModel):
+class ItemMoveResult(VTSBaseModel):
     item_instance_id: Annotated[str, Field(alias="itemInstanceID")]
     success: bool
     error_id: Annotated[int, Field(alias="errorID")]
 
 
-@with_request_model_config
-class ItemListRequest(BaseModel):
+class ItemListRequest(VTSBaseModel):
     include_available_spots: bool = False
     include_item_instances_in_scene: bool = False
     include_available_item_files: bool = False
@@ -92,8 +86,7 @@ class ItemListRequest(BaseModel):
     ] = None
 
 
-@with_response_model_config
-class ItemListResponse(BaseModel):
+class ItemListResponse(VTSBaseModel):
     items_in_scene_count: int
     total_items_allowed_count: int
     can_load_items_right_now: bool
@@ -102,8 +95,7 @@ class ItemListResponse(BaseModel):
     available_item_files: list[ItemFileInfo] = []
 
 
-@with_request_model_config
-class ItemLoadRequest(BaseModel):
+class ItemLoadRequest(VTSBaseModel):
     file_name: str
     position_x: float
     position_y: float
@@ -123,14 +115,12 @@ class ItemLoadRequest(BaseModel):
     custom_data_ask_timer: float = -1
 
 
-@with_response_model_config
-class ItemLoadResponse(BaseModel):
+class ItemLoadResponse(VTSBaseModel):
     instance_id: Annotated[str, Field(alias="instanceID")]
     file_name: str
 
 
-@with_request_model_config
-class ItemUnloadRequest(BaseModel):
+class ItemUnloadRequest(VTSBaseModel):
     unload_all_in_scene: bool = False
     unload_all_loaded_by_this_plugin: bool = False
     allow_unloading_items_loaded_by_user_or_other_plugins: bool = True
@@ -138,13 +128,11 @@ class ItemUnloadRequest(BaseModel):
     file_names: list[str] = []
 
 
-@with_response_model_config
-class ItemUnloadResponse(BaseModel):
+class ItemUnloadResponse(VTSBaseModel):
     unloaded_items: list[UnloadedItem]
 
 
-@with_request_model_config
-class ItemAnimationControlRequest(BaseModel):
+class ItemAnimationControlRequest(VTSBaseModel):
     item_instance_id: Annotated[str, Field(alias="itemInstanceID")]
     framerate: float = -1
     frame: int = -1
@@ -156,14 +144,12 @@ class ItemAnimationControlRequest(BaseModel):
     animation_play_state: bool = True
 
 
-@with_response_model_config
-class ItemAnimationControlResponse(BaseModel):
+class ItemAnimationControlResponse(VTSBaseModel):
     frame: int
     animation_playing: bool
 
 
-@with_request_model_config
-class ItemMoveInfo(BaseModel):
+class ItemMoveInfo(VTSBaseModel):
     item_instance_id: Annotated[str, Field(alias="itemInstanceID")]
     time_in_seconds: float
     fade_mode: FadeMode = "linear"
@@ -177,18 +163,15 @@ class ItemMoveInfo(BaseModel):
     user_can_stop: bool = True
 
 
-@with_request_model_config
-class ItemMoveRequest(BaseModel):
+class ItemMoveRequest(VTSBaseModel):
     items_to_move: list[ItemMoveInfo]
 
 
-@with_response_model_config
-class ItemMoveResponse(BaseModel):
+class ItemMoveResponse(VTSBaseModel):
     moved_items: list[ItemMoveResult]
 
 
-@with_request_model_config
-class ItemPinRequest(BaseModel):
+class ItemPinRequest(VTSBaseModel):
     pin: bool
     item_instance_id: Annotated[str, Field(alias="itemInstanceID")]
     angle_relative_to: AngleRelativeTo = "RelativeToWorld"
@@ -197,15 +180,13 @@ class ItemPinRequest(BaseModel):
     pin_info: ItemPinInfo
 
 
-@with_response_model_config
-class ItemPinResponse(BaseModel):
+class ItemPinResponse(VTSBaseModel):
     is_pinned: bool
     item_instance_id: Annotated[str, Field(alias="itemInstanceID")]
     item_file_name: str
 
 
-@with_request_model_config
-class ItemSortRequest(BaseModel):
+class ItemSortRequest(VTSBaseModel):
     """Sort and pin an item between the layers of the main model.
 
     The three mode fields decide how `split_at`, `within_model_order_front` and
@@ -224,8 +205,7 @@ class ItemSortRequest(BaseModel):
     within_model_order_back: str | None = None
 
 
-@with_response_model_config
-class ItemSortResponse(BaseModel):
+class ItemSortResponse(VTSBaseModel):
     item_instance_id: Annotated[str, Field(alias="itemInstanceID")]
     model_loaded: bool
     model_id: Annotated[str, Field(alias="modelID")]

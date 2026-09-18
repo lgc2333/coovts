@@ -17,7 +17,9 @@ class PendingRequest[M: BaseModel]:
     def resolve(self, raw: str | bytes, data: Any, *, is_error: bool) -> None:
         model: type[BaseModel] | None = APIErrorResponse if is_error else self.model
         try:
-            result = data if model is None else model.model_validate(data)
+            result = (
+                data if model is None else model.model_validate(data, by_alias=True)
+            )
         except Exception as e:
             err = ValidationError(raw, model)
             err.__cause__ = e

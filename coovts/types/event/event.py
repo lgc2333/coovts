@@ -1,55 +1,47 @@
-from typing import Annotated, Any
+from typing import Annotated
 
-from pydantic import BaseModel, Field, field_serializer
+from pydantic import Field
 
 from ..api.art_mesh import ArtMeshHit, ArtMeshHitInfo, Point2D
 from ..api.model import ModelPosition
-from ..shared import with_request_model_config, with_response_model_config
+from ..shared import VTSBaseModel
 
 
-@with_request_model_config
-class TestEventConfig(BaseModel):
+class TestEventConfig(VTSBaseModel):
+    # Not a pytest test class: `Test` is part of VTS's test event name.
     __test__ = False
-    """Not a pytest test class: `Test` is part of VTS's test event name."""
 
     test_message_for_event: str
 
 
-@with_response_model_config
-class TestEventData(BaseModel):
+class TestEventData(VTSBaseModel):
     __test__ = False
-    """Not a pytest test class: `Test` is part of VTS's test event name."""
 
     your_test_message: str
     counter: int
 
 
-@with_request_model_config
-class ModelLoadedEventConfig(BaseModel):
+class ModelLoadedEventConfig(VTSBaseModel):
     model_id: Annotated[list[str] | None, Field(alias="modelID")] = None
 
 
-@with_response_model_config
-class ModelLoadedEventData(BaseModel):
+class ModelLoadedEventData(VTSBaseModel):
     model_loaded: bool
     model_name: str
     model_id: Annotated[str, Field(alias="modelID")]
 
 
-@with_request_model_config
-class TrackingStatusChangedEventConfig(BaseModel):
+class TrackingStatusChangedEventConfig(VTSBaseModel):
     pass
 
 
-@with_response_model_config
-class TrackingStatusChangedEventData(BaseModel):
+class TrackingStatusChangedEventData(VTSBaseModel):
     face_found: bool
     left_hand_found: bool
     right_hand_found: bool
 
 
-@with_request_model_config
-class HotkeyTriggeredEventConfig(BaseModel):
+class HotkeyTriggeredEventConfig(VTSBaseModel):
     only_for_action: str | None = None
     ignore_hotkeys_triggered_by_api: Annotated[
         bool,
@@ -57,8 +49,7 @@ class HotkeyTriggeredEventConfig(BaseModel):
     ] = False
 
 
-@with_response_model_config
-class HotkeyTriggeredEventData(BaseModel):
+class HotkeyTriggeredEventData(VTSBaseModel):
     hotkey_id: Annotated[str, Field(alias="hotkeyID")]
     hotkey_name: str
     hotkey_action: str
@@ -69,25 +60,21 @@ class HotkeyTriggeredEventData(BaseModel):
     is_live2d_item: bool
 
 
-@with_request_model_config
-class ModelMovedEventConfig(BaseModel):
+class ModelMovedEventConfig(VTSBaseModel):
     pass
 
 
-@with_response_model_config
-class ModelMovedEventData(BaseModel):
+class ModelMovedEventData(VTSBaseModel):
     model_id: Annotated[str, Field(alias="modelID")]
     model_name: str
     model_position: ModelPosition
 
 
-@with_request_model_config
-class ModelOutlineEventConfig(BaseModel):
+class ModelOutlineEventConfig(VTSBaseModel):
     draw: bool = False
 
 
-@with_response_model_config
-class ModelOutlineEventData(BaseModel):
+class ModelOutlineEventData(VTSBaseModel):
     model_name: str
     model_id: Annotated[str, Field(alias="modelID")]
     convex_hull: list[Point2D]
@@ -95,13 +82,11 @@ class ModelOutlineEventData(BaseModel):
     window_size: Point2D
 
 
-@with_request_model_config
-class ModelClickedEventConfig(BaseModel):
+class ModelClickedEventConfig(VTSBaseModel):
     only_clicks_on_model: bool = True
 
 
-@with_response_model_config
-class ModelClickedEventData(BaseModel):
+class ModelClickedEventData(VTSBaseModel):
     model_loaded: bool
     loaded_model_id: Annotated[str, Field(alias="loadedModelID")]
     loaded_model_name: str
@@ -113,8 +98,7 @@ class ModelClickedEventData(BaseModel):
     art_mesh_hits: list[ArtMeshHit]
 
 
-@with_request_model_config
-class ItemEventConfig(BaseModel):
+class ItemEventConfig(VTSBaseModel):
     item_instance_ids: Annotated[
         list[str] | None,
         Field(alias="itemInstanceIDs"),
@@ -122,34 +106,29 @@ class ItemEventConfig(BaseModel):
     item_file_names: list[str] | None = None
 
 
-@with_response_model_config
-class ItemEventData(BaseModel):
+class ItemEventData(VTSBaseModel):
     item_event_type: str
     item_instance_id: Annotated[str, Field(alias="itemInstanceID")]
     item_file_name: str
     item_position: Point2D
 
 
-@with_request_model_config
-class Live2DCubismEditorConnectedEventConfig(BaseModel):
+class Live2DCubismEditorConnectedEventConfig(VTSBaseModel):
     pass
 
 
-@with_response_model_config
-class Live2DCubismEditorConnectedEventData(BaseModel):
+class Live2DCubismEditorConnectedEventData(VTSBaseModel):
     trying_to_connect: bool
     connected: bool
     should_send_parameters: bool
 
 
-@with_request_model_config
-class ModelAnimationEventConfig(BaseModel):
+class ModelAnimationEventConfig(VTSBaseModel):
     ignore_live2d_items: bool = False
     ignore_idle_animations: bool = False
 
 
-@with_response_model_config
-class ModelAnimationEventData(BaseModel):
+class ModelAnimationEventData(VTSBaseModel):
     animation_event_type: str
     animation_event_time: float
     animation_event_data: str
@@ -161,26 +140,22 @@ class ModelAnimationEventData(BaseModel):
     is_live2d_item: bool
 
 
-@with_request_model_config
-class BackgroundChangedEventConfig(BaseModel):
+class BackgroundChangedEventConfig(VTSBaseModel):
     """https://github.com/DenchiSoft/VTubeStudio/blob/master/Events/README.md#background-changed"""
 
 
-@with_response_model_config
-class BackgroundChangedEventData(BaseModel):
+class BackgroundChangedEventData(VTSBaseModel):
     """https://github.com/DenchiSoft/VTubeStudio/blob/master/Events/README.md#background-changed"""
 
     background_name: str
     """Name as shown in the background list, typically the file name without its extension."""
 
 
-@with_request_model_config
-class ModelConfigChangedEventConfig(BaseModel):
+class ModelConfigChangedEventConfig(VTSBaseModel):
     """https://github.com/DenchiSoft/VTubeStudio/blob/master/Events/README.md#model-config-modified"""
 
 
-@with_response_model_config
-class ModelConfigChangedEventData(BaseModel):
+class ModelConfigChangedEventData(VTSBaseModel):
     """https://github.com/DenchiSoft/VTubeStudio/blob/master/Events/README.md#model-config-modified"""
 
     model_id: Annotated[str, Field(alias="modelID")]
@@ -189,21 +164,18 @@ class ModelConfigChangedEventData(BaseModel):
     """`True` when the changed setting is related to hotkeys."""
 
 
-@with_request_model_config
-class PostProcessingEventConfig(BaseModel):
+class PostProcessingEventConfig(VTSBaseModel):
     """https://github.com/DenchiSoft/VTubeStudio/blob/master/Events/README.md#post-processing-event"""
 
 
-@with_response_model_config
-class PostProcessingEventData(BaseModel):
+class PostProcessingEventData(VTSBaseModel):
     """https://github.com/DenchiSoft/VTubeStudio/blob/master/Events/README.md#post-processing-event"""
 
     current_on_state: bool
     current_preset: str
 
 
-@with_request_model_config
-class ExpressionToggledEventConfig(BaseModel):
+class ExpressionToggledEventConfig(VTSBaseModel):
     """Only available on the public beta branch of VTube Studio.
 
     https://github.com/DenchiSoft/VTubeStudio/blob/master/Events/README.md#expression-activateddeactivated-event
@@ -213,8 +185,7 @@ class ExpressionToggledEventConfig(BaseModel):
     ignore_live2d_items: bool
 
 
-@with_response_model_config
-class ExpressionToggledEventData(BaseModel):
+class ExpressionToggledEventData(VTSBaseModel):
     """Only available on the public beta branch of VTube Studio.
 
     https://github.com/DenchiSoft/VTubeStudio/blob/master/Events/README.md#expression-activateddeactivated-event
@@ -232,8 +203,7 @@ class ExpressionToggledEventData(BaseModel):
     active: bool
 
 
-@with_request_model_config
-class ArtMeshTrackingPointConfig(BaseModel):
+class ArtMeshTrackingPointConfig(VTSBaseModel):
     """One point to track in an `ArtMeshTrackingEventConfig` payload."""
 
     tracking_point_id: Annotated[str, Field(alias="trackingPointID")]
@@ -243,14 +213,8 @@ class ArtMeshTrackingPointConfig(BaseModel):
     visualize: bool
     """Draws a debug circle at the tracked position in VTube Studio."""
 
-    @field_serializer("art_mesh_coords")
-    def serialize_art_mesh_coords(self, value: ArtMeshHitInfo) -> dict[str, Any]:
-        """Send the shared `ArtMeshHitInfo` with its wire aliases (`modelID`, `artMeshID`)."""
-        return value.model_dump(by_alias=True)
 
-
-@with_response_model_config
-class ArtMeshTrackingPoint(BaseModel):
+class ArtMeshTrackingPoint(VTSBaseModel):
     """One found point in an `ArtMeshTrackingEventData` payload."""
 
     tracking_point_id: Annotated[str, Field(alias="trackingPointID")]
@@ -264,8 +228,7 @@ class ArtMeshTrackingPoint(BaseModel):
     """In VTS coordinate units based on the window height."""
 
 
-@with_request_model_config
-class ArtMeshTrackingEventConfig(BaseModel):
+class ArtMeshTrackingEventConfig(VTSBaseModel):
     """Only available on the public beta branch of VTube Studio.
 
     https://github.com/DenchiSoft/VTubeStudio/blob/master/Events/README.md#track-custom-point-on-artmesh-event
@@ -276,8 +239,7 @@ class ArtMeshTrackingEventConfig(BaseModel):
     tracking_points: list[ArtMeshTrackingPointConfig]
 
 
-@with_response_model_config
-class ArtMeshTrackingEventData(BaseModel):
+class ArtMeshTrackingEventData(VTSBaseModel):
     """Only available on the public beta branch of VTube Studio.
 
     https://github.com/DenchiSoft/VTubeStudio/blob/master/Events/README.md#track-custom-point-on-artmesh-event
@@ -295,16 +257,14 @@ class ArtMeshTrackingEventData(BaseModel):
     """Only the points that were found, the missing ones are omitted."""
 
 
-@with_request_model_config
-class ArtMeshRef(BaseModel):
+class ArtMeshRef(VTSBaseModel):
     """One ArtMesh to track in an `ArtMeshOutlineEventConfig` payload."""
 
     model_id: Annotated[str, Field(alias="modelID")]
     art_mesh_id: Annotated[str, Field(alias="artMeshID")]
 
 
-@with_response_model_config
-class ArtMeshOutlineRing(BaseModel):
+class ArtMeshOutlineRing(VTSBaseModel):
     """One boundary ring of an ArtMesh outline."""
 
     points: list[float]
@@ -312,8 +272,7 @@ class ArtMeshOutlineRing(BaseModel):
     stays a list of floats instead of 20 `Point2D`s."""
 
 
-@with_response_model_config
-class ArtMeshOutline(BaseModel):
+class ArtMeshOutline(VTSBaseModel):
     """One found ArtMesh in an `ArtMeshOutlineEventData` payload."""
 
     art_mesh_id: Annotated[str, Field(alias="artMeshID")]
@@ -327,8 +286,7 @@ class ArtMeshOutline(BaseModel):
     """One ring per boundary."""
 
 
-@with_request_model_config
-class ArtMeshOutlineEventConfig(BaseModel):
+class ArtMeshOutlineEventConfig(VTSBaseModel):
     """Only available on the public beta branch of VTube Studio.
 
     https://github.com/DenchiSoft/VTubeStudio/blob/master/Events/README.md#track-artmesh-outline-event
@@ -339,8 +297,7 @@ class ArtMeshOutlineEventConfig(BaseModel):
     art_meshes: list[ArtMeshRef]
 
 
-@with_response_model_config
-class ArtMeshOutlineEventData(BaseModel):
+class ArtMeshOutlineEventData(VTSBaseModel):
     """Only available on the public beta branch of VTube Studio.
 
     https://github.com/DenchiSoft/VTubeStudio/blob/master/Events/README.md#track-artmesh-outline-event

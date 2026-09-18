@@ -1,23 +1,18 @@
-from pydantic import BaseModel
-
-from ..shared import with_request_model_config, with_response_model_config
+from ..shared import VTSBaseModel
 
 
-@with_response_model_config
-class CapturePartColor(BaseModel):
+class CapturePartColor(VTSBaseModel):
     active: bool
     color_r: int
     color_g: int
     color_b: int
 
 
-@with_request_model_config
-class SceneColorOverlayInfoRequest(BaseModel):
+class SceneColorOverlayInfoRequest(VTSBaseModel):
     pass
 
 
-@with_response_model_config
-class SceneColorOverlayInfoResponse(BaseModel):
+class SceneColorOverlayInfoResponse(VTSBaseModel):
     active: bool
     items_included: bool
     is_window_capture: bool

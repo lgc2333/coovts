@@ -1,24 +1,21 @@
 from typing import Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
-from ..shared import with_request_model_config, with_response_model_config
+from ..shared import VTSBaseModel
 
 
-@with_response_model_config
-class ExpressionParameter(BaseModel):
+class ExpressionParameter(VTSBaseModel):
     name: str
     value: float
 
 
-@with_response_model_config
-class HotkeyRef(BaseModel):
+class HotkeyRef(VTSBaseModel):
     name: str
     id: str
 
 
-@with_response_model_config
-class ExpressionInfo(BaseModel):
+class ExpressionInfo(VTSBaseModel):
     name: str
     file: str
     active: bool
@@ -29,27 +26,23 @@ class ExpressionInfo(BaseModel):
     parameters: list[ExpressionParameter] = []
 
 
-@with_request_model_config
-class ExpressionStateRequest(BaseModel):
+class ExpressionStateRequest(VTSBaseModel):
     details: bool = True
     expression_file: str | None = None
 
 
-@with_response_model_config
-class ExpressionStateResponse(BaseModel):
+class ExpressionStateResponse(VTSBaseModel):
     model_loaded: bool
     model_name: str
     model_id: Annotated[str, Field(alias="modelID")]
     expressions: list[ExpressionInfo]
 
 
-@with_request_model_config
-class ExpressionActivationRequest(BaseModel):
+class ExpressionActivationRequest(VTSBaseModel):
     expression_file: str
     fade_time: float = 0.25
     active: bool
 
 
-@with_response_model_config
-class ExpressionActivationResponse(BaseModel):
+class ExpressionActivationResponse(VTSBaseModel):
     pass

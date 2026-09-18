@@ -6,13 +6,13 @@ sync point below, not a decision.
 
 ## Sync point
 
-| | |
-| --- | --- |
-| Repository | [DenchiSoft/VTubeStudio](https://github.com/DenchiSoft/VTubeStudio) |
-| Branch | `master` |
-| Commit | `0f46ef44b487fa17c8120db572ebd925924b93a3` |
-| Fetched | 2026-09-18 |
-| Verified against | VTube Studio 1.35.10, `apiVersion "1.0"` |
+|                  |                                                                     |
+| ---------------- | ------------------------------------------------------------------- |
+| Repository       | [DenchiSoft/VTubeStudio](https://github.com/DenchiSoft/VTubeStudio) |
+| Branch           | `master`                                                            |
+| Commit           | `0f46ef44b487fa17c8120db572ebd925924b93a3`                          |
+| Fetched          | 2026-09-18                                                          |
+| Verified against | VTube Studio 1.35.10, `apiVersion "1.0"`                            |
 
 ## What came from where
 
@@ -47,5 +47,6 @@ without writing the stub:
   date: no difference in either direction.
 - The three beta events and the beta `ArtMeshAtPositionRequest` were subscribed to / called against
   a stable VTS: `APIError` 950 (`Unknown API event type: ...`) and 7 (`Unknown messageType: ...`).
-- A list-only `PermissionRequest` was answered with `grantSuccess: false`, `requestedPermission:
-  ""` and a `permissions` array holding only the permissions VTS reports for this plugin.
+- A list-only `PermissionRequest` was answered with `grantSuccess: false`,
+  `requestedPermission: ""` and a `permissions` array holding only the permissions VTS reports
+  for this plugin.

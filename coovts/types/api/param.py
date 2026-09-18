@@ -1,21 +1,19 @@
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
-from ..shared import with_request_model_config, with_response_model_config
+from ..shared import VTSBaseModel
 
 type ParameterMode = Literal["set", "add"]
 
 
-@with_request_model_config
-class ParameterValue(BaseModel):
+class ParameterValue(VTSBaseModel):
     id: str
     value: float
     weight: float = 1.0
 
 
-@with_response_model_config
-class InputParameter(BaseModel):
+class InputParameter(VTSBaseModel):
     name: str
     added_by: str
     value: float
@@ -24,8 +22,7 @@ class InputParameter(BaseModel):
     default_value: float
 
 
-@with_response_model_config
-class Live2DParameter(BaseModel):
+class Live2DParameter(VTSBaseModel):
     name: str
     value: float
     min: float
@@ -33,23 +30,19 @@ class Live2DParameter(BaseModel):
     default_value: float
 
 
-@with_request_model_config
-class FaceFoundRequest(BaseModel):
+class FaceFoundRequest(VTSBaseModel):
     pass
 
 
-@with_response_model_config
-class FaceFoundResponse(BaseModel):
+class FaceFoundResponse(VTSBaseModel):
     found: bool
 
 
-@with_request_model_config
-class InputParameterListRequest(BaseModel):
+class InputParameterListRequest(VTSBaseModel):
     pass
 
 
-@with_response_model_config
-class InputParameterListResponse(BaseModel):
+class InputParameterListResponse(VTSBaseModel):
     model_loaded: bool
     model_name: str
     model_id: Annotated[str, Field(alias="modelID")]
@@ -57,31 +50,26 @@ class InputParameterListResponse(BaseModel):
     default_parameters: list[InputParameter]
 
 
-@with_request_model_config
-class ParameterValueRequest(BaseModel):
+class ParameterValueRequest(VTSBaseModel):
     name: str
 
 
-@with_response_model_config
 class ParameterValueResponse(InputParameter):
     pass
 
 
-@with_request_model_config
-class Live2DParameterListRequest(BaseModel):
+class Live2DParameterListRequest(VTSBaseModel):
     pass
 
 
-@with_response_model_config
-class Live2DParameterListResponse(BaseModel):
+class Live2DParameterListResponse(VTSBaseModel):
     model_loaded: bool
     model_name: str
     model_id: Annotated[str, Field(alias="modelID")]
     parameters: list[Live2DParameter]
 
 
-@with_request_model_config
-class ParameterCreationRequest(BaseModel):
+class ParameterCreationRequest(VTSBaseModel):
     parameter_name: str
     explanation: str = ""
     min: float
@@ -89,28 +77,23 @@ class ParameterCreationRequest(BaseModel):
     default_value: float
 
 
-@with_response_model_config
-class ParameterCreationResponse(BaseModel):
+class ParameterCreationResponse(VTSBaseModel):
     parameter_name: str
 
 
-@with_request_model_config
-class ParameterDeletionRequest(BaseModel):
+class ParameterDeletionRequest(VTSBaseModel):
     parameter_name: str
 
 
-@with_response_model_config
-class ParameterDeletionResponse(BaseModel):
+class ParameterDeletionResponse(VTSBaseModel):
     parameter_name: str
 
 
-@with_request_model_config
-class InjectParameterDataRequest(BaseModel):
+class InjectParameterDataRequest(VTSBaseModel):
     face_found: bool = False
     mode: ParameterMode = "set"
     parameter_values: list[ParameterValue]
 
 
-@with_response_model_config
-class InjectParameterDataResponse(BaseModel):
+class InjectParameterDataResponse(VTSBaseModel):
     pass

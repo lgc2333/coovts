@@ -1,4 +1,4 @@
-"""`Files/ErrorID.cs` of DenchiSoft/VTubeStudio@0f46ef4
+"""`Files/ErrorID.cs` of DenchiSoft/VTubeStudio@0f46ef4.
 
 https://github.com/DenchiSoft/VTubeStudio/blob/0f46ef4/Files/ErrorID.cs
 """

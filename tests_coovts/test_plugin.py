@@ -891,7 +891,7 @@ async def test_unknown_payload_fields_are_ignored(
         )
         response = await asyncio.wait_for(call, 1)
         assert isinstance(response, APIStateResponse)
-        assert response.v_tube_studio_version == "1.35.10"
+        assert response.vtube_studio_version == "1.35.10"
     finally:
         await finish(plugin, run_task)
 

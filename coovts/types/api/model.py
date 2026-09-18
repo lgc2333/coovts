@@ -1,20 +1,18 @@
 from typing import Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
-from ..shared import with_request_model_config, with_response_model_config
+from ..shared import VTSBaseModel
 
 
-@with_response_model_config
-class ModelPosition(BaseModel):
+class ModelPosition(VTSBaseModel):
     position_x: float
     position_y: float
     rotation: float
     size: float
 
 
-@with_response_model_config
-class ModelInfo(BaseModel):
+class ModelInfo(VTSBaseModel):
     model_loaded: bool
     model_name: str
     model_id: Annotated[str, Field(alias="modelID")]
@@ -22,13 +20,11 @@ class ModelInfo(BaseModel):
     vts_model_icon_name: str
 
 
-@with_request_model_config
-class CurrentModelRequest(BaseModel):
+class CurrentModelRequest(VTSBaseModel):
     pass
 
 
-@with_response_model_config
-class CurrentModelResponse(BaseModel):
+class CurrentModelResponse(VTSBaseModel):
     model_loaded: bool
     model_name: str
     model_id: Annotated[str, Field(alias="modelID")]
@@ -45,29 +41,24 @@ class CurrentModelResponse(BaseModel):
     model_position: ModelPosition
 
 
-@with_request_model_config
-class AvailableModelsRequest(BaseModel):
+class AvailableModelsRequest(VTSBaseModel):
     pass
 
 
-@with_response_model_config
-class AvailableModelsResponse(BaseModel):
+class AvailableModelsResponse(VTSBaseModel):
     number_of_models: int
     available_models: list[ModelInfo]
 
 
-@with_request_model_config
-class ModelLoadRequest(BaseModel):
+class ModelLoadRequest(VTSBaseModel):
     model_id: Annotated[str, Field(alias="modelID")]
 
 
-@with_response_model_config
-class ModelLoadResponse(BaseModel):
+class ModelLoadResponse(VTSBaseModel):
     model_id: Annotated[str, Field(alias="modelID")]
 
 
-@with_request_model_config
-class MoveModelRequest(BaseModel):
+class MoveModelRequest(VTSBaseModel):
     time_in_seconds: float
     values_are_relative_to_model: bool
     position_x: float | None = None
@@ -76,6 +67,5 @@ class MoveModelRequest(BaseModel):
     size: float | None = None
 
 
-@with_response_model_config
-class MoveModelResponse(BaseModel):
+class MoveModelResponse(VTSBaseModel):
     pass

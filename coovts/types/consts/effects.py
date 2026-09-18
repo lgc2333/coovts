@@ -1,4 +1,4 @@
-"""`Files/Effects.cs` of DenchiSoft/VTubeStudio@0f46ef4, fetched 2026-09-18.
+"""`Files/Effects.cs` of DenchiSoft/VTubeStudio@0f46ef4.
 
 https://github.com/DenchiSoft/VTubeStudio/blob/0f46ef4/Files/Effects.cs
 """

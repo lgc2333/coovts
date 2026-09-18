@@ -34,14 +34,14 @@ wheels = [
 
 [[package]]
 name = "cookit"
-version = "0.14.0"
+version = "0.14.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/1f/9b/cf90deb943c6d4ae2a9daec77f76c4188a0f405b0d08e8fbdf7c8dcce2c8/cookit-0.14.0.tar.gz", hash = "sha256:202f8fd6324dd8914df5fbbad780b64b10b1b7dc14dbda8bca3d540cf8217576", size = 44195, upload-time = "2026-08-06T10:38:55.067Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e1/d7/b21943a2f2e9e290d61f2ffad94bb77d0f7bc5043773d292bbfc3ac5d2de/cookit-0.14.1.tar.gz", hash = "sha256:03b6262739e62754df0b4acb4736ebb9636a07de1902d7e67b47b5006bcc708a", size = 53948, upload-time = "2026-09-18T13:34:51.809Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/83/0d/1de536d3fd11431ce495db024f3083eac6270158f459842305bd8dc5668b/cookit-0.14.0-py3-none-any.whl", hash = "sha256:74140a0d430da17fef892bd685b2511c50dc8c99653ddb470c9195d7f8559f31", size = 34783, upload-time = "2026-08-06T10:38:54.04Z" },
+    { url = "https://files.pythonhosted.org/packages/be/c2/e31f15488a381004e09b0f88c21e3fbcfe62f0dd2840b68a06bc63f3f613/cookit-0.14.1-py3-none-any.whl", hash = "sha256:052101dd2bb3a335fcac39b39c7f8558fa41548b1cf9b05bd5b8032fd69c23b7", size = 35138, upload-time = "2026-09-18T13:34:50.703Z" },
 ]
 
 [package.optional-dependencies]
@@ -74,8 +74,8 @@ log = [
 [package.dev-dependencies]
 dev = [
     { name = "basedpyright" },
+    { name = "coovts", extra = ["log"] },
     { name = "hatchling" },
-    { name = "loguru" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
@@ -84,9 +84,9 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "cookit", extras = ["loguru"], marker = "extra == 'all'", specifier = ">=0.14.0" },
-    { name = "cookit", extras = ["loguru"], marker = "extra == 'log'", specifier = ">=0.14.0" },
-    { name = "cookit", extras = ["pydantic"], specifier = ">=0.14.0" },
+    { name = "cookit", extras = ["loguru"], marker = "extra == 'all'", specifier = ">=0.14.1" },
+    { name = "cookit", extras = ["loguru"], marker = "extra == 'log'", specifier = ">=0.14.1" },
+    { name = "cookit", extras = ["pydantic"], specifier = ">=0.14.1" },
     { name = "loguru", marker = "extra == 'all'", specifier = ">=0.7.3" },
     { name = "loguru", marker = "extra == 'log'", specifier = ">=0.7.3" },
     { name = "pydantic", specifier = ">=2.13.5" },
@@ -97,8 +97,8 @@ provides-extras = ["all", "log"]
 [package.metadata.requires-dev]
 dev = [
     { name = "basedpyright", specifier = ">=1.40.1" },
+    { name = "coovts", extras = ["log"] },
     { name = "hatchling", specifier = ">=1.32.3" },
-    { name = "loguru", specifier = ">=0.7.3" },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "pytest-asyncio", specifier = ">=1.4.0" },
     { name = "pytest-cov", specifier = ">=6" },

@@ -1,12 +1,11 @@
 from typing import Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
-from ..shared import with_request_model_config, with_response_model_config
+from ..shared import VTSBaseModel
 
 
-@with_request_model_config
-class ColorData(BaseModel):
+class ColorData(VTSBaseModel):
     color_r: int
     color_g: int
     color_b: int
@@ -14,8 +13,7 @@ class ColorData(BaseModel):
     mix_with_scene_lighting_color: float = 1.0
 
 
-@with_request_model_config
-class ArtMeshMatcher(BaseModel):
+class ArtMeshMatcher(VTSBaseModel):
     tint_all: bool = False
     art_mesh_number: list[int] = []
     name_exact: list[str] = []
@@ -24,13 +22,11 @@ class ArtMeshMatcher(BaseModel):
     tag_contains: list[str] = []
 
 
-@with_request_model_config
-class ArtMeshListRequest(BaseModel):
+class ArtMeshListRequest(VTSBaseModel):
     pass
 
 
-@with_response_model_config
-class ArtMeshListResponse(BaseModel):
+class ArtMeshListResponse(VTSBaseModel):
     model_loaded: bool
     number_of_art_mesh_names: int
     number_of_art_mesh_tags: int
@@ -38,40 +34,34 @@ class ArtMeshListResponse(BaseModel):
     art_mesh_tags: list[str]
 
 
-@with_request_model_config
-class ColorTintRequest(BaseModel):
+class ColorTintRequest(VTSBaseModel):
     color_tint: ColorData
     art_mesh_matcher: ArtMeshMatcher
 
 
-@with_response_model_config
-class ColorTintResponse(BaseModel):
+class ColorTintResponse(VTSBaseModel):
     matched_art_meshes: int
 
 
-@with_request_model_config
-class ArtMeshSelectionRequest(BaseModel):
+class ArtMeshSelectionRequest(VTSBaseModel):
     text_override: str | None = None
     help_override: str | None = None
     requested_art_mesh_count: int = 0
     active_art_meshes: list[str] = []
 
 
-@with_response_model_config
-class ArtMeshSelectionResponse(BaseModel):
+class ArtMeshSelectionResponse(VTSBaseModel):
     success: bool
     active_art_meshes: list[str]
     inactive_art_meshes: list[str]
 
 
-@with_response_model_config
-class Point2D(BaseModel):
+class Point2D(VTSBaseModel):
     x: float
     y: float
 
 
-@with_response_model_config
-class ArtMeshHitInfo(BaseModel):
+class ArtMeshHitInfo(VTSBaseModel):
     model_id: Annotated[str, Field(alias="modelID")]
     art_mesh_id: Annotated[str, Field(alias="artMeshID")]
     angle: float
@@ -84,15 +74,13 @@ class ArtMeshHitInfo(BaseModel):
     vertex_weight3: float
 
 
-@with_response_model_config
-class ArtMeshHit(BaseModel):
+class ArtMeshHit(VTSBaseModel):
     art_mesh_order: int
     is_masked: bool
     hit_info: ArtMeshHitInfo
 
 
-@with_request_model_config
-class ArtMeshAtPositionRequest(BaseModel):
+class ArtMeshAtPositionRequest(VTSBaseModel):
     """Only available on the public beta branch of VTube Studio."""
 
     x: float
@@ -100,8 +88,7 @@ class ArtMeshAtPositionRequest(BaseModel):
     visualize: float = 0
 
 
-@with_response_model_config
-class ArtMeshAtPositionResponse(BaseModel):
+class ArtMeshAtPositionResponse(VTSBaseModel):
     """Only available on the public beta branch of VTube Studio."""
 
     model_loaded: bool

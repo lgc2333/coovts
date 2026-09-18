@@ -60,6 +60,7 @@ Only `poe` runs on the project venv; use `uv run` / `uv run --with` for anything
 - `CONTEXT.md` is the domain glossary: canonical terms and one-line definitions, nothing else.
 - `docs/adr/` holds one file per decision, numbered; add one when a decision is hard to reverse and would look arbitrary without the reason.
 - Follow the `domain-modeling` skill for both (install it from GitHub `mattpocock/skills` if missing), and write in English like everywhere else here.
+
 - `docs/references.md` is the upstream sync record: where each transcribed constant and model came from, plus the current surface counts. Counts live there, never in an ADR.
 
 ### Structure Rules
@@ -75,6 +76,8 @@ Only `poe` runs on the project venv; use `uv run` / `uv run --with` for anything
 ### Code Flavor Rules
 
 - Model fields and enum members are documented with a docstring written below them, never with a `#` comment.
+
+- Payload models inherit `VTSBaseModel` (one shared `wire_model_config`), and frames coming off the wire are validated with `by_alias=True` — the config alone builds models from field names.
 
 ### Testing Rules
 

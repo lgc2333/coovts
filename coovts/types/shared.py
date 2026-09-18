@@ -1,25 +1,31 @@
 from typing import Annotated, Any
 
-from cookit.pyd import model_with_model_config
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
 
-request_model_config = ConfigDict(
+wire_model_config = ConfigDict(
     alias_generator=to_camel,
     validate_by_alias=False,
     serialize_by_alias=True,
 )
-response_model_config = ConfigDict(
-    alias_generator=to_camel,
-)
+"""The one configuration every model in this package uses.
+
+`validate_by_alias=False` keeps the python field name the only way to *build* a model, and
+`serialize_by_alias=True` makes every dump spell fields the way the wire does — nested models
+included, which is why a request payload can hold a response model without a serializer of its
+own. Frames from VTube Studio are camelCase, so the boundary that reads them asks for alias
+validation by hand (`by_alias=True`): see `Plugin._handle_raw`, `Plugin._call_api` and
+`PendingRequest.result`.
+"""
 
 
-with_request_model_config = model_with_model_config(request_model_config)
-with_response_model_config = model_with_model_config(response_model_config)
+class VTSBaseModel(BaseModel):
+    """Base class of every model that mirrors a VTube Studio payload."""
+
+    model_config = wire_model_config
 
 
-@with_request_model_config
-class BaseRequest(BaseModel):
+class BaseRequest(VTSBaseModel):
     api_name: str = "VTubeStudioPublicAPI"
     api_version: str = "1.0"
     request_id: Annotated[str | None, Field(alias="requestID")] = None
@@ -27,8 +33,7 @@ class BaseRequest(BaseModel):
     data: Any
 
 
-@with_response_model_config
-class BaseResponse(BaseModel):
+class BaseResponse(VTSBaseModel):
     api_name: str
     api_version: str = "1.0"
     timestamp: int

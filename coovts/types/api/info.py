@@ -1,30 +1,28 @@
-from pydantic import BaseModel
+from typing import Annotated
 
-from ..shared import with_request_model_config, with_response_model_config
+from pydantic import Field
+
+from ..shared import VTSBaseModel
 
 
-@with_request_model_config
-class APIStateRequest(BaseModel):
+class APIStateRequest(VTSBaseModel):
     pass
 
 
-@with_response_model_config
-class APIStateResponse(BaseModel):
+class APIStateResponse(VTSBaseModel):
     active: bool
-    v_tube_studio_version: str
+    vtube_studio_version: Annotated[str, Field(alias="vTubeStudioVersion")]
     current_session_authenticated: bool
 
 
-@with_request_model_config
-class StatisticsRequest(BaseModel):
+class StatisticsRequest(VTSBaseModel):
     pass
 
 
-@with_response_model_config
-class StatisticsResponse(BaseModel):
+class StatisticsResponse(VTSBaseModel):
     uptime: int
     framerate: int
-    v_tube_studio_version: str
+    vtube_studio_version: Annotated[str, Field(alias="vTubeStudioVersion")]
     allowed_plugins: int
     connected_plugins: int
     started_with_steam: bool
@@ -33,13 +31,11 @@ class StatisticsResponse(BaseModel):
     window_is_fullscreen: bool
 
 
-@with_request_model_config
-class VTSFolderInfoRequest(BaseModel):
+class VTSFolderInfoRequest(VTSBaseModel):
     pass
 
 
-@with_response_model_config
-class VTSFolderInfoResponse(BaseModel):
+class VTSFolderInfoResponse(VTSBaseModel):
     models: str
     backgrounds: str
     items: str

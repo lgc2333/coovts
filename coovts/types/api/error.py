@@ -1,11 +1,10 @@
 from typing import Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
-from ..shared import with_response_model_config
+from ..shared import VTSBaseModel
 
 
-@with_response_model_config
-class APIErrorResponse(BaseModel):
+class APIErrorResponse(VTSBaseModel):
     error_id: Annotated[int, Field(alias="errorID")]
     message: str

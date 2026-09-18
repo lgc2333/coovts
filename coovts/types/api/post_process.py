@@ -1,18 +1,16 @@
 from typing import Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
-from ..shared import with_request_model_config, with_response_model_config
+from ..shared import VTSBaseModel
 
 
-@with_request_model_config
-class ConfigValue(BaseModel):
+class ConfigValue(VTSBaseModel):
     config_id: Annotated[str, Field(alias="configID")]
     config_value: str
 
 
-@with_response_model_config
-class EffectConfigEntry(BaseModel):
+class EffectConfigEntry(VTSBaseModel):
     internal_id: Annotated[str, Field(alias="internalID")]
     enum_id: Annotated[str, Field(alias="enumID")]
     explanation: str
@@ -37,8 +35,7 @@ class EffectConfigEntry(BaseModel):
     scene_item_default: str
 
 
-@with_response_model_config
-class PostProcessingEffect(BaseModel):
+class PostProcessingEffect(VTSBaseModel):
     internal_id: Annotated[str, Field(alias="internalID")]
     enum_id: Annotated[str, Field(alias="enumID")]
     explanation: str
@@ -47,15 +44,13 @@ class PostProcessingEffect(BaseModel):
     config_entries: list[EffectConfigEntry]
 
 
-@with_request_model_config
-class PostProcessingListRequest(BaseModel):
+class PostProcessingListRequest(VTSBaseModel):
     fill_post_processing_presets_array: bool = True
     fill_post_processing_effects_array: bool = True
     effect_id_filter: Annotated[list[str], Field(alias="effectIDFilter")] = []
 
 
-@with_response_model_config
-class PostProcessingListResponse(BaseModel):
+class PostProcessingListResponse(VTSBaseModel):
     post_processing_supported: bool
     post_processing_active: bool
     can_send_post_processing_update_request_right_now: bool
@@ -72,8 +67,7 @@ class PostProcessingListResponse(BaseModel):
     post_processing_presets: list[str] = []
 
 
-@with_request_model_config
-class PostProcessingUpdateRequest(BaseModel):
+class PostProcessingUpdateRequest(VTSBaseModel):
     post_processing_on: bool
     set_post_processing_preset: bool = False
     set_post_processing_values: bool = False
@@ -86,8 +80,7 @@ class PostProcessingUpdateRequest(BaseModel):
     post_processing_values: list[ConfigValue] = []
 
 
-@with_response_model_config
-class PostProcessingUpdateResponse(BaseModel):
+class PostProcessingUpdateResponse(VTSBaseModel):
     post_processing_active: bool
     preset_is_active: bool
     active_preset: str

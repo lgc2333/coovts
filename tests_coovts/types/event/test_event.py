@@ -149,7 +149,7 @@ ART_MESH_OUTLINE_EVENT_PAYLOAD: dict[str, object] = {
 
 def test_real_test_event_frame_decodes() -> None:
     """The `TestEvent` payload VTS sent decodes into its data model."""
-    data = event.TestEventData.model_validate(real_payload("TestEvent"))
+    data = event.TestEventData.model_validate(real_payload("TestEvent"), by_alias=True)
 
     assert data.your_test_message == "coovts probe"
     assert data.counter == 560
@@ -157,7 +157,10 @@ def test_real_test_event_frame_decodes() -> None:
 
 def test_real_model_moved_event_uses_the_shared_position_model() -> None:
     """A real `ModelMovedEvent` decodes into the same `ModelPosition` the API side declares."""
-    data = event.ModelMovedEventData.model_validate(real_payload("ModelMovedEvent"))
+    data = event.ModelMovedEventData.model_validate(
+        real_payload("ModelMovedEvent"),
+        by_alias=True,
+    )
 
     assert data.model_id == "6248f9ba0edc401c96de072a3350de3f"
     assert data.model_name == "饼干寻"
@@ -169,7 +172,10 @@ def test_real_model_moved_event_uses_the_shared_position_model() -> None:
 
 def test_real_model_outline_event_frame_decodes() -> None:
     """A real 15 FPS `ModelOutlineEvent` decodes with its hull, center and window size."""
-    data = event.ModelOutlineEventData.model_validate(real_payload("ModelOutlineEvent"))
+    data = event.ModelOutlineEventData.model_validate(
+        real_payload("ModelOutlineEvent"),
+        by_alias=True,
+    )
 
     assert len(data.convex_hull) == 12
     assert data.convex_hull[0].x == 0.018246205523610115
@@ -179,7 +185,7 @@ def test_real_model_outline_event_frame_decodes() -> None:
 
 def test_real_event_frames_carry_an_id_that_is_not_ours() -> None:
     """Events arrive with VTS's own 32-hex id, so they can never resolve a pending request."""
-    envelope = BaseResponse.model_validate_json(real_frame("TestEvent"))
+    envelope = BaseResponse.model_validate_json(real_frame("TestEvent"), by_alias=True)
 
     assert envelope.message_type == "TestEvent"
     assert envelope.request_id == "4513064a63b54cb6ab77a4eb1f5d471d"
@@ -207,6 +213,7 @@ def test_documented_background_changed_payload_decodes() -> None:
     """The documented `BackgroundChangedEvent` payload decodes into its data model."""
     data = event.BackgroundChangedEventData.model_validate(
         {"backgroundName": "my_cool_background"},
+        by_alias=True,
     )
 
     assert data.background_name == "my_cool_background"
@@ -220,6 +227,7 @@ def test_documented_model_config_changed_payload_decodes() -> None:
             "modelName": "My Cool Model",
             "hotkeyConfigChanged": True,
         },
+        by_alias=True,
     )
 
     assert data.model_id == "UniqueIDToIdentifyThisModelBy"
@@ -234,6 +242,7 @@ def test_documented_post_processing_payload_decodes() -> None:
             "currentOnState": True,
             "currentPreset": "my_preset",
         },
+        by_alias=True,
     )
 
     assert data.current_on_state is True
@@ -253,6 +262,7 @@ def test_documented_expression_toggled_payload_decodes() -> None:
             "expressionName": "EyesCry",
             "active": True,
         },
+        by_alias=True,
     )
 
     assert data.model_id == "d8ee771d2909873b1aa0226d03ef4f51"
@@ -269,6 +279,7 @@ def test_documented_art_mesh_tracking_payload_decodes() -> None:
     """The documented `ArtMeshTrackingEvent` payload decodes into its data model."""
     data = event.ArtMeshTrackingEventData.model_validate(
         ART_MESH_TRACKING_EVENT_PAYLOAD,
+        by_alias=True,
     )
 
     assert data.model_loaded is True
@@ -291,6 +302,7 @@ def test_documented_art_mesh_outline_payload_decodes() -> None:
     """The documented `ArtMeshOutlineEvent` payload decodes into its data model."""
     data = event.ArtMeshOutlineEventData.model_validate(
         ART_MESH_OUTLINE_EVENT_PAYLOAD,
+        by_alias=True,
     )
 
     assert data.model_loaded is True
@@ -330,6 +342,7 @@ def test_outline_ring_keeps_all_forty_numbers_flat() -> None:
                 },
             ],
         },
+        by_alias=True,
     )
 
     ring = data.art_mesh_outlines[0].outline_points[0]
@@ -362,6 +375,7 @@ def test_art_mesh_tracking_config_serializes_to_the_documented_wire_shape() -> N
                 },
             ],
         },
+        by_alias=True,
     )
     request = api.EventSubscriptionRequest(
         event_name="ArtMeshTrackingEvent",

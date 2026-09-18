@@ -1,6 +1,4 @@
-# ruff: noqa: E741 -- I and O are the upstream names of the I and O keys
-
-"""`Files/RestrictedRawKey.cs` of DenchiSoft/VTubeStudio@0f46ef4, fetched 2026-09-18.
+"""`Files/RestrictedRawKey.cs` of DenchiSoft/VTubeStudio@0f46ef4.
 
 The values are the Windows virtual-key codes. Upstream never sends this table over
 the wire: `keyCombination` in `HotkeyInfo` is documented to stay empty for security
@@ -48,13 +46,13 @@ class RestrictedRawKey(IntEnum):
     F = 0x46
     G = 0x47
     H = 0x48
-    I = 0x49
+    I = 0x49  # noqa: E741
     J = 0x4A
     K = 0x4B
     L = 0x4C
     M = 0x4D
     N = 0x4E
-    O = 0x4F
+    O = 0x4F  # noqa: E741
     P = 0x50
     Q = 0x51
     R = 0x52

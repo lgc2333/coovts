@@ -1,12 +1,11 @@
 from typing import Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
-from ..shared import with_request_model_config, with_response_model_config
+from ..shared import VTSBaseModel
 
 
-@with_response_model_config
-class HotkeyInfo(BaseModel):
+class HotkeyInfo(VTSBaseModel):
     name: str
     type: str
     description: str
@@ -16,8 +15,7 @@ class HotkeyInfo(BaseModel):
     on_screen_button_id: Annotated[int, Field(alias="onScreenButtonID")]
 
 
-@with_request_model_config
-class HotkeysInCurrentModelRequest(BaseModel):
+class HotkeysInCurrentModelRequest(VTSBaseModel):
     model_id: Annotated[str | None, Field(alias="modelID")] = None
     live2d_item_file_name: Annotated[
         str | None,
@@ -25,20 +23,17 @@ class HotkeysInCurrentModelRequest(BaseModel):
     ] = None
 
 
-@with_response_model_config
-class HotkeysInCurrentModelResponse(BaseModel):
+class HotkeysInCurrentModelResponse(VTSBaseModel):
     model_loaded: bool
     model_name: str
     model_id: Annotated[str, Field(alias="modelID")]
     available_hotkeys: list[HotkeyInfo]
 
 
-@with_request_model_config
-class HotkeyTriggerRequest(BaseModel):
+class HotkeyTriggerRequest(VTSBaseModel):
     hotkey_id: Annotated[str, Field(alias="hotkeyID")]
     item_instance_id: Annotated[str | None, Field(alias="itemInstanceID")] = None
 
 
-@with_response_model_config
-class HotkeyTriggerResponse(BaseModel):
+class HotkeyTriggerResponse(VTSBaseModel):
     hotkey_id: Annotated[str, Field(alias="hotkeyID")]

@@ -80,22 +80,22 @@ def test_request_serializes_by_alias_but_rejects_alias_input() -> None:
     assert "model_id" in str(excinfo.value)
 
 
-def test_response_model_validates_by_wire_alias_only() -> None:
-    """`ModelLoadResponse` decodes the wire spelling and ignores the python field name."""
-    response = api.ModelLoadResponse.model_validate({"modelID": "m1"})
+def test_wire_payloads_are_read_with_the_alias_flag() -> None:
+    """A frame is camelCase, so reading one passes `by_alias=True` — the way the plugin does."""
+    response = api.ModelLoadResponse.model_validate({"modelID": "m1"}, by_alias=True)
     assert response.model_id == "m1"
 
     with pytest.raises(ValidationError) as excinfo:
-        api.ModelLoadResponse.model_validate({"model_id": "m1"})
+        api.ModelLoadResponse.model_validate({"modelID": "m1"})
 
-    assert [error["loc"] for error in excinfo.value.errors()] == [("modelID",)]
-    assert "modelID" in str(excinfo.value)
+    assert [error["loc"] for error in excinfo.value.errors()] == [("model_id",)]
 
 
 def test_response_model_ignores_unknown_wire_fields() -> None:
     """A response payload carrying a field this library does not know still decodes."""
     response = api.ModelLoadResponse.model_validate(
         {"modelID": "m1", "someFieldVtsAddedLater": 1},
+        by_alias=True,
     )
 
     assert response.model_id == "m1"
@@ -105,14 +105,18 @@ def test_real_response_frames_decode() -> None:
     """Responses a real VTube Studio sent decode, shared position model included."""
     current = api.CurrentModelResponse.model_validate(
         real_payload("CurrentModelResponse"),
+        by_alias=True,
     )
     assert current.model_name == "饼干寻"
     assert current.number_of_live2d_parameters == 50
     assert current.model_position.rotation == 358.4307861328125
     assert current.model_position.size == -65.87860870361328
 
-    state = api.APIStateResponse.model_validate(real_payload("APIStateResponse"))
-    assert state.v_tube_studio_version == "1.35.10"
+    state = api.APIStateResponse.model_validate(
+        real_payload("APIStateResponse"),
+        by_alias=True,
+    )
+    assert state.vtube_studio_version == "1.35.10"
     assert state.current_session_authenticated is True
 
 
@@ -130,9 +134,12 @@ def test_real_error_frames_decode_with_their_ids() -> None:
     }
 
     for error_id, message in expectations.items():
-        envelope = BaseResponse.model_validate_json(real_error_frame(error_id))
+        envelope = BaseResponse.model_validate_json(
+            real_error_frame(error_id),
+            by_alias=True,
+        )
         assert envelope.message_type == "APIError"
-        error = api.APIErrorResponse.model_validate(envelope.data)
+        error = api.APIErrorResponse.model_validate(envelope.data, by_alias=True)
         assert (error.error_id, error.message) == (error_id, message)
 
 
