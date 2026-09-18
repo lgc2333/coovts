@@ -9,7 +9,7 @@ license-files = ["LICENSE"]
 requires-python = ">=3.12"
 keywords = ["vtube studio", "vtuber", "live2d", "websocket", "asyncio"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
