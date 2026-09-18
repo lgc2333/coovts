@@ -2,6 +2,8 @@
 
 **Status**: accepted
 
+**Amended by**: ADR-0017 (events are declared, and the library keeps them subscribed)
+
 `PluginAPI` is an ABC with two untyped abstract seams (`_call_api`, `_handle_event`) and two
 untyped public forwarders (`call_api`, `handle_event`). `Plugin` implements the seams and inherits
 the forwarders, so the runtime carries no per-request code; all typing lives in

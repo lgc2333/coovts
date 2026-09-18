@@ -9,44 +9,55 @@ the same thing:
 
 - **The subscription** is what makes VTS push the event. It is a network action, and it is
   session-scoped.
-- **The handler** is a local callback registered with `@plugin.handle_event(...)`. VTS knows nothing
-  about it.
+- **The handler** is a local callback. VTS knows nothing about it.
 
-Either half alone fails silently: a subscription with no handler means frames arrive and are
-dropped; a handler with no subscription never fires.
+`plugin.subscribe_event(...)` declares both halves at once, and the library keeps the subscription
+alive:
 
 ```python
-from coovts.types import api, event, get_event_name
+from coovts.types import event
 
 
-@plugin.on_authenticated
-async def _():
-    await plugin.call_api(
-        api.EventSubscriptionRequest(
-            event_name=get_event_name(event.ModelMovedEventData),
-            subscribe=True,
-            config=event.ModelMovedEventConfig(),
-        ),
-    )
-
-
-@plugin.handle_event(event.ModelMovedEventData)
+@plugin.subscribe_event(event.ModelMovedEventData)
 async def _(data: event.ModelMovedEventData):
     print(data.model_position)
 ```
 
+Write it at module level, once. VTS is subscribed to right after every successful authentication, so
+a reconnect cannot silently leave you without events. A handler on its own is what
+`@plugin.handle_event(...)` registers: it hands back the same wrapped handler, so disposing of it
+only stops the dispatch — there is no subscription behind it to cancel.
+
 The details that matter:
 
-- **The event name is derived from the model class name**: `XxxEventData` and `XxxEventConfig` minus
-  the suffix, or call `get_event_name(...)`. The data model and the config model share one event name.
-- **`config` is a required field**, even for events with no configuration (pass `XxxEventConfig()`).
-  Omitting it fails at construction time. What the config fields on each event mean is upstream:
+- **The event is named by its data model.** `XxxEventData` is the event `XxxEvent`, and
+  `get_event_config_model(...)` finds its config model, `XxxEventConfig`. Field meaning is upstream:
   [Subscribing and unsubscribing][e-sub] and the section per event.
-- **Subscribe inside `on_authenticated`**, because a subscription is session-scoped: after a
-  reconnect VTS remembers nothing.
-- **Unsubscribing** is the same request with `subscribe=False`.
-- `EventSubscriptionRequest.config` is deliberately left as `Any` for now; the plan for a
-  subscribe helper is to derive the data type from the config type.
+- **A config is optional, unless its model has a required field.** The default is the config model
+  built from its own field defaults, so `subscribe_event(event.ModelOutlineEventData)` sends
+  `{"draw": false}`. Pass a config to choose: `subscribe_event(event.ModelOutlineEventData,
+event.ModelOutlineEventConfig(draw=True))`. `ArtMeshTrackingEventData`,
+  `ArtMeshOutlineEventData` and `ExpressionToggledEventData` cannot be declared without one — their
+  configs have required fields, and the generated stub types `config` per event, so the type checker
+  is what holds you to it.
+- **A config does not have to be a model**: anything VTS accepts for that event — a hand-built dict,
+  typically — goes through the untyped overload and out untouched.
+- **`await plugin.subscribe_event(...)`** sends the subscription right away, returns the
+  `EventSubscriptionResponse`, and registers the declaration all the same. That is how a config
+  computed at runtime gets sent.
+- **`await on_moved.dispose()`** gives the event up: the handler comes back wrapped, so the function
+  you decorated carries `dispose`, which cancels the subscription and forgets the registration. A
+  declaration that has no handler yet is disposed of the same way, off the object `subscribe_event`
+  returned.
+- **A refused subscription reaches `on_subscribe_failed`** with the registration and the error.
+  Nothing else is lost: the session stays up, and the next authentication tries again.
+- **A model this package does not model** goes through the generic overload:
+  `plugin.subscribe_event(MyEventData, MyConfig())`, whose config is `Any` — a wrong one is not caught
+  there, and VTS is the one that refuses it.
+- **An event can also be named by its wire name**: `handle_event("ModelMovedEvent")`, or
+  `subscribe_event("ModelMovedEvent", config)`. Nothing is decoded or validated, the handler gets the
+  raw payload typed `Any`, and an omitted config goes out empty. Hand-built
+  `api.EventSubscriptionRequest` frames through `call_api` stay the last resort.
 
 ## Dispatch semantics
 
@@ -72,7 +83,9 @@ whose `requestID` was already consumed. That is intended, not a missing log line
 ## Debugging
 
 - To check whether a subscription went through, look at
-  `EventSubscriptionResponse.subscribed_event_count`.
+  `EventSubscriptionResponse.subscribed_event_count` — returned by an awaited declaration, and
+  otherwise visible only as a failure on `on_subscribe_failed`. Declared events are in
+  `plugin.subscriptions`.
 - To check whether frames actually arrive, add `on_recv_raw` and look at the raw JSON. If a frame
   arrives but your handler does not run, either you never subscribed or the payload failed to decode
   (that one goes to `on_parse_data_error`).

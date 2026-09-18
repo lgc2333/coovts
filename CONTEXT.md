@@ -26,11 +26,19 @@ A function registered for one inbound event type; it runs as its own task and it
 awaited by the library.
 _Avoid_: Callback, Subscriber, Listener
 
+**Event registration**:
+The local record of one event: its data model, the config its subscription carries, and the handlers
+attached to it. One registration per event, created by `plugin.subscribe_event(...)` when the event
+is subscribed to, or by `plugin.handle_event(...)` when only a handler is wanted; an event is named by
+its data model, or by its event name when nothing needs decoding. Giving it up means disposing of it,
+which cancels the subscription and stops its handlers.
+_Avoid_: Subscription, Handler, Listener
+
 **Event subscription**:
 The opt-in sent to VTube Studio that makes it push a given event. Distinct from a handler, which is
 local: a subscription with no handler delivers frames nobody reads, and a handler without a
-subscription never fires.
-_Avoid_: Registration, Listen, Hook
+subscription never fires. Distinct from the event registration that holds it, which is local state.
+_Avoid_: Listen, Hook
 
 **Request ID**:
 The decimal-string identifier coovts assigns to an outbound API request so its response can be

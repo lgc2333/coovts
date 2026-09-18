@@ -17,7 +17,7 @@ import sys
 from pathlib import Path
 
 from coovts.plugin import Plugin
-from coovts.types import api, event, get_event_name
+from coovts.types import api, event
 
 AUTH_TOKEN_FILE = Path(__file__).parent / "auth_token.txt"
 
@@ -41,20 +41,15 @@ async def _(e: Exception):
     AUTH_TOKEN_FILE.unlink(missing_ok=True)
 
 
-@plugin.on_authenticated
-async def _():
-    await plugin.call_api(
-        api.EventSubscriptionRequest(
-            event_name=get_event_name(event.ModelMovedEventData),
-            subscribe=True,
-            config=event.ModelMovedEventConfig(),
-        ),
-    )
-
-
-@plugin.handle_event(event.ModelMovedEventData)
+@plugin.subscribe_event(event.ModelMovedEventData)
 async def _(data: event.ModelMovedEventData):
     print("model moved:", data.model_position)
+
+
+@plugin.on_authenticated
+async def _():
+    model = await plugin.call_api(api.CurrentModelRequest())
+    print("current model:", model.model_name, model.model_id)
 
 
 async def main() -> int:
@@ -68,13 +63,17 @@ if __name__ == "__main__":
 
 带全部日志 hook 的完整版见 [`examples/basic.py`](../../../examples/basic.py)。
 
+请求需要有会话，所以 `call_api` 同样写在 `on_authenticated` 里；它按请求给出类型，返回对应的响应模型
+（见[发请求](./03-requests.md)）。
+
 ## 三件容易踩的事
 
 ### 1. 每会话初始化要放在 `on_authenticated` 里
 
-`on_authenticated` **每个会话都触发一次**，重连之后也触发。事件订阅、自定义参数这类东西是会话级的，
-连接断了就没了。所以凡是「每个会话都要重新建立」的东西——订阅、创建参数、记住的模型 id——都放
-`on_authenticated`，别放 `main()`。理由见 [ADR-0007](../../adr/0007-reconnect-is-a-fixed-delay-loop.md)。
+`on_authenticated` **每个会话都触发一次**，重连之后也触发。事件订阅同样是会话级的，但这一半由库负责：
+声明过的事件会在 hook 触发前重新订阅一次，所以不会被重连忘掉。其余 VTS 会忘掉的东西——自定义参数、
+创建出来的 id、缓存的列表——就得你自己来：放进 `on_authenticated`，而不是 `main()`。理由见
+[ADR-0007](../../adr/0007-reconnect-is-a-fixed-delay-loop.md)。
 
 ### 2. token 是库交给你保管的
 

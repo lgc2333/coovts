@@ -6,21 +6,13 @@ says what would make building it worth while now.
 
 An entry leaves this page when it is built, or moves into an ADR when it is decided against.
 
-## Batch calls, a subscribe helper, and a parameter keepalive helper
+## Batch calls, and a parameter keepalive helper
 
-**What**: convenience wrappers for calling several things in one go, for subscribing to an event
-together with its handler, and for keeping a plugin-controlled parameter alive at the rate VTS
-requires.
+**What**: convenience wrappers for calling several things in one go, and for keeping a
+plugin-controlled parameter alive at the rate VTS requires.
 
 **Trigger**: measurement first. "One request that already carries every value" against "send only
 when the value changes" decides what the defaults should be, so the helpers wait for those numbers.
-
-## `EventSubscriptionRequest.config` stops being `Any`
-
-**What**: narrow the config field so a subscription's config type derives the handler's data type.
-
-**Trigger**: the subscribe helper above — it is where the derivation would live, and the chain for it
-already exists in `get_event_name`.
 
 ## UDP server discovery and `VTubeStudioAPIStateBroadcast`
 

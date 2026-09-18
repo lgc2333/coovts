@@ -18,9 +18,16 @@ minor 就是放破坏性变更的地方（[ADR-0012](./docs/adr/0012-public-api-
 - 删掉日志 shim、`log` / `all` extra 与 `cookit` 依赖：库完全不打日志
   （[ADR-0011](./docs/adr/0011-dependency-set.md)）。
 - 新增 `on_disconnect_failed` hook：库自己发起的断开若关闭失败，就报到这里。
-- `call_api` / `handle_event` 由模型生成到 stub，并加了 CI 检查漂移。
+- `call_api` 与 `subscribe_event` 由模型生成到 stub，并加了 CI 检查漂移；`handle_event` 则是 `Plugin`
+  上的泛型方法。
 - 加了 pytest 套件，用真实 VTube Studio 的抓包帧回放。
 - 加了 `CONTEXT.md`、ADR、使用指南，以及这份 changelog。
+- 事件现在用 `plugin.subscribe_event(...)` 声明一次：handler 与订阅绑在一起，每次重连后自动重发；交回来的
+  handler 被包了一层、带 `dispose()`，而 await 声明本身则立刻订阅。事件也可以用 wire 名指名，这时什么都不
+  解析，handler 拿到的是原始 payload。
+- VTS 拒绝的订阅不再让鉴权失败，改报到新增的 `on_subscribe_failed` hook。
+- 生成的 stub 为每个事件多了一条带类型的 `subscribe_event` 重载，其 `config` 只有在对应 config
+  模型没有必填字段时才是可选的。
 
 ## 0.0.1.alpha2 — 2025-05-21
 

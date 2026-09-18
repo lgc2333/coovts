@@ -6,41 +6,48 @@
 
 VTS 的事件要能跑通，**订阅**和 **handler** 缺一不可，而它们是两回事：
 
-- **订阅**：给 VTS 发 `EventSubscriptionRequest`，让它开始推这个事件。这是网络上的动作，会话级。
-- **handler**：在本地用 `@plugin.handle_event(...)` 注册回调。VTS 完全不知道它存在。
+- **订阅**：让 VTS 开始推这个事件。这是网络上的动作，会话级。
+- **handler**：本地回调，VTS 完全不知道它存在。
 
-两种半成品都是静默失效：只订阅不挂 handler，帧照收、然后被丢掉；只挂 handler 不订阅，永远不触发。
+`plugin.subscribe_event(...)` 一次把两半都声明了，并且由库负责让订阅一直活着：
 
 ```python
-from coovts.types import api, event, get_event_name
+from coovts.types import event
 
 
-@plugin.on_authenticated
-async def _():
-    await plugin.call_api(
-        api.EventSubscriptionRequest(
-            event_name=get_event_name(event.ModelMovedEventData),
-            subscribe=True,
-            config=event.ModelMovedEventConfig(),
-        ),
-    )
-
-
-@plugin.handle_event(event.ModelMovedEventData)
+@plugin.subscribe_event(event.ModelMovedEventData)
 async def _(data: event.ModelMovedEventData):
     print(data.model_position)
 ```
 
+写在模块顶层，只写一次。每次鉴权成功后 VTS 那边都会重新订阅，所以重连不会悄悄让你收不到事件。只想要
+handler 的话，就是 `@plugin.handle_event(...)` 注册的东西：它交回来的同样是包过一层的 handler，所以
+dispose 它只是停掉分发——它背后没有订阅可以取消。
+
 要点：
 
-- **事件名从模型类名推导**：`XxxEventData` / `XxxEventConfig` 去掉后缀就是事件名，也可以用
-  `get_event_name(...)` 现成地取。data 模型和 config 模型共享同一个事件名。
-- **`config` 是必填字段**，即使这个事件没有配置项（那就传 `XxxEventConfig()`）。忘传会在构造时就报错。
-  上游事件不同 config 字段的含义见 [订阅与取消订阅][e-sub] 与各事件章节。
-- **订阅要放在 `on_authenticated`**，因为它是会话级的：重连之后 VTS 那边什么都不记得了。
-- **取消订阅**同样用 `EventSubscriptionRequest`，`subscribe=False`。
-- `EventSubscriptionRequest.config` 现在是有意留成 `Any` 的，将来做订阅便捷方法时会按 config 类型推导
-  data 类型。
+- **事件由它的 data 模型来指名**：`XxxEventData` 就是事件 `XxxEvent`，`get_event_config_model(...)` 能找到
+  它的 config 模型 `XxxEventConfig`。字段含义看上游：[订阅与取消订阅][e-sub] 与各事件章节。
+- **config 是可选的，除非它的模型有必填字段**：默认值就是按 config 模型自己的字段默认值构造出来的，所以
+  `subscribe_event(event.ModelOutlineEventData)` 发出去的是 `{"draw": false}`。想自己指定就传一个 config：
+  `subscribe_event(event.ModelOutlineEventData, event.ModelOutlineEventConfig(draw=True))`。
+  `ArtMeshTrackingEventData`、`ArtMeshOutlineEventData` 和 `ExpressionToggledEventData` 不能不带 config
+  声明——它们的 config 有必填字段，而生成的 stub 会按事件给 `config` 定类型，所以管着你的是类型检查器。
+- **config 不一定是模型**：VTS 在该事件上接受的任何东西（通常是手搓的 dict）都会走不带类型的 overload，原样
+  发上去。
+- **`await plugin.subscribe_event(...)`** 会立刻把订阅发出去，返回 `EventSubscriptionResponse`，同时照样
+  登记这个声明。运行时算出来的 config 就是这么发出去的。
+- **`await on_moved.dispose()`** 会放弃这个事件：handler 是被包了一层才交回来的，所以你装饰的那个函数身上
+  就带着 `dispose`，它会取消订阅并忘掉这个 registration。还没挂 handler 的声明就用 `subscribe_event` 返回
+  的对象同样 dispose。
+- **订阅被拒绝会走 `on_subscribe_failed`**，带上 registration 和异常。别的都不会丢：会话继续开着，下次
+  鉴权会再试一次。
+- **这个包没有建模的模型**走泛用 overload：`plugin.subscribe_event(MyEventData, MyConfig())`，那里 config 是
+  `Any`——传错不会被类型层拦住，拦它的是 VTS。
+- **事件也可以用 wire 名来指名**：`handle_event("ModelMovedEvent")`，或者
+  `subscribe_event("ModelMovedEvent", config)`。这种形式什么都不解析、也不校验：handler 拿到的是原始
+  payload，类型是 `Any`；config 不传就发空 config。手搓 `api.EventSubscriptionRequest` 经 `call_api` 发出
+  去，仍然是最后的兜底。
 
 ## 分发语义
 
@@ -60,10 +67,12 @@ async def _(data: event.ModelMovedEventData):
 
 ## 调试
 
-- 想确认「到底有没有订阅上」：看 `EventSubscriptionResponse.subscribed_event_count`。
+- 想确认「到底有没有订阅上」：看 `EventSubscriptionResponse.subscribed_event_count`——await 过的声明会返回
+  它，除此之外它只会在 `on_subscribe_failed` 里以失败的形式出现。声明过的事件在 `plugin.subscriptions`
+  里。
 - 想确认「帧到底有没有来」：挂 `on_recv_raw` 看原始 JSON；如果来了但 handler 没触发，那是没订阅或是
   载荷解不成模型（后者会走 `on_parse_data_error`）。
-- 先拿 `TestEventData` 试链路：它就是为了测事件 API 存在的。
+- 先拿 `TestEventData` 试链路：它就是为了端到端测事件 API 存在的。
 
 ## 各个事件的字段含义在哪
 

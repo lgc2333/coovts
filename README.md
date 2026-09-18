@@ -36,26 +36,23 @@ English | [简体中文](README.zh-cn.md)
 import asyncio
 
 from coovts.plugin import Plugin
-from coovts.types import api, event, get_event_name
+from coovts.types import api, event
 
 # no token yet: VTS asks the user once
 plugin = Plugin("A Creative Plugin Name", "LgCuwukii☆")
 
 
-@plugin.on_authenticated
-async def _():  # runs once per session, reconnects included
-    await plugin.call_api(
-        api.EventSubscriptionRequest(
-            event_name=get_event_name(event.ModelMovedEventData),
-            subscribe=True,
-            config=event.ModelMovedEventConfig(),
-        ),
-    )
-
-
-@plugin.handle_event(event.ModelMovedEventData)
+@plugin.subscribe_event(event.ModelMovedEventData)
 async def _(data: event.ModelMovedEventData):
     print(data.model_position)
+
+
+# Requests need a session, so they belong in `on_authenticated`, which fires again after every reconnect;
+# `call_api` is typed per request and returns that request's response model.
+@plugin.on_authenticated
+async def _():
+    model = await plugin.call_api(api.CurrentModelRequest())
+    print("current model:", model.model_name, model.model_id)
 
 
 asyncio.run(plugin.run())
@@ -81,10 +78,6 @@ _or_
 ```bash
 uv add coovts
 ```
-
-There are no extras and no logging dependency: Pydantic and `websockets` are the whole runtime set,
-and everything a plugin has to know arrives as a hook or an exception
-([ADR-0011](./docs/adr/0011-dependency-set.md)).
 
 ## 📞 Contacts
 

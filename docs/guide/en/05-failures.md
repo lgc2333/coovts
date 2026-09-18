@@ -50,7 +50,8 @@ reasoning is in [ADR-0016](../../adr/0016-fatal-authentication-refusals-end-the-
 - **Requests in flight.** A disconnect fails them; a successful reconnect does not re-send them.
   Whether to repeat a lost call is the caller's decision ([ADR-0008](../../adr/0008-request-correlation-and-error-surface.md)).
 - **Events.** Lost is lost; VTS does not replay. To converge on the truth, ask again from
-  `on_authenticated`.
+  `on_authenticated`. A missing _subscription_ is not part of that: a declared event is subscribed to
+  again after every reconnect, and a refusal is reported to `on_subscribe_failed`.
 - **The connection itself** is retried, but only as a fixed-delay reconnect
   ([ADR-0007](../../adr/0007-reconnect-is-a-fixed-delay-loop.md)).
 
@@ -77,8 +78,10 @@ Deliberate exclusions ([ADR-0013](../../adr/0013-non-goals.md)):
 2. `on_recv_raw` / `on_before_send_raw` — the JSON that actually moved.
 3. `on_parse_data_error` — frames arrive but do not decode (broken envelope, or payload that does not
    match the model).
-4. `on_handler_run_failed` — your own code raised.
-5. The library exception at the `await` — the request-level cause; look up `APIError.data.error_id`
+4. `on_subscribe_failed` — a declared event's subscription was refused: an event this VTS does not
+   know (a beta event on a stable build), or a config it rejected.
+5. `on_handler_run_failed` — your own code raised.
+6. The library exception at the `await` — the request-level cause; look up `APIError.data.error_id`
    in the ErrorID table.
 
 ## Back to the start

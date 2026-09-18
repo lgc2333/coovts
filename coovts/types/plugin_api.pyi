@@ -1,14 +1,11 @@
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Coroutine
 from types import EllipsisType
 from typing import Any, Literal, overload
 
 from pydantic import BaseModel
 
+from ..subscriptions import EventRegistration
 from . import api, event
-
-type _Deco[**P, R] = Callable[[Callable[P, R]], Callable[P, R]]
-type _Co[T] = Coroutine[Any, Any, T]
 
 class PluginAPI(ABC):
     @abstractmethod
@@ -23,10 +20,11 @@ class PluginAPI(ABC):
         api_timeout: float | EllipsisType | None = ...,
     ) -> Any: ...
     @abstractmethod
-    def _handle_event[T: BaseModel](
+    def _subscribe_event(
         self,
-        event_data_model: type[T],
-    ) -> _Deco[[T], _Co[Any]]: ...
+        event_data_model: type[BaseModel] | str,
+        config: Any = None,
+    ) -> EventRegistration[Any]: ...
 
     # region builtin apis
 
@@ -508,93 +506,116 @@ class PluginAPI(ABC):
         api_timeout: float | EllipsisType | None = ...,
     ) -> dict[str, Any]: ...
 
-    # region builtin events
+    # region builtin event subscriptions
 
     @overload
-    def handle_event[T: event.ArtMeshOutlineEventData](
+    def subscribe_event(
         self,
-        event_data_model: type[T],
-    ) -> _Deco[[T], _Co[Any]]: ...
+        event_data_model: type[event.ArtMeshOutlineEventData],
+        config: event.ArtMeshOutlineEventConfig,
+    ) -> EventRegistration[event.ArtMeshOutlineEventData]: ...
     @overload
-    def handle_event[T: event.ArtMeshTrackingEventData](
+    def subscribe_event(
         self,
-        event_data_model: type[T],
-    ) -> _Deco[[T], _Co[Any]]: ...
+        event_data_model: type[event.ArtMeshTrackingEventData],
+        config: event.ArtMeshTrackingEventConfig,
+    ) -> EventRegistration[event.ArtMeshTrackingEventData]: ...
     @overload
-    def handle_event[T: event.BackgroundChangedEventData](
+    def subscribe_event(
         self,
-        event_data_model: type[T],
-    ) -> _Deco[[T], _Co[Any]]: ...
+        event_data_model: type[event.BackgroundChangedEventData],
+        config: event.BackgroundChangedEventConfig | None = None,
+    ) -> EventRegistration[event.BackgroundChangedEventData]: ...
     @overload
-    def handle_event[T: event.ExpressionToggledEventData](
+    def subscribe_event(
         self,
-        event_data_model: type[T],
-    ) -> _Deco[[T], _Co[Any]]: ...
+        event_data_model: type[event.ExpressionToggledEventData],
+        config: event.ExpressionToggledEventConfig,
+    ) -> EventRegistration[event.ExpressionToggledEventData]: ...
     @overload
-    def handle_event[T: event.HotkeyTriggeredEventData](
+    def subscribe_event(
         self,
-        event_data_model: type[T],
-    ) -> _Deco[[T], _Co[Any]]: ...
+        event_data_model: type[event.HotkeyTriggeredEventData],
+        config: event.HotkeyTriggeredEventConfig | None = None,
+    ) -> EventRegistration[event.HotkeyTriggeredEventData]: ...
     @overload
-    def handle_event[T: event.ItemEventData](
+    def subscribe_event(
         self,
-        event_data_model: type[T],
-    ) -> _Deco[[T], _Co[Any]]: ...
+        event_data_model: type[event.ItemEventData],
+        config: event.ItemEventConfig | None = None,
+    ) -> EventRegistration[event.ItemEventData]: ...
     @overload
-    def handle_event[T: event.Live2DCubismEditorConnectedEventData](
+    def subscribe_event(
         self,
-        event_data_model: type[T],
-    ) -> _Deco[[T], _Co[Any]]: ...
+        event_data_model: type[event.Live2DCubismEditorConnectedEventData],
+        config: event.Live2DCubismEditorConnectedEventConfig | None = None,
+    ) -> EventRegistration[event.Live2DCubismEditorConnectedEventData]: ...
     @overload
-    def handle_event[T: event.ModelAnimationEventData](
+    def subscribe_event(
         self,
-        event_data_model: type[T],
-    ) -> _Deco[[T], _Co[Any]]: ...
+        event_data_model: type[event.ModelAnimationEventData],
+        config: event.ModelAnimationEventConfig | None = None,
+    ) -> EventRegistration[event.ModelAnimationEventData]: ...
     @overload
-    def handle_event[T: event.ModelClickedEventData](
+    def subscribe_event(
         self,
-        event_data_model: type[T],
-    ) -> _Deco[[T], _Co[Any]]: ...
+        event_data_model: type[event.ModelClickedEventData],
+        config: event.ModelClickedEventConfig | None = None,
+    ) -> EventRegistration[event.ModelClickedEventData]: ...
     @overload
-    def handle_event[T: event.ModelConfigChangedEventData](
+    def subscribe_event(
         self,
-        event_data_model: type[T],
-    ) -> _Deco[[T], _Co[Any]]: ...
+        event_data_model: type[event.ModelConfigChangedEventData],
+        config: event.ModelConfigChangedEventConfig | None = None,
+    ) -> EventRegistration[event.ModelConfigChangedEventData]: ...
     @overload
-    def handle_event[T: event.ModelLoadedEventData](
+    def subscribe_event(
         self,
-        event_data_model: type[T],
-    ) -> _Deco[[T], _Co[Any]]: ...
+        event_data_model: type[event.ModelLoadedEventData],
+        config: event.ModelLoadedEventConfig | None = None,
+    ) -> EventRegistration[event.ModelLoadedEventData]: ...
     @overload
-    def handle_event[T: event.ModelMovedEventData](
+    def subscribe_event(
         self,
-        event_data_model: type[T],
-    ) -> _Deco[[T], _Co[Any]]: ...
+        event_data_model: type[event.ModelMovedEventData],
+        config: event.ModelMovedEventConfig | None = None,
+    ) -> EventRegistration[event.ModelMovedEventData]: ...
     @overload
-    def handle_event[T: event.ModelOutlineEventData](
+    def subscribe_event(
         self,
-        event_data_model: type[T],
-    ) -> _Deco[[T], _Co[Any]]: ...
+        event_data_model: type[event.ModelOutlineEventData],
+        config: event.ModelOutlineEventConfig | None = None,
+    ) -> EventRegistration[event.ModelOutlineEventData]: ...
     @overload
-    def handle_event[T: event.PostProcessingEventData](
+    def subscribe_event(
         self,
-        event_data_model: type[T],
-    ) -> _Deco[[T], _Co[Any]]: ...
+        event_data_model: type[event.PostProcessingEventData],
+        config: event.PostProcessingEventConfig | None = None,
+    ) -> EventRegistration[event.PostProcessingEventData]: ...
     @overload
-    def handle_event[T: event.TestEventData](
+    def subscribe_event(
         self,
-        event_data_model: type[T],
-    ) -> _Deco[[T], _Co[Any]]: ...
+        event_data_model: type[event.TestEventData],
+        config: event.TestEventConfig,
+    ) -> EventRegistration[event.TestEventData]: ...
     @overload
-    def handle_event[T: event.TrackingStatusChangedEventData](
+    def subscribe_event(
         self,
-        event_data_model: type[T],
-    ) -> _Deco[[T], _Co[Any]]: ...
+        event_data_model: type[event.TrackingStatusChangedEventData],
+        config: event.TrackingStatusChangedEventConfig | None = None,
+    ) -> EventRegistration[event.TrackingStatusChangedEventData]: ...
 
     # endregion
 
     @overload
-    def handle_event[T: BaseModel](
+    def subscribe_event[T: BaseModel](
         self,
         event_data_model: type[T],
-    ) -> _Deco[[T], _Co[Any]]: ...
+        config: Any | None,
+    ) -> EventRegistration[T]: ...
+    @overload
+    def subscribe_event(
+        self,
+        event_data_model: str,
+        config: Any | None = None,
+    ) -> EventRegistration[Any]: ...

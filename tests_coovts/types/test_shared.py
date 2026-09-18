@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from coovts.types import api, event
 from coovts.types.shared import (
     get_api_response_model,
+    get_event_config_model,
     get_event_name,
     get_message_type,
 )
@@ -37,6 +38,31 @@ def test_event_data_and_config_agree_on_event_name() -> None:
     config = event.ModelLoadedEventConfig.model_validate({})
     assert get_event_name(event.ModelLoadedEventConfig) == data_name
     assert get_event_name(config) == data_name
+
+
+def test_event_config_model_pairs_with_its_data_model() -> None:
+    """A data model resolves to its config sibling, and a config model to itself."""
+    assert (
+        get_event_config_model(event.ModelLoadedEventData)
+        is event.ModelLoadedEventConfig
+    )
+    assert (
+        get_event_config_model(event.ModelLoadedEventConfig)
+        is event.ModelLoadedEventConfig
+    )
+
+    instance = event.ModelLoadedEventConfig(model_id=["m1"])
+    assert get_event_config_model(instance) is event.ModelLoadedEventConfig
+
+
+def test_unresolvable_event_config_model_raises_value_error() -> None:
+    """A model the config convention cannot name raises instead of guessing."""
+
+    class NotAnEvent(BaseModel):
+        """Ends in neither a `EventData` nor a `EventConfig` suffix."""
+
+    with pytest.raises(ValueError):  # noqa: PT011
+        get_event_config_model(NotAnEvent)
 
 
 def test_msg_t_overrides_message_type() -> None:

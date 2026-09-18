@@ -37,20 +37,21 @@ fix), the second means "a reconnect is coming". See [When things fail](./05-fail
 Every hook is a `Hook` object registered with `@plugin.on_xxx`. A hook takes several handlers and
 **starts** them in registration order; they are tasks, so completion order is not guaranteed.
 
-| Hook                          | Fires when                                                  | Arguments      |
-| ----------------------------- | ----------------------------------------------------------- | -------------- |
-| `on_connecting`               | Before every connect attempt, reconnects included           | —              |
-| `on_connected`                | The socket is up, before authentication                     | —              |
-| `on_connect_failed`           | `connect` failed (a retry follows after a delay)            | `e: Exception` |
-| `on_connection_closed`        | The receive loop ended on an exception                      | `e: Exception` |
-| `on_disconnect_failed`        | A disconnect the plugin performs on its own failed          | `e: Exception` |
-| `on_parse_data_error`         | A frame failed to parse (the envelope, or an event payload) | `raw, e`       |
-| `on_authentication_token_got` | A token was just obtained                                   | `token: str`   |
-| `on_authenticated`            | Authentication succeeded (**once per session**)             | —              |
-| `on_authenticate_failed`      | Authentication failed                                       | `e: Exception` |
-| `on_handler_run_failed`       | One of your handlers raised                                 | `e: Exception` |
-| `on_recv_raw`                 | Any frame arrived, before parsing                           | `raw`          |
-| `on_before_send_raw`          | A request is about to go out                                | `payload: str` |
+| Hook                          | Fires when                                                  | Arguments         |
+| ----------------------------- | ----------------------------------------------------------- | ----------------- |
+| `on_connecting`               | Before every connect attempt, reconnects included           | —                 |
+| `on_connected`                | The socket is up, before authentication                     | —                 |
+| `on_connect_failed`           | `connect` failed (a retry follows after a delay)            | `e: Exception`    |
+| `on_connection_closed`        | The receive loop ended on an exception                      | `e: Exception`    |
+| `on_disconnect_failed`        | A disconnect the plugin performs on its own failed          | `e: Exception`    |
+| `on_parse_data_error`         | A frame failed to parse (the envelope, or an event payload) | `raw, e`          |
+| `on_authentication_token_got` | A token was just obtained                                   | `token: str`      |
+| `on_authenticated`            | Authentication succeeded (**once per session**)             | —                 |
+| `on_authenticate_failed`      | Authentication failed                                       | `e: Exception`    |
+| `on_handler_run_failed`       | One of your handlers raised                                 | `e: Exception`    |
+| `on_subscribe_failed`         | A declared event's subscription was refused                 | `registration, e` |
+| `on_recv_raw`                 | Any frame arrived, before parsing                           | `raw`             |
+| `on_before_send_raw`          | A request is about to go out                                | `payload: str`    |
 
 `on_recv_raw` and `on_before_send_raw` are the packet-capture pair: they hand you the raw JSON
 strings, which is how you answer "what did we actually send and receive".
@@ -79,18 +80,23 @@ same loop, and since an attempt is a loopback call, backoff would buy nothing. T
 Two consequences for your code:
 
 1. `on_authenticated` fires **again** after a reconnect, which is why per-session setup lives there.
-2. Requests in flight are never resumed or re-sent; see
-   [Requests](./03-requests.md#what-happens-to-pending-requests-on-a-disconnect).
+2. Before the `on_authenticated` handlers run, every event you declared with `subscribe_event` is
+   subscribed to again; a refusal reaches `on_subscribe_failed` instead of ending the session. So the
+   hook sees a live subscription, not a promise of one.
+
+Requests in flight are never resumed or re-sent; see
+[Requests](./03-requests.md#what-happens-to-pending-requests-on-a-disconnect).
 
 ## Where to put what
 
-| You want to                                   | Put it in                        |
-| --------------------------------------------- | -------------------------------- |
-| Read config, build objects, set up logging    | module level or `main()`         |
-| Subscribe to events, create custom parameters | `on_authenticated` (per session) |
-| Fetch a model or item list once               | `on_authenticated` (per session) |
-| Do work when an event arrives                 | the handler registered for it    |
-| Clean up                                      | after `stop()` returns           |
+| You want to                                | Put it in                        |
+| ------------------------------------------ | -------------------------------- |
+| Read config, build objects, set up logging | module level or `main()`         |
+| Declare events to subscribe to             | module level, once               |
+| Create custom parameters                   | `on_authenticated` (per session) |
+| Fetch a model or item list once            | `on_authenticated` (per session) |
+| Do work when an event arrives              | the handler registered for it    |
+| Clean up                                   | after `stop()` returns           |
 
 ## Next
 

@@ -26,9 +26,18 @@ on PyPI yet.
   nothing at all ([ADR-0011](./docs/adr/0011-dependency-set.md)).
 - A disconnect the plugin performs on its own reports a refusing close to the new
   `on_disconnect_failed` hook.
-- `call_api` and `handle_event` are generated into a stub from the models, with CI failing on drift.
+- `call_api` and `subscribe_event` are generated into a stub from the models, with CI failing on
+  drift; `handle_event` is a generic method on `Plugin`.
 - Added a pytest suite replayed against frames captured from a real VTube Studio.
 - Added `CONTEXT.md`, the ADRs, the user guide, and this changelog.
+- Events are declared once with `plugin.subscribe_event(...)`, which pairs the handler with the
+  subscription and re-sends it after every reconnect; the handler it hands back is wrapped and
+  carries `dispose()`, and awaiting the declaration subscribes right away. An event may also be named
+  by its wire name, in which case nothing is decoded and the handler gets the raw payload.
+- A subscription VTS refuses now reaches the new `on_subscribe_failed` hook instead of failing the
+  authentication.
+- The generated stub gains a typed `subscribe_event` overload per event, whose `config` is only
+  optional when its config model has no required field.
 
 ## 0.0.1.alpha2 — 2025-05-21
 

@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 from coovts.plugin import Plugin
-from coovts.types import api, event, get_event_name
+from coovts.types import api, event
 
 logging.basicConfig(
     level=logging.INFO,
@@ -76,6 +76,9 @@ async def _(token: str):
 async def _():
     logger.info("Authenticated successfully!")
 
+    model = await plugin.call_api(api.CurrentModelRequest())
+    logger.info("Current model: %s (%s)", model.model_name, model.model_id)
+
 
 @plugin.on_authenticate_failed
 async def _(e: Exception):
@@ -92,23 +95,13 @@ async def _(e: Exception):
 # endregion
 
 
-# region api calling (event registering) & handling
+# region event declaring & handling
 
 
-@plugin.on_authenticated
-async def _():
-    await plugin.call_api(
-        api.EventSubscriptionRequest(
-            event_name=get_event_name(event.ModelMovedEventData),
-            subscribe=True,
-            config=event.ModelMovedEventConfig(),
-        ),
-    )
-    logger.info("Subscribed to ModelMovedEvent")
-
-
-@plugin.handle_event(event.ModelMovedEventData)
-async def _(data: event.ModelMovedEventData):
+# declared once, re-subscribed after every authentication; a refusal reaches on_subscribe_failed
+# you can dispose it by `await _model_moved_handler.dispose()`
+@plugin.subscribe_event(event.ModelMovedEventData)
+async def _model_moved_handler(data: event.ModelMovedEventData):
     logger.info("Model moved: %s", data)
 
 

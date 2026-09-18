@@ -46,7 +46,8 @@ supervisor 直接结束运行，状态落到 `STOPPED`：
 ## 什么永远不会被自动重试
 
 - **在途请求**：断线就失败，重连成功也不会替你重发。要不要重来由你决定（[ADR-0008](../../adr/0008-request-correlation-and-error-surface.md)）。
-- **事件**：断了就是丢了，VTS 不重放。想让状态收敛，就在 `on_authenticated` 里主动重问一次。
+- **事件**：断了就是丢了，VTS 不重放。想让状态收敛，就在 `on_authenticated` 里主动重问一次。缺一个
+  *订阅*不算在内：声明过的事件每次重连后都会重新订阅，被拒绝则报给 `on_subscribe_failed`。
 - **连接本身**：会重试，但只是定延重连（[ADR-0007](../../adr/0007-reconnect-is-a-fixed-delay-loop.md)）。
 
 ## 还没做的东西
@@ -69,8 +70,10 @@ supervisor 直接结束运行，状态落到 `STOPPED`：
    打出来。
 2. `on_recv_raw` / `on_before_send_raw`：线上实际流动的 JSON。
 3. `on_parse_data_error`：帧到了但解不出来（信封坏了，或者载荷和模型对不上）。
-4. `on_handler_run_failed`：你的业务代码抛了异常。
-5. `await` 处的库异常类型：请求级失败的具体原因，`APIError.data.error_id` 查 ErrorID 表。
+4. `on_subscribe_failed`：声明过的事件的订阅被拒绝了——这个 VTS 不认识的事件（稳定版上跑 beta 事件），
+   或者它不接受的 config。
+5. `on_handler_run_failed`：你的业务代码抛了异常。
+6. `await` 处的库异常类型：请求级失败的具体原因，`APIError.data.error_id` 查 ErrorID 表。
 
 ## 回到开头
 

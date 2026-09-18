@@ -11,20 +11,21 @@ with their responses, and for dispatching the events VTube Studio pushes to your
 - **One `Plugin` is one connection.** The connection lifecycle (connect → authenticate → receive →
   drop → reconnect) runs in a supervisor task the library owns; your code watches it through
   **hooks** instead of managing a socket.
-- **Two ways in and out of VTS:** requests (`call_api` / `send_request`) and events (a subscription
-  plus a handler).
-- **The library does not mirror VTS state.** Model lists, parameter values and subscription state
-  are asked for when needed; the connection state machine is the only local state it keeps.
+- **Two ways in and out of VTS:** requests (`call_api` / `send_request`) and events (a declared event,
+  which is a subscription plus its handlers).
+- **The library does not mirror VTS state.** Model lists and parameter values are asked for when
+  needed. The local state it does keep is the connection state machine, and the events you declared —
+  which it subscribes to again after every reconnect.
 
 ## Reading order
 
-| #   | Page                                          | Read it when                                                            |
-| --- | --------------------------------------------- | ----------------------------------------------------------------------- |
-| 1   | [Getting started](./01-getting-started.md)    | You want it running once, and need to know where the token goes         |
-| 2   | [Connection and lifecycle](./02-lifecycle.md) | You need hook timing, reconnect semantics, or where to init per session |
-| 3   | [Requests](./03-requests.md)                  | Timeouts, exceptions, field naming, endpoints nobody modelled yet       |
-| 4   | [Events](./04-events.md)                      | How subscriptions relate to handlers, and how dispatch behaves          |
-| 5   | [When things fail](./05-failures.md)          | Which layer raises, what gets retried, what is worth retrying           |
+| #   | Page                                          | Read it when                                                                            |
+| --- | --------------------------------------------- | --------------------------------------------------------------------------------------- |
+| 1   | [Getting started](./01-getting-started.md)    | You want it running once, and need to know where the token goes                         |
+| 2   | [Connection and lifecycle](./02-lifecycle.md) | You need hook timing, reconnect semantics, or where to init per session                 |
+| 3   | [Requests](./03-requests.md)                  | Timeouts, exceptions, field naming, endpoints nobody modelled yet                       |
+| 4   | [Events](./04-events.md)                      | How a declared event relates to its subscription and handlers, and how dispatch behaves |
+| 5   | [When things fail](./05-failures.md)          | Which layer raises, what gets retried, what is worth retrying                           |
 
 ## Three conventions
 

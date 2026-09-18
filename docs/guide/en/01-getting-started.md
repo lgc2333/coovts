@@ -18,7 +18,7 @@ import sys
 from pathlib import Path
 
 from coovts.plugin import Plugin
-from coovts.types import api, event, get_event_name
+from coovts.types import api, event
 
 AUTH_TOKEN_FILE = Path(__file__).parent / "auth_token.txt"
 
@@ -42,20 +42,15 @@ async def _(e: Exception):
     AUTH_TOKEN_FILE.unlink(missing_ok=True)
 
 
-@plugin.on_authenticated
-async def _():
-    await plugin.call_api(
-        api.EventSubscriptionRequest(
-            event_name=get_event_name(event.ModelMovedEventData),
-            subscribe=True,
-            config=event.ModelMovedEventConfig(),
-        ),
-    )
-
-
-@plugin.handle_event(event.ModelMovedEventData)
+@plugin.subscribe_event(event.ModelMovedEventData)
 async def _(data: event.ModelMovedEventData):
     print("model moved:", data.model_position)
+
+
+@plugin.on_authenticated
+async def _():
+    model = await plugin.call_api(api.CurrentModelRequest())
+    print("current model:", model.model_name, model.model_id)
 
 
 async def main() -> int:
@@ -69,14 +64,18 @@ if __name__ == "__main__":
 
 [`examples/basic.py`](../../../examples/basic.py) is the same thing with every logging hook filled in.
 
+A request needs an authenticated session, so `call_api` goes in `on_authenticated` too; it is typed per
+request and returns that request's response model ([Requests](./03-requests.md)).
+
 ## Three things that bite
 
 ### 1. Per-session setup belongs in `on_authenticated`
 
 `on_authenticated` fires **once per session**, including after every reconnect. Event subscriptions
-and custom parameters are session-scoped: when the connection drops, VTS forgets them. So anything
-that has to exist per session — subscriptions, created parameters, ids you noted down — goes in
-`on_authenticated`, not in `main()`. The reasoning is in
+are session-scoped too, but the library takes care of that half: a declared event is subscribed to
+again right before the hook fires, so it cannot be forgotten by a reconnect. Everything else VTS
+forgets — custom parameters, created ids, cached lists — is yours: it goes in `on_authenticated`, not
+in `main()`. The reasoning is in
 [ADR-0007](../../adr/0007-reconnect-is-a-fixed-delay-loop.md).
 
 ### 2. The token is yours to keep

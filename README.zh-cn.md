@@ -36,26 +36,23 @@ _✨ 另一个写 VTube Studio 插件的 Python 库 ✨_
 import asyncio
 
 from coovts.plugin import Plugin
-from coovts.types import api, event, get_event_name
+from coovts.types import api, event
 
 # no token yet: VTS asks the user once
 plugin = Plugin("A Creative Plugin Name", "LgCuwukii☆")
 
 
-@plugin.on_authenticated
-async def _():  # runs once per session, reconnects included
-    await plugin.call_api(
-        api.EventSubscriptionRequest(
-            event_name=get_event_name(event.ModelMovedEventData),
-            subscribe=True,
-            config=event.ModelMovedEventConfig(),
-        ),
-    )
-
-
-@plugin.handle_event(event.ModelMovedEventData)
+@plugin.subscribe_event(event.ModelMovedEventData)
 async def _(data: event.ModelMovedEventData):
     print(data.model_position)
+
+
+# 请求需要会话，所以写在 `on_authenticated` 里——每次重连后它都会再触发；
+# `call_api` 按请求给出类型，返回对应的响应模型。
+@plugin.on_authenticated
+async def _():
+    model = await plugin.call_api(api.CurrentModelRequest())
+    print("current model:", model.model_name, model.model_id)
 
 
 asyncio.run(plugin.run())
@@ -81,9 +78,6 @@ _or_
 ```bash
 uv add coovts
 ```
-
-没有 extra，也没有日志依赖：运行时就是 Pydantic + `websockets`，而插件需要知道的一切都通过 hook 或
-异常交给你（[ADR-0011](./docs/adr/0011-dependency-set.md)）。
 
 ## 📞 联系方式
 

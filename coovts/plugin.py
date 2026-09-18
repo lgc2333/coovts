@@ -1,7 +1,6 @@
 import asyncio
 import base64
 from collections.abc import Callable, Iterable, Iterator
-from dataclasses import dataclass
 from enum import Enum, auto
 from pathlib import Path
 from types import CoroutineType, EllipsisType
@@ -13,14 +12,19 @@ from websockets.exceptions import WebSocketException
 
 from .errors import APIError, AuthenticationFailedError, NetworkError
 from .request import RequestManager
+from .subscriptions import EventRegistration, SubscriptionRegistry
 from .types import (
     BaseRequest,
     BaseResponse,
     get_api_response_model,
-    get_event_name,
     get_message_type,
 )
-from .types.api import AuthenticationRequest, AuthenticationTokenRequest
+from .types.api import (
+    AuthenticationRequest,
+    AuthenticationTokenRequest,
+    EventSubscriptionRequest,
+    EventSubscriptionResponse,
+)
 from .types.consts import ErrorID
 from .types.plugin_api import PluginAPI
 
@@ -39,6 +43,7 @@ type AuthenticationTokenGotHandler = Callable[[str], C[Any]]
 type AuthenticatedHandler = Callable[[], C[Any]]
 type AuthenticationFailedHandler = Callable[[Exception], C[Any]]
 type HandlerRunFailedHandler = Callable[[Exception], C[Any]]
+type SubscribeFailedHandler = Callable[[EventRegistration, Exception], C[Any]]
 type RecvRawHandler = Callable[[str | bytes], C[Any]]
 type BeforeSendRawHandler = Callable[[str], C[Any]]
 
@@ -61,12 +66,6 @@ _FATAL_AUTH_ERROR_IDS: frozenset[ErrorID] = frozenset(
     },
 )
 """Authentication refusals that retrying cannot fix. Plugin stops when VTS answers these."""
-
-
-@dataclass
-class EventHandlerInfo[T: BaseModel]:
-    model: type[T]
-    handler: Callable[[T], Any]
 
 
 class Hook[T]:
@@ -137,13 +136,14 @@ class Plugin(PluginAPI):
         self.on_authenticated: Hook[AuthenticatedHandler] = Hook()
         self.on_authenticate_failed: Hook[AuthenticationFailedHandler] = Hook()
         self.on_handler_run_failed: Hook[HandlerRunFailedHandler] = Hook()
+        self.on_subscribe_failed: Hook[SubscribeFailedHandler] = Hook()
         self.on_recv_raw: Hook[RecvRawHandler] = Hook()
         self.on_before_send_raw: Hook[BeforeSendRawHandler] = Hook()
-        self.event_handlers: dict[str, list[EventHandlerInfo]] = {}
 
         self.client: ws.ClientConnection | None = None
         self.stopped = True
         self.req_manager = RequestManager()
+        self.subscriptions = SubscriptionRegistry(self._send_subscription)
 
         self._state = PluginState.STOPPED
         self._recv_task: Task | None = None
@@ -162,23 +162,36 @@ class Plugin(PluginAPI):
     def state(self) -> PluginState:
         return self._state
 
-    def _register_event[T: BaseModel, H: Callable[[BaseModel], Any]](
+    @overload
+    def handle_event[T: BaseModel](
         self,
-        model: type[T],
-        handler: H,
-    ) -> H:
-        event_name = get_event_name(model)
-        self.event_handlers.setdefault(event_name, []).append(
-            EventHandlerInfo(model, handler),
-        )
-        return handler
+        event_data_model: type[T],
+    ) -> EventRegistration[T]: ...
+    @overload
+    def handle_event(self, event_data_model: str) -> EventRegistration[Any]: ...
+    def handle_event(
+        self,
+        event_data_model: type[BaseModel] | str,
+    ) -> EventRegistration[Any]:
+        """Register a handler for an event without subscribing to it; decorate with the result.
+
+        An event named by its wire name is not decoded, so its handlers get the raw payload.
+        """
+        return self.subscriptions.registration(event_data_model)
 
     @override
-    def _handle_event(self, event_data_model: type[BaseModel]):
-        def deco(f: Callable):
-            return self._register_event(event_data_model, f)
+    def _subscribe_event(
+        self,
+        event_data_model: type[BaseModel] | str,
+        config: Any = None,
+    ) -> EventRegistration[Any]:
+        return self.subscriptions.subscribe(event_data_model, config)
 
-        return deco
+    async def _send_subscription(
+        self,
+        request: EventSubscriptionRequest,
+    ) -> EventSubscriptionResponse:
+        return await self.call_api(request)
 
     def dispatch_handlers[**P, R](
         self,
@@ -219,14 +232,20 @@ class Plugin(PluginAPI):
                 is_error=resp.message_type == APIError.message_type,
             )
 
-        if resp.message_type in self.event_handlers:
-            for handler_info in self.event_handlers[resp.message_type]:
+        registration = self.subscriptions.get(resp.message_type)
+        if registration is not None:
+            for handler in registration.handlers:
                 try:
-                    data = handler_info.model.model_validate(resp.data, by_alias=True)
+                    data_model = registration.data_model
+                    data = (
+                        resp.data
+                        if data_model is None
+                        else data_model.model_validate(resp.data, by_alias=True)
+                    )
                 except Exception as e:
                     self.dispatch_handlers(self.on_parse_data_error, raw, e)
                 else:
-                    self.dispatch_handlers([handler_info.handler], data)
+                    self.dispatch_handlers([handler], data)
 
     async def _recv(self, client: ws.ClientConnection):
         self._handle_raw(await client.recv())
@@ -291,6 +310,16 @@ class Plugin(PluginAPI):
         if self._run_task:
             self._run_task.cancel()
         self._run_task = None
+
+    async def _resubscribe(self) -> None:
+        """Re-send every declared subscription, which a new session does not remember."""
+        for registration in self.subscriptions:
+            if registration.config is None:
+                continue
+            try:
+                await self.subscriptions.send(registration)
+            except Exception as e:
+                self.dispatch_handlers(self.on_subscribe_failed, registration, e)
 
     async def _run(self):
         if not self.stopped:
@@ -441,4 +470,5 @@ class Plugin(PluginAPI):
             self.authentication_token = None
             raise AuthenticationFailedError(data)
         self._state = PluginState.AUTHENTICATED
+        await self._resubscribe()
         self.dispatch_handlers(self.on_authenticated)

@@ -10,21 +10,19 @@ from coovts.types import (
     api,
     event,
     get_api_response_model,
+    get_event_config_model,
     get_message_type,
 )
 
 FILE_HEAD = """\
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Coroutine
 from types import EllipsisType
 from typing import Any, Literal, overload
 
 from pydantic import BaseModel
 
+from ..subscriptions import EventRegistration
 from . import api, event
-
-type _Deco[**P, R] = Callable[[Callable[P, R]], Callable[P, R]]
-type _Co[T] = Coroutine[Any, Any, T]
 
 class PluginAPI(ABC):
     @abstractmethod
@@ -39,10 +37,11 @@ class PluginAPI(ABC):
         api_timeout: float | EllipsisType | None = ...,
     ) -> Any: ...
     @abstractmethod
-    def _handle_event[T: BaseModel](
+    def _subscribe_event(
         self,
-        event_data_model: type[T],
-    ) -> _Deco[[T], _Co[Any]]: ...
+        event_data_model: type[BaseModel] | str,
+        config: Any = None,
+    ) -> EventRegistration[Any]: ...
 
     # region builtin apis
 """
@@ -111,29 +110,48 @@ API_REST = """
     ) -> dict[str, Any]: ...
 """
 
-EVENT_HEAD = """
-    # region builtin events
+SUBSCRIPTION_HEAD = """
+    # region builtin event subscriptions
 """
 
-EVENT_TEMPLATE = """
+SUBSCRIPTION_TEMPLATE = """
     @overload
-    def handle_event[T: event.{model}](
+    def subscribe_event(
         self,
-        event_data_model: type[T],
-    ) -> _Deco[[T], _Co[Any]]: ..."""
+        event_data_model: type[event.{data}],
+        config: event.{config}{optional},
+    ) -> EventRegistration[event.{data}]: ..."""
 
-EVENT_TAIL = """
+SUBSCRIPTION_TAIL = """
 
     # endregion
 
     @overload
-    def handle_event[T: BaseModel](
+    def subscribe_event[T: BaseModel](
         self,
         event_data_model: type[T],
-    ) -> _Deco[[T], _Co[Any]]: ...
+        config: Any | None,
+    ) -> EventRegistration[T]: ...
+    @overload
+    def subscribe_event(
+        self,
+        event_data_model: str,
+        config: Any | None = None,
+    ) -> EventRegistration[Any]: ...
 """
 
 PYI_PATH = Path(__file__).parent.parent / "coovts" / "types" / "plugin_api.pyi"
+
+
+def event_data_models() -> tuple[type[BaseModel], ...]:
+    """The event data models the stub's event surface is generated from."""
+    models = []
+    for name, model in event.__dict__.items():
+        if not name.endswith("EventData"):
+            continue
+        assert issubclass(model, BaseModel), f"{name} is not a pydantic model"
+        models.append(model)
+    return tuple(models)
 
 
 def render() -> str:
@@ -152,13 +170,25 @@ def render() -> str:
         )
     parts.append(API_REST)
 
-    parts.append(EVENT_HEAD)
-    for name, model in event.__dict__.items():
-        if not name.endswith("EventData"):
-            continue
-        assert issubclass(model, BaseModel), f"{name} is not a pydantic model"
-        parts.append(EVENT_TEMPLATE.format(model=model.__name__))
-    parts.append(EVENT_TAIL)
+    events = event_data_models()
+    parts.append(SUBSCRIPTION_HEAD)
+    for model in events:
+        config_model = get_event_config_model(model)
+        # Only a config with a required field has to be passed: every other one can be built
+        # from its own defaults, so `subscribe_event` accepts its absence.
+        optional = (
+            ""
+            if any(field.is_required() for field in config_model.model_fields.values())
+            else " | None = None"
+        )
+        parts.append(
+            SUBSCRIPTION_TEMPLATE.format(
+                data=model.__name__,
+                config=config_model.__name__,
+                optional=optional,
+            ),
+        )
+    parts.append(SUBSCRIPTION_TAIL)
     return "".join(parts)
 
 
@@ -170,13 +200,14 @@ def stats() -> str:
         if isinstance(value, type) and issubclass(value, BaseModel)
     ]
     requests = [name for name in api.__dict__ if name.endswith("Request")]
-    events = [name for name in event.__dict__ if name.endswith("EventData")]
+    events = event_data_models()
     event_models = [
         name for name in event.__dict__ if name.endswith(("EventData", "EventConfig"))
     ]
     return (
         f"{len(requests)} call_api overloads from {len(api_models)} api models, "
-        f"{len(events)} handle_event overloads from {len(event_models)} event models"
+        f"{len(events)} subscribe_event overloads (plus 1 generic one and 1 by event name) from "
+        f"{len(event_models)} event models"
     )
 
 

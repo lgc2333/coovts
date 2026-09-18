@@ -8,15 +8,7 @@ vts_base_model_config = ConfigDict(
     validate_by_alias=False,
     serialize_by_alias=True,
 )
-"""The one configuration every model in this package uses.
-
-`validate_by_alias=False` keeps the python field name the only way to *build* a model, and
-`serialize_by_alias=True` makes every dump spell fields the way the wire does — nested models
-included, which is why a request payload can hold a response model without a serializer of its
-own. Frames from VTube Studio are camelCase, so reading one asks for alias validation by hand
-(`by_alias=True`): `Plugin._handle_raw` does it for the envelope and for every event payload,
-`PendingRequest.result` for the answer to a call.
-"""
+"""The one configuration every model in this package uses. See ADR-0014."""
 
 
 class VTSBaseModel(BaseModel):
@@ -79,6 +71,21 @@ def get_message_type(model: type[BaseModel] | BaseModel) -> str:
             return msg_t
         raise TypeError(f"Model's 'msg_t' should be a str, not {type(msg_t)}")
     return model.__name__
+
+
+def get_event_config_model(model: type[BaseModel] | BaseModel) -> type[VTSBaseModel]:
+    if not isinstance(model, type):
+        model = type(model)
+
+    from . import event
+
+    config_m = getattr(event, f"{get_event_name(model)}Config", None)
+    if isinstance(config_m, type) and issubclass(config_m, VTSBaseModel):
+        return config_m
+
+    raise ValueError(
+        f"Cannot find suitable config model for {model}, please pass it explicitly",
+    )
 
 
 def get_event_name(model: type[BaseModel] | BaseModel) -> str:
