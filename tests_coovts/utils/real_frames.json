@@ -1,0 +1,49 @@
+{
+  "_note": [
+    "Frames captured verbatim from a real VTube Studio 1.35.10 session on Windows",
+    "(2026-09-18) by temp/real_vts/probe.py. Nothing here is hand-written.",
+    "The AuthenticationTokenResponse frame is omitted: it carries a live token."
+  ],
+  "frames": [
+    {
+      "messageType": "AuthenticationResponse",
+      "raw": "{\"apiName\":\"VTubeStudioPublicAPI\",\"apiVersion\":\"1.0\",\"timestamp\":1789721225978,\"messageType\":\"AuthenticationResponse\",\"requestID\":\"2\",\"data\":{\"authenticated\":true,\"reason\":\"Token valid. The plugin is authenticated for the duration of this session.\"}}"
+    },
+    {
+      "messageType": "APIStateResponse",
+      "raw": "{\"apiName\":\"VTubeStudioPublicAPI\",\"apiVersion\":\"1.0\",\"timestamp\":1789721225992,\"messageType\":\"APIStateResponse\",\"requestID\":\"10\",\"data\":{\"active\":true,\"vTubeStudioVersion\":\"1.35.10\",\"currentSessionAuthenticated\":true}}"
+    },
+    {
+      "messageType": "CurrentModelResponse",
+      "raw": "{\"apiName\":\"VTubeStudioPublicAPI\",\"apiVersion\":\"1.0\",\"timestamp\":1789721226087,\"messageType\":\"CurrentModelResponse\",\"requestID\":\"14\",\"data\":{\"modelLoaded\":true,\"modelName\":\"饼干寻\",\"modelID\":\"6248f9ba0edc401c96de072a3350de3f\",\"vtsModelName\":\"饼干寻.vtube.json\",\"vtsModelIconName\":\"ico_bingganxun.jpg\",\"live2DModelName\":\"饼干寻.model3.json\",\"modelLoadTime\":3457,\"timeSinceModelLoaded\":558439,\"numberOfLive2DParameters\":50,\"numberOfLive2DArtmeshes\":86,\"hasPhysicsFile\":true,\"numberOfTextures\":1,\"textureResolution\":4096,\"modelPosition\":{\"positionX\":0.07763361930847168,\"positionY\":-0.43790245056152346,\"rotation\":358.4307861328125,\"size\":-65.87860870361328}}}"
+    },
+    {
+      "messageType": "ModelMovedEvent",
+      "raw": "{\"apiName\":\"VTubeStudioPublicAPI\",\"apiVersion\":\"1.0\",\"timestamp\":1789721226348,\"messageType\":\"ModelMovedEvent\",\"requestID\":\"428e6d14994b4c27976b54153539ab15\",\"data\":{\"modelID\":\"6248f9ba0edc401c96de072a3350de3f\",\"modelName\":\"饼干寻\",\"modelPosition\":{\"positionX\":0.07763361930847168,\"positionY\":-0.43790245056152346,\"rotation\":358.4307861328125,\"size\":-65.87860870361328}}}"
+    },
+    {
+      "messageType": "ModelOutlineEvent",
+      "raw": "{\"apiName\":\"VTubeStudioPublicAPI\",\"apiVersion\":\"1.0\",\"timestamp\":1789721226436,\"messageType\":\"ModelOutlineEvent\",\"requestID\":\"9b684c998d684511bcb8a581c7368a82\",\"data\":{\"modelID\":\"6248f9ba0edc401c96de072a3350de3f\",\"modelName\":\"饼干寻\",\"convexHull\":[{\"x\":0.018246205523610116,\"y\":-1.0352048873901368},{\"x\":0.1341996043920517,\"y\":-1.0264201164245606},{\"x\":0.2720738649368286,\"y\":0.06727562099695206},{\"x\":0.2644178569316864,\"y\":0.2604823410511017},{\"x\":0.20836003124713899,\"y\":0.6534183025360107},{\"x\":0.17238354682922364,\"y\":0.7415431141853333},{\"x\":0.0698004812002182,\"y\":0.8626437187194824},{\"x\":-0.046942394226789477,\"y\":0.7733650207519531},{\"x\":-0.07709071040153504,\"y\":0.7034492492675781},{\"x\":-0.11492419987916947,\"y\":0.5594218373298645},{\"x\":-0.1530388742685318,\"y\":0.14417357742786408},{\"x\":-0.16512171924114228,\"y\":-0.03926429897546768}],\"convexHullCenter\":{\"x\":0.04853031411767006,\"y\":0.22207362949848176},\"windowSize\":{\"x\":1440,\"y\":800}}}"
+    },
+    {
+      "messageType": "TestEvent",
+      "raw": "{\"apiName\":\"VTubeStudioPublicAPI\",\"apiVersion\":\"1.0\",\"timestamp\":1789721227114,\"messageType\":\"TestEvent\",\"requestID\":\"4513064a63b54cb6ab77a4eb1f5d471d\",\"data\":{\"yourTestMessage\":\"coovts probe\",\"counter\":560}}"
+    },
+    {
+      "messageType": "APIError",
+      "raw": "{\"apiName\":\"VTubeStudioPublicAPI\",\"apiVersion\":\"1.0\",\"timestamp\":1789721226269,\"messageType\":\"APIError\",\"requestID\":\"24\",\"data\":{\"errorID\":7,\"message\":\"Unknown messageType: ArtMeshAtPositionRequest\"}}"
+    },
+    {
+      "messageType": "APIError",
+      "raw": "{\"apiName\":\"VTubeStudioPublicAPI\",\"apiVersion\":\"1.0\",\"timestamp\":1789721221896,\"messageType\":\"APIError\",\"requestID\":\"token-18\",\"data\":{\"errorID\":50,\"message\":\"User denied authentication request for your plugin.\"}}"
+    },
+    {
+      "messageType": "APIError",
+      "raw": "{\"apiName\":\"VTubeStudioPublicAPI\",\"apiVersion\":\"1.0\",\"timestamp\":1789721186548,\"messageType\":\"APIError\",\"requestID\":\"token-1\",\"data\":{\"errorID\":51,\"message\":\"Cannot start authentication process because authentication is currently ongoing. Authentication request window is open in VTube Studio.\"}}"
+    },
+    {
+      "messageType": "APIError",
+      "raw": "{\"apiName\":\"VTubeStudioPublicAPI\",\"apiVersion\":\"1.0\",\"timestamp\":1789721226302,\"messageType\":\"APIError\",\"requestID\":\"25\",\"data\":{\"errorID\":1250,\"message\":\"No item with the given item instance ID is currently loaded.\"}}"
+    }
+  ]
+}
