@@ -22,7 +22,10 @@ on PyPI yet.
   cancels the handler tasks still in flight.
 - A lost connection fails pending requests with `NetworkError`, and a request past its deadline
   raises `RequestTimeout`.
-- Logging is optional: `loguru` is no longer a hard dependency.
+- Dropped the logging shim, the `log` / `all` extras and the `cookit` dependency: the library logs
+  nothing at all ([ADR-0011](./docs/adr/0011-dependency-set.md)).
+- A disconnect the plugin performs on its own reports a refusing close to the new
+  `on_disconnect_failed` hook.
 - `call_api` and `handle_event` are generated into a stub from the models, with CI failing on drift.
 - Added a pytest suite replayed against frames captured from a real VTube Studio.
 - Added `CONTEXT.md`, the ADRs, the user guide, and this changelog.

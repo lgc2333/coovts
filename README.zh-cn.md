@@ -73,22 +73,17 @@ asyncio.run(plugin.run())
 需要 Python 3.12 及以上。
 
 ```bash
-pip install coovts[all]
+pip install coovts
 ```
 
 _or_
 
 ```bash
-uv add coovts[all]
+uv add coovts
 ```
 
-不装 extra 也能用，extra 只是往上加东西：
-
-- **`log`** —— 装上 `loguru`，库内部的诊断信息才会进到你的日志里。不装则库保持安静，因为插件作者
-  自己已经有日志方案了（[ADR-0011](./docs/adr/0011-dependency-set.md)）。
-- **`all`** —— 所有可选 extra。目前就等于 `log`，上面两条命令用的就是它。
-
-另有一个 `dev` 依赖组，用于开发 coovts 本身，不会随包发布。
+没有 extra，也没有日志依赖：运行时就是 Pydantic + `websockets`，而插件需要知道的一切都通过 hook 或
+异常交给你（[ADR-0011](./docs/adr/0011-dependency-set.md)）。
 
 ## 📞 联系方式
 

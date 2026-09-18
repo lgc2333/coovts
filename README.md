@@ -73,23 +73,18 @@ Thanks for using it, and contributions are welcome 😊
 You should use at least Python 3.12 to use this library.
 
 ```bash
-pip install coovts[all]
+pip install coovts
 ```
 
 _or_
 
 ```bash
-uv add coovts[all]
+uv add coovts
 ```
 
-The package works without extras; they only add things on top:
-
-- **`log`** — installs `loguru` so the library's diagnostics reach your logs. Without it the library
-  stays quiet, because a plugin author already has a logging setup of their own
-  ([ADR-0011](./docs/adr/0011-dependency-set.md)).
-- **`all`** — every optional extra. Today that is just `log`, and it is what the commands above use.
-
-There is also a `dev` dependency group for working on coovts itself; it never ships with the package.
+There are no extras and no logging dependency: Pydantic and `websockets` are the whole runtime set,
+and everything a plugin has to know arrives as a hook or an exception
+([ADR-0011](./docs/adr/0011-dependency-set.md)).
 
 ## 📞 Contacts
 

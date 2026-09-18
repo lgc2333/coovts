@@ -42,6 +42,7 @@ flowchart LR
 | `on_connected`                | socket 连上、鉴权之前                        | —              |
 | `on_connect_failed`           | `connect` 失败（之后会等一会儿重试）         | `e: Exception` |
 | `on_connection_closed`        | 收包循环因异常结束                           | `e: Exception` |
+| `on_disconnect_failed`        | 库自己发起的一次断开失败了                   | `e: Exception` |
 | `on_parse_data_error`         | 帧解析失败（信封本身，或事件载荷解不成模型） | `raw, e`       |
 | `on_authentication_token_got` | 首次申请到 token                             | `token: str`   |
 | `on_authenticated`            | 鉴权成功（**每个会话一次**）                 | —              |
@@ -60,6 +61,8 @@ flowchart LR
   （此时在途请求以 `CancelledError` 结束）、取消 supervisor。
 - 因此 handler 必须容忍取消：吞掉或阻塞 `CancelledError` 会让整个程序退不出去。见
   [ADR-0006](../../adr/0006-handler-dispatch-is-fire-and-forget.md)。
+- `stop()` 期间断开失败会抛给 `stop()` 的调用方；重连循环自己发起的断开失败则报给
+  `on_disconnect_failed`。
 - `stop()` 之后可以再 `run()`，会重新走一遍连接与鉴权。
 
 ## 重连语义

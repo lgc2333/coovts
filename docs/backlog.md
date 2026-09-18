@@ -31,14 +31,13 @@ the unsolicited state broadcast VTS sends over UDP.
 configured, which is why this is the only gap in the model set
 ([ADR-0004](./adr/0004-vts-api-coverage.md)).
 
-## More log points inside the library
+## Logging in the library, if it ever needs any
 
-**What**: `coovts/log.py` exists and `Plugin` imports from it, but the runtime barely calls it — one
-`warning_suppress` around the failed-disconnect path is the whole of it, and `logger` is never used.
-Candidates: connect attempts and their outcome, the authentication steps, request send / receive /
-expiry, frames dropped for having no handler or no matching request, and handler failures.
+**What**: the library logs nothing and depends on no logging stack — a design position, not a gap:
+everything a caller has to know arrives as a hook or an exception
+([ADR-0011](./adr/0011-dependency-set.md)). If that position is ever revisited, the candidates are
+connect attempts and their outcome, the authentication steps, request send / receive / expiry, frames
+dropped for having no handler or no matching request, and handler failures.
 
-**Trigger**: a failure whose cause the hooks cannot explain. Hooks and exceptions already carry
-everything a plugin has to react to, so a log line earns its place only by making a diagnosis
-cheaper — and never as the only place a fact appears, because without `loguru` every diagnostic is
-dropped ([ADR-0011](./adr/0011-dependency-set.md)).
+**Trigger**: a diagnosis that hooks and exceptions cannot carry. They are designed to be enough, so a
+log line would have to earn its way in — and the dependency is already decided: it would be `loguru`.

@@ -6,8 +6,9 @@
 
 Python >= 3.12, and `pip install coovts`.
 
-`loguru` is optional: install it (`pip install "coovts[log]"`) and the library logs through it;
-without it the library's internal logging goes quiet. It is never a hard dependency.
+The library brings no logging of its own: no logging dependency, no log lines. Everything worth
+knowing arrives as a hook or an exception
+([ADR-0011](../../adr/0011-dependency-set.md)).
 
 ## A minimal plugin
 

@@ -13,7 +13,8 @@
 
 于是 `on_authenticate_failed(e)` 里的 `e` 可能是 `APIError`（VTS 明确拒绝），也可能是
 `ConnectionClosed`（socket 断了）。**想区分这两种，必须自己 `isinstance(e, APIError)`。**
-同理，连接类失败不会变成 `await` 侧的一种异常，因为那时候根本没有请求在等。
+同理，连接类失败不会变成 `await` 侧的一种异常，因为那时候根本没有请求在等。库自己发起的一次断开失败了
+也一样只走 hook：`on_disconnect_failed`，不会出现在 `await` 处。
 
 这也解释了为什么没有 `on_disconnected` 这种回调：断开这件事的可见后果，就是「在途请求全以
 `NetworkError` 失败」加上「`on_connection_closed` 收到传输异常」，再加一个专门的 hook 只是多一条
@@ -64,7 +65,8 @@ supervisor 直接结束运行，状态落到 `STOPPED`：
 
 ## 排查顺序
 
-1. `on_connect_failed` / `on_connection_closed`：连接层到底通不通，异常原样打出来。
+1. `on_connect_failed` / `on_connection_closed` / `on_disconnect_failed`：连接层到底通不通，异常原样
+   打出来。
 2. `on_recv_raw` / `on_before_send_raw`：线上实际流动的 JSON。
 3. `on_parse_data_error`：帧到了但解不出来（信封坏了，或者载荷和模型对不上）。
 4. `on_handler_run_failed`：你的业务代码抛了异常。

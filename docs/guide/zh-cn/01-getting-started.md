@@ -6,8 +6,8 @@
 
 需要 Python >= 3.12。`pip install coovts` 即可。
 
-`loguru` 是可选依赖：装了，库内部日志就走它（`pip install "coovts[log]"`）；没装，库内部日志静默。
-`loguru` 永远不会成为硬依赖。
+库自身不带任何日志：没有日志依赖，也没有一行日志。所有值得知道的事都通过 hook 或异常交给你
+（[ADR-0011](../../adr/0011-dependency-set.md)）。
 
 ## 最小插件
 

@@ -43,6 +43,7 @@ Every hook is a `Hook` object registered with `@plugin.on_xxx`. A hook takes sev
 | `on_connected`                | The socket is up, before authentication                     | —              |
 | `on_connect_failed`           | `connect` failed (a retry follows after a delay)            | `e: Exception` |
 | `on_connection_closed`        | The receive loop ended on an exception                      | `e: Exception` |
+| `on_disconnect_failed`        | A disconnect the plugin performs on its own failed          | `e: Exception` |
 | `on_parse_data_error`         | A frame failed to parse (the envelope, or an event payload) | `raw, e`       |
 | `on_authentication_token_got` | A token was just obtained                                   | `token: str`   |
 | `on_authenticated`            | Authentication succeeded (**once per session**)             | —              |
@@ -63,6 +64,8 @@ strings, which is how you answer "what did we actually send and receive".
   supervisor.
 - So a handler must tolerate cancellation: swallowing or blocking on `CancelledError` keeps the whole
   program from exiting. See [ADR-0006](../../adr/0006-handler-dispatch-is-fire-and-forget.md).
+- A teardown that fails during `stop()` reaches the caller of `stop()`; a disconnect the reconnect
+  loop performs on its own reaches `on_disconnect_failed` instead.
 - After `stop()` you may `run()` again; it goes through connect and authenticate from the top.
 
 ## Reconnect semantics

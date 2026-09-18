@@ -14,7 +14,8 @@ This is the first thing to internalise about the library:
 So the `e` in `on_authenticate_failed(e)` may be an `APIError` (VTS decided) or a
 `ConnectionClosed` (the socket died). **Telling those apart means checking
 `isinstance(e, APIError)` yourself.** Connection-level failures cannot show up at an `await` for a
-request, because by then there is no request waiting.
+request, because by then there is no request waiting. A disconnect the library performs on its own is
+hook-only in the same way: it reaches `on_disconnect_failed`, never an `await`.
 
 That split is also why there is no `on_disconnected` callback: a dropped connection is already
 visible as "every pending request failed with `NetworkError`" plus "`on_connection_closed` got the
@@ -71,8 +72,8 @@ Deliberate exclusions ([ADR-0013](../../adr/0013-non-goals.md)):
 
 ## How to debug, in order
 
-1. `on_connect_failed` / `on_connection_closed` — is the connection layer even working? Log the
-   exception as it arrives.
+1. `on_connect_failed` / `on_connection_closed` / `on_disconnect_failed` — is the connection layer
+   even working? Log the exception as it arrives.
 2. `on_recv_raw` / `on_before_send_raw` — the JSON that actually moved.
 3. `on_parse_data_error` — frames arrive but do not decode (broken envelope, or payload that does not
    match the model).
