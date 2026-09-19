@@ -4,7 +4,7 @@ English | [简体中文](CHANGELOG.zh-cn.md)
 
 The newest release is first. Its date is the PyPI upload date.
 
-## 0.1.0 (unreleased)
+## 0.1.0 — 2026-09-20
 
 ### Added
 
