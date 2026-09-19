@@ -84,13 +84,14 @@ def test_frame_decodes_by_alias_or_field_name_without_a_flag() -> None:
     assert api.ModelLoadResponse.model_validate({"model_id": "m1"}) == response
 
 
-def test_response_model_ignores_unknown_wire_fields() -> None:
-    """A response payload carrying a field this library does not know still decodes."""
+def test_response_model_keeps_unknown_wire_fields() -> None:
+    """A response payload carrying a field this library does not know still decodes, and keeps it."""
     response = api.ModelLoadResponse.model_validate(
         {"modelID": "m1", "someFieldVtsAddedLater": 1},
     )
 
     assert response.model_id == "m1"
+    assert response.model_extra == {"someFieldVtsAddedLater": 1}
 
 
 def test_real_response_frames_decode() -> None:

@@ -124,11 +124,15 @@ class Live2DCubismEditorConnectedEventData(VTSBaseModel):
 
 
 class ModelAnimationEventConfig(VTSBaseModel):
+    """https://github.com/DenchiSoft/VTubeStudio/blob/master/Events/README.md#animation-event-triggered"""
+
     ignore_live2d_items: bool = False
     ignore_idle_animations: bool = False
 
 
 class ModelAnimationEventData(VTSBaseModel):
+    """https://github.com/DenchiSoft/VTubeStudio/blob/master/Events/README.md#animation-event-triggered"""
+
     animation_event_type: str
     animation_event_time: float
     animation_event_data: str

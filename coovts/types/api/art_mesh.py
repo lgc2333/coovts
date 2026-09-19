@@ -20,10 +20,20 @@ class ArtMeshMatcher(VTSBaseModel):
     name_contains: list[str] = []
     tag_exact: list[str] = []
     tag_contains: list[str] = []
+    art_mesh_group_id_exact: Annotated[
+        list[str], Field(alias="artMeshGroupIDExact")
+    ] = []
 
 
 class ArtMeshListRequest(VTSBaseModel):
     pass
+
+
+class ArtMeshGroup(VTSBaseModel):
+    group_id: Annotated[str, Field(alias="groupID")]
+    group_name: str
+    number_of_art_meshes_in_group: int
+    art_mesh_names: list[str]
 
 
 class ArtMeshListResponse(VTSBaseModel):
@@ -32,6 +42,8 @@ class ArtMeshListResponse(VTSBaseModel):
     number_of_art_mesh_tags: int
     art_mesh_names: list[str]
     art_mesh_tags: list[str]
+    number_of_art_mesh_groups: int = 0
+    art_mesh_groups: list[ArtMeshGroup] = []
 
 
 class ColorTintRequest(VTSBaseModel):

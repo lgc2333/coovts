@@ -8,8 +8,13 @@ vts_base_model_config = ConfigDict(
     validate_by_name=True,
     validate_by_alias=True,
     serialize_by_alias=True,
+    extra="allow",
 )
-"""The one configuration every model in this package uses. See ADR-0014."""
+"""The one configuration every model in this package uses. See ADR-0014, ADR-0018 and ADR-0020.
+
+Unknown fields are kept in `model_extra` and go out exactly as they came in: the alias generator
+does not apply to them, so anything the models do not declare must be written wire-style.
+"""
 
 
 class VTSBaseModel(BaseModel):

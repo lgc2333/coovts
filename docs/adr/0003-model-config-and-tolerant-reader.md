@@ -1,6 +1,6 @@
 ---
 status: accepted
-amended_by: ['0014']
+amended_by: ['0014', '0020']
 ---
 
 # Model config is injected wholesale, and unknown fields are ignored

@@ -1,6 +1,7 @@
 from .art_mesh import (
     ArtMeshAtPositionRequest as ArtMeshAtPositionRequest,
     ArtMeshAtPositionResponse as ArtMeshAtPositionResponse,
+    ArtMeshGroup as ArtMeshGroup,
     ArtMeshHit as ArtMeshHit,
     ArtMeshHitInfo as ArtMeshHitInfo,
     ArtMeshListRequest as ArtMeshListRequest,

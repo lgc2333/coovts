@@ -78,7 +78,6 @@ def test_msg_t_overrides_message_type() -> None:
         msg_t: ClassVar[str] = "CustomMessage"
 
     assert get_message_type(RenamedRequest) == "CustomMessage"
-    assert get_message_type(RenamedRequest) != RenamedRequest.__name__
 
 
 def test_msg_t_overrides_event_name() -> None:

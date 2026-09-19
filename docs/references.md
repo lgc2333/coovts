@@ -35,7 +35,7 @@ case-insensitively with `_` and `-` ignored, so the wire form of a member is the
 `poe gen-api` prints these numbers every time it runs, and `poe gen-api --dry-run` prints them
 without writing the stub:
 
-- 39 `call_api` overloads (plus 4 generic ones), generated from 106 models in `coovts/types/api`.
+- 39 `call_api` overloads (plus 4 generic ones), generated from 107 models in `coovts/types/api`.
 - 16 `subscribe_event` overloads, plus 1 for a model this package does not model and 1 for an event
   named by its wire name, generated from the 32 event config/data models in `coovts/types/event`. The
   overload for an unmodelled model defaults no `config`, so a call that forgot the config of an event
@@ -55,3 +55,9 @@ without writing the stub:
 - A list-only `PermissionRequest` was answered with `grantSuccess: false`,
   `requestedPermission: ""` and a `permissions` array holding only the permissions VTS reports
   for this plugin.
+- A read-only battery of 13 requests was sent to a live VTube Studio 1.35.10 and every response was
+  compared to its model key by key (701 nested objects). That comparison is where
+  `ExpressionInfo.secondsSinceLastActive` came from: VTube Studio sends it, and no upstream document
+  describes it.
+- The same comparison found `ArtMeshMatcher.artMeshGroupIDExact` and the `ArtMeshListResponse`
+  `artMeshGroups` list unmodelled. Both are modelled now.

@@ -1,6 +1,7 @@
 ---
 status: accepted
 amends: ['0014']
+amended_by: ['0020']
 ---
 
 # Aliases validate everywhere, not only where a frame enters

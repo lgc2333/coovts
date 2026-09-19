@@ -22,6 +22,8 @@ class ExpressionInfo(VTSBaseModel):
     deactivate_when_key_is_let_go: bool
     auto_deactivate_after_seconds: bool
     seconds_remaining: float
+    seconds_since_last_active: float = 0.0
+    """VTube Studio sends it; the upstream document does not describe it, so it defaults."""
     used_in_hotkeys: list[HotkeyRef] = []
     parameters: list[ExpressionParameter] = []
 
