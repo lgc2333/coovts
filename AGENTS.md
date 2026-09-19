@@ -70,6 +70,7 @@ Only `poe` runs on the project venv; use `uv run` / `uv run --with` for anything
 - Relations are bidirectional: a relation is a mirrored pair of keys. A plain mention of another ADR earns no key, and an ADR records a relation only when its own file is the one making it.
 
 - `CHANGELOG.md` is the release notice users read: one section per release, plus an `Unreleased` one while work is pending; `0.0` promises nothing, so the number alone says nothing (ADR-0012). Keep `CHANGELOG.zh-cn.md` in step with it (same versions, same bullets).
+- Write both changelogs with the `wait-what` skill vendored at `.agents/skills/wait-what/SKILL.md` (read that file — it is hidden, so it never appears in the skill list).
 
 - `docs/guide/{en,zh-cn}/` is the user-facing guide: one page per topic, the same pages in both languages, kept in sync (identical code blocks and anchors). It documents only what reading the code cannot tell you — runtime behaviour, failure modes, what is never retried — links `docs/adr/` for reasons, and points at upstream anchors for request/event field semantics instead of copying them.
 

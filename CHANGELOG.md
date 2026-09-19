@@ -2,51 +2,55 @@
 
 English | [简体中文](CHANGELOG.zh-cn.md)
 
-Releases are listed newest first, with the PyPI upload dates. On the `0.0` line nothing was promised
-and the number said nothing about the size of a change; from `0.1` on, the minor is where breaks live
-([ADR-0012](./docs/adr/0012-public-api-and-versioning.md)).
+The newest release is first. Its date is the PyPI upload date.
 
 ## 0.1.0 (unreleased)
 
-Leaves the `0.0` unstable line: the version number now says what a release does, and the package
-metadata drops the alpha status (ADR-0012). Everything below landed after `0.0.1.alpha2` and is not
-on PyPI yet.
+This release leaves the unstable `0.0` line. The version number now says what a release does, and the
+package metadata no longer declares the alpha status (ADR-0012). Every item below came after
+`0.0.1.alpha2`, and no item is on PyPI yet.
 
-- Transcribed the upstream constant tables — error IDs, hotkey actions, effects and their configs,
-  restricted keys — into `coovts.types.consts`.
-- Modelled the permission flow, the six events that were missing, `ItemSort`, and the ArtMesh models
-  shared between the api and event packages.
-- Replaced the per-model config decorators with one base model and one config dict,
-  `VTSBaseModel` / `vts_base_model_config`.
-- Payload models now validate by field name and by wire alias everywhere, so a frame and a python dict
-  both decode at any call site and nothing passes `by_alias=True` anymore
+- `coovts.types.consts` now holds the upstream constant tables: error IDs, restricted keys, hotkey
+  actions, and post-processing effects with their configs.
+- The library gains the permission flow, the six events that were missing, `ItemSort`, and the
+  ArtMesh models that the api package and the event package share.
+- One base model and one config dict replace the per-model config decorators: `VTSBaseModel` and
+  `vts_base_model_config` ([ADR-0014](./docs/adr/0014-one-model-config-and-a-wire-boundary.md)).
+- Every payload model now validates by field name and by wire alias. A frame and a Python dict both
+  decode at any call site, and no call site passes `by_alias=True` any more
   ([ADR-0018](./docs/adr/0018-aliases-validate-everywhere.md)).
-- An authentication refusal a retry cannot fix now ends the run instead of looping, and `stop()`
-  cancels the handler tasks still in flight.
-- A lost connection fails pending requests with `NetworkError`, and a request past its deadline
-  raises `RequestTimeout`.
-- Dropped the logging shim, the `log` / `all` extras and the `cookit` dependency: the library logs
-  nothing at all ([ADR-0011](./docs/adr/0011-dependency-set.md)).
-- A disconnect the plugin performs on its own reports a refusing close to the new
+- A fatal authentication error now ends the run. A refusal that a retry cannot fix is not retried
+  ([ADR-0016](./docs/adr/0016-fatal-authentication-refusals-end-the-run.md)).
+- `stop()` cancels the handler tasks that are still running.
+- A lost connection fails every pending request with `NetworkError`.
+- A pending request that passes its API timeout raises `RequestTimeout`.
+- The library does not log. The logging shim, the `log` and `all` extras, and the `cookit`
+  dependency are gone ([ADR-0011](./docs/adr/0011-dependency-set.md)).
+- A disconnect that the plugin starts itself now reports a failed close to the new
   `on_disconnect_failed` hook.
-- `Plugin.stopped` is gone: the supervisor stops by being cancelled, so `await plugin.stop()` is the
-  way to stop it and `plugin.state` is what to read.
-- `call_api` and `subscribe_event` are generated into a stub from the models, with CI failing on
-  drift; `handle_event` is a generic method on `Plugin`.
-- Added a pytest suite replayed against frames captured from a real VTube Studio.
-- Added `CONTEXT.md`, the ADRs, the user guide, and this changelog.
-- Events are declared once with `plugin.subscribe_event(...)`, which pairs the handler with the
-  subscription and re-sends it after every reconnect; the handler it hands back is wrapped and
-  carries `dispose()`, and awaiting the declaration subscribes right away. An event may also be named
-  by its wire name, in which case nothing is decoded and the handler gets the raw payload.
-- A subscription VTS refuses now reaches the new `on_subscribe_failed` hook instead of failing the
-  authentication.
-- The generated stub gains a typed `subscribe_event` overload per event, whose `config` is only
-  optional when its config model has no required field.
+- `Plugin.stopped` is gone. The supervisor stops when a caller cancels it, so a caller stops the
+  plugin with `await plugin.stop()` and reads the state from `plugin.state`.
+- The generated API surface now covers `call_api` and `subscribe_event`, typed per model. CI fails
+  when the stub and the models disagree. `handle_event` is a generic method on `Plugin`.
+- A pytest suite replays frames that a real VTube Studio captured.
+- `CONTEXT.md`, the ADRs, the user guide, and this changelog are new.
+- `plugin.subscribe_event(...)` declares an event once. The declaration holds the data model, the
+  config of its subscription, and its handlers. The library sends the subscription again after every
+  reconnect, so a subscription cannot stay lost
+  ([ADR-0017](./docs/adr/0017-declared-events-are-resubscribed.md)).
+- The call hands back a wrapped handler that carries `dispose()`. A caller that awaits the call
+  subscribes at once.
+- An event can also be named by its wire name. Then the library decodes nothing, and the handler
+  gets the raw payload.
+- A subscription that VTS refuses now reaches the new `on_subscribe_failed` hook. It no longer fails
+  the authentication.
+- The generated stub gives `subscribe_event` one typed overload per event. The `config` argument is
+  optional only when the event config model has no required field.
 
 ## 0.0.1.alpha2 — 2025-05-21
 
-- Refactored the project, completed the missing data models, and made the type hints better.
+- This release refactored the project, completed the missing data models, and improved the type
+  hints.
 
 ## 0.0.1.alpha1 — 2025-04-11
 
