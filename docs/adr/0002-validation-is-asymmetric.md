@@ -1,6 +1,9 @@
-# Requests validate by field name, responses by wire alias
+---
+status: superseded
+superseded_by: ['0014']
+---
 
-**Status**: accepted
+# Requests validate by field name, responses by wire alias
 
 Request models set `validate_by_alias=False` together with `serialize_by_alias=True`: user code
 builds them with snake_case keywords, and a plain `model_dump_json()` emits camelCase without

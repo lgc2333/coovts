@@ -93,7 +93,7 @@ except APIError as e:
 ## 逃生舱
 
 没被建模的端点（比如上游新加的）不用等库更新。自己写一个继承 `coovts.types.shared.VTSBaseModel` 的模型
-就走和库内模型完全一样的路径：类名就是 messageType，蛇形进/驼峰出和校验行为也都一样。
+就走和库内模型完全一样的路径：类名就是 messageType，命名规则和校验行为也都一样。
 
 ```python
 from coovts.types.shared import VTSBaseModel
@@ -112,9 +112,11 @@ raw = await plugin.call_api(MyEndpointRequest(some_field=1), response_model=None
 
 ## 字段命名与线层
 
-- **构造请求时用蛇形字段名**，`model_dump_json()` 自动输出驼峰（`validate_by_alias=False` +
-  `serialize_by_alias=True`）。所以 `ModelLoadRequest(model_id="...")` 出去就是 `modelID`。
-- **解码入站帧一律按驼峰校验**：VTS 发来 `model_loaded` 是错误，不会被当成别名的宽容写法接受。
+- **构造请求时用蛇形字段名，输出照样是驼峰**：配置是 `validate_by_name=True` +
+  `serialize_by_alias=True`，所以 `ModelLoadRequest(model_id="...")` 出去就是 `modelID`。手里已经是线上键名的
+  字典走 `model_validate` 进去；构造函数签名由字段名生成，所以 `modelID=` 这种关键字是类型错误。
+- **两种写法都不算错**：每个模型按字段名和别名都能校验，帧和 Python 字典都能解析；线上依然是驼峰，因为 VTS
+  就发驼峰。见 [ADR-0018](../../adr/0018-aliases-validate-everywhere.md)。
 - **未知字段静默丢弃**：VTS 明确说可以在不升版本的情况下加字段，所以多出来的键一律忽略，不会报错——
   代价是新字段在你建模它之前是不可见的。见 [ADR-0003](../../adr/0003-model-config-and-tolerant-reader.md)。
 

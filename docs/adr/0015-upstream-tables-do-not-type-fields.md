@@ -1,6 +1,8 @@
-# Upstream tables are transcribed, and no wire field is typed by one
+---
+status: accepted
+---
 
-**Status**: accepted
+# Upstream tables are transcribed, and no wire field is typed by one
 
 VTube Studio ships the identifiers of its own API as source tables — `Files/ErrorID.cs`,
 `HotkeyAction.cs`, `RestrictedRawKey.cs`, `Effects.cs` and `EffectConfigs.cs`. All five are

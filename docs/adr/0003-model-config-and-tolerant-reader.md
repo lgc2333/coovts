@@ -1,6 +1,9 @@
-# Model config is injected wholesale, and unknown fields are ignored
+---
+status: accepted
+amended_by: ['0014']
+---
 
-**Status**: accepted
+# Model config is injected wholesale, and unknown fields are ignored
 
 No model declares its own `model_config`. Config arrives through `with_request_model_config` /
 `with_response_model_config`, a `cookit` factory that returns a same-named subclass of the

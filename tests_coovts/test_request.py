@@ -89,7 +89,7 @@ async def test_reset_skips_request_whose_future_already_settled() -> None:
 
     manager = RequestManager()
     pending = manager.start(ModelLoadResponse)
-    response = ModelLoadResponse.model_validate({"modelID": "m1"}, by_alias=True)
+    response = ModelLoadResponse.model_validate({"modelID": "m1"})
     pending.future.set_result(response)
 
     manager.reset("connection closed")

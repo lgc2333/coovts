@@ -1,6 +1,9 @@
-# Everything without a leading underscore is public, and `0.0` means unstable
+---
+status: accepted
+amended_by: ['0014']
+---
 
-**Status**: accepted
+# Everything without a leading underscore is public, and `0.0` means unstable
 
 The public API is every symbol the package exposes that does not start with an underscore — the
 `Plugin` class and its hooks, the models in `coovts.types.api` and `coovts.types.event`, the

@@ -1,8 +1,9 @@
+---
+status: accepted
+amends: ['0009']
+---
+
 # Events are declared, and the library keeps them subscribed
-
-**Status**: accepted
-
-**Amends**: ADR-0009 (the seams it counts and the generated surface it enumerates)
 
 A VTS event needs two things that live in different places: a subscription, which is what makes VTS
 push the event and which dies with the session, and a handler, which is local and survives a

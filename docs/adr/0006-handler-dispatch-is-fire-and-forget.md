@@ -1,6 +1,8 @@
-# Handler dispatch is fire-and-forget
+---
+status: accepted
+---
 
-**Status**: accepted
+# Handler dispatch is fire-and-forget
 
 `dispatch_handlers` turns every registered handler into its own `create_task` and returns the task
 list to a caller that ignores it. The tasks are held until they complete, which is all `stop()` needs

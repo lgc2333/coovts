@@ -5,7 +5,8 @@ from pydantic.alias_generators import to_camel
 
 vts_base_model_config = ConfigDict(
     alias_generator=to_camel,
-    validate_by_alias=False,
+    validate_by_name=True,
+    validate_by_alias=True,
     serialize_by_alias=True,
 )
 """The one configuration every model in this package uses. See ADR-0014."""

@@ -1,6 +1,8 @@
-# Dependencies: Pydantic for the wire and websockets for transport
+---
+status: accepted
+---
 
-**Status**: accepted
+# Dependencies: Pydantic for the wire and websockets for transport
 
 The runtime dependency set is two packages, each with one job: Pydantic v2 defines and validates
 every wire model, and `websockets` is the transport. There are no version ceilings, and nothing else

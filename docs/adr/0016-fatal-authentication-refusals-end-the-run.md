@@ -1,6 +1,8 @@
-# Authentication refusals a retry cannot fix end the run
+---
+status: accepted
+---
 
-**Status**: accepted
+# Authentication refusals a retry cannot fix end the run
 
 A token request reaches the user as a popup in VTube Studio, and some answers do not change however
 often it is asked: the user denied it, the plugin's name, developer or icon is rejected as invalid,

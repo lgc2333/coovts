@@ -9,7 +9,7 @@ import pkgutil
 from types import ModuleType
 
 import pytest
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 
 from coovts.types import api, consts, event
 from coovts.types.shared import (
@@ -64,38 +64,30 @@ def test_every_event_data_model_agrees_with_its_config_sibling() -> None:
         assert get_event_name(config_model) == event_name
 
 
-def test_request_serializes_by_alias_but_rejects_alias_input() -> None:
-    """`ModelLoadRequest` emits camelCase, yet refuses to be built from the wire alias."""
+def test_request_takes_either_spelling_and_dumps_the_wire_one() -> None:
+    """`ModelLoadRequest` is built from the field name or the alias, and emits camelCase."""
     request = api.ModelLoadRequest(model_id="m1")
+
     assert request.model_id == "m1"
+    assert api.ModelLoadRequest.model_validate({"modelID": "m1"}) == request
 
     payload: dict[str, str] = json.loads(request.model_dump_json())
     assert payload["modelID"] == "m1"
     assert "model_id" not in payload
 
-    with pytest.raises(ValidationError) as excinfo:
-        api.ModelLoadRequest.model_validate({"modelID": "m1"})
 
-    assert [error["loc"] for error in excinfo.value.errors()] == [("model_id",)]
-    assert "model_id" in str(excinfo.value)
+def test_frame_decodes_by_alias_or_field_name_without_a_flag() -> None:
+    """A frame is read with a plain `model_validate`, the way the plugin reads one."""
+    response = api.ModelLoadResponse.model_validate({"modelID": "m1"})
 
-
-def test_wire_payloads_are_read_with_the_alias_flag() -> None:
-    """A frame is camelCase, so reading one passes `by_alias=True` — the way the plugin does."""
-    response = api.ModelLoadResponse.model_validate({"modelID": "m1"}, by_alias=True)
     assert response.model_id == "m1"
-
-    with pytest.raises(ValidationError) as excinfo:
-        api.ModelLoadResponse.model_validate({"modelID": "m1"})
-
-    assert [error["loc"] for error in excinfo.value.errors()] == [("model_id",)]
+    assert api.ModelLoadResponse.model_validate({"model_id": "m1"}) == response
 
 
 def test_response_model_ignores_unknown_wire_fields() -> None:
     """A response payload carrying a field this library does not know still decodes."""
     response = api.ModelLoadResponse.model_validate(
         {"modelID": "m1", "someFieldVtsAddedLater": 1},
-        by_alias=True,
     )
 
     assert response.model_id == "m1"
@@ -105,7 +97,6 @@ def test_real_response_frames_decode() -> None:
     """Responses a real VTube Studio sent decode, shared position model included."""
     current = api.CurrentModelResponse.model_validate(
         real_payload("CurrentModelResponse"),
-        by_alias=True,
     )
     assert current.model_name == "饼干寻"
     assert current.number_of_live2d_parameters == 50
@@ -114,7 +105,6 @@ def test_real_response_frames_decode() -> None:
 
     state = api.APIStateResponse.model_validate(
         real_payload("APIStateResponse"),
-        by_alias=True,
     )
     assert state.vtube_studio_version == "1.35.10"
     assert state.current_session_authenticated is True
@@ -136,10 +126,9 @@ def test_real_error_frames_decode_with_their_ids() -> None:
     for error_id, message in expectations.items():
         envelope = BaseResponse.model_validate_json(
             real_error_frame(error_id),
-            by_alias=True,
         )
         assert envelope.message_type == "APIError"
-        error = api.APIErrorResponse.model_validate(envelope.data, by_alias=True)
+        error = api.APIErrorResponse.model_validate(envelope.data)
         assert (error.error_id, error.message) == (error_id, message)
 
 

@@ -1,6 +1,8 @@
-# Model the documented VTube Studio API one to one
+---
+status: accepted
+---
 
-**Status**: accepted
+# Model the documented VTube Studio API one to one
 
 The request and event models mirror the documented VTube Studio plugin API one to one: every
 request of the official API README is modelled, plus the `EventSubscription` pair (documented in

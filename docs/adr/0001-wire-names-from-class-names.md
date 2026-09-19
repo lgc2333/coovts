@@ -1,6 +1,8 @@
-# Wire names are derived from class names
+---
+status: accepted
+---
 
-**Status**: accepted
+# Wire names are derived from class names
 
 Every wire string is computed from a Python class name instead of living in a registry or a tagged
 union: `get_message_type` returns the class name verbatim (the model `AuthenticationRequest` _is_

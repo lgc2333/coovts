@@ -1,6 +1,8 @@
-# One `Plugin` object owns the whole connection
+---
+status: accepted
+---
 
-**Status**: accepted
+# One `Plugin` object owns the whole connection
 
 There is exactly one public runtime class. `Plugin` holds the connection, the authentication state,
 the hook lists, the event handler table and the pending request table; connecting, authenticating,

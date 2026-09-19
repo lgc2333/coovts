@@ -104,8 +104,8 @@ parse failure goes to `on_parse_data_error`.
 
 For endpoints nobody has modelled yet — say upstream just added one — you do not wait for a library
 release. A model of your own that inherits `coovts.types.shared.VTSBaseModel` takes the same path as a
-library model: its class name is the messageType, and it gets the same snake_case-in / camelCase-out
-behaviour and the same validation.
+library model: its class name is the messageType, and it carries the same naming rules and the same
+validation.
 
 ```python
 from coovts.types.shared import VTSBaseModel
@@ -125,11 +125,13 @@ payload that is not a model at all works too, as long as you hand over `message_
 
 ## Field names and the wire
 
-- **Build requests with snake_case field names.** `model_dump_json()` emits camelCase for you
-  (`validate_by_alias=False` together with `serialize_by_alias=True`), so
-  `ModelLoadRequest(model_id="...")` leaves as `modelID`.
-- **Inbound frames are validated by wire spelling only.** A VTS payload carrying `model_loaded` is an
-  error, not a generously accepted alias.
+- **Build requests with snake_case field names; the dump spells them the wire way.** The config is
+  `validate_by_name=True` with `serialize_by_alias=True`, so `ModelLoadRequest(model_id="...")` leaves
+  as `modelID`. A dict that already carries wire keys goes in through `model_validate` — the
+  constructor signature is built from field names, so `modelID=` would be a type error.
+- **Neither spelling is an error.** Every model validates by field name and by alias, so a frame and a
+  python dict both decode; wire data is camelCase because VTS sends camelCase. See
+  [ADR-0018](../../adr/0018-aliases-validate-everywhere.md).
 - **Unknown fields are dropped silently.** VTube Studio documents that it may add fields to existing
   payloads without a version bump, so extra keys are ignored rather than rejected — the price being
   that a new field stays invisible until someone models it. See

@@ -1,6 +1,8 @@
-# Non-goals
+---
+status: accepted
+---
 
-**Status**: accepted
+# Non-goals
 
 The library models the API surface recorded in `docs/references.md` and stops where a plugin's
 needs stop. The following are deliberate exclusions, not gaps waiting to be filled; each one is

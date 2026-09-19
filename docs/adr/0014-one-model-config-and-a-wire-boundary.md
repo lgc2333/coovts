@@ -1,10 +1,11 @@
+---
+status: accepted
+supersedes: ['0002']
+amends: ['0003', '0012']
+amended_by: ['0018']
+---
+
 # One model config, and a wire boundary that asks for aliases
-
-**Status**: accepted
-
-**Supersedes**: ADR-0002 (validation is asymmetric)
-
-**Amends**: ADR-0012 (the public symbols it lists for `coovts.types.shared`)
 
 Every payload model inherits `VTSBaseModel`, whose only job is `vts_base_model_config`: camelCase
 aliases generated from the field names, `validate_by_alias=False` and `serialize_by_alias=True`.

@@ -225,7 +225,7 @@ class Plugin(PluginAPI):
         self.dispatch_handlers(self.on_recv_raw, raw)
 
         try:
-            resp = BaseResponse.model_validate_json(raw, by_alias=True)
+            resp = BaseResponse.model_validate_json(raw)
         except Exception as e:
             self.dispatch_handlers(self.on_parse_data_error, raw, e)
             return
@@ -244,7 +244,7 @@ class Plugin(PluginAPI):
                     data = (
                         resp.data
                         if data_model is None
-                        else data_model.model_validate(resp.data, by_alias=True)
+                        else data_model.model_validate(resp.data)
                     )
                 except Exception as e:
                     self.dispatch_handlers(self.on_parse_data_error, raw, e)

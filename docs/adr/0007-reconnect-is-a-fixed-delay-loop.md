@@ -1,6 +1,8 @@
-# Reconnection is an unconditional fixed-delay loop
+---
+status: accepted
+---
 
-**Status**: accepted
+# Reconnection is an unconditional fixed-delay loop
 
 One supervisor task loops forever: connect, authenticate, receive until the socket fails, sleep
 `reconnect_delay` (5 seconds by default), repeat. There is no exponential backoff, no jitter and no

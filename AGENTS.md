@@ -8,9 +8,10 @@ Python >= 3.12 library for writing VTube Studio plugins (async WebSocket + Pydan
 README.md              user-facing intro; README.zh-cn.md mirrors it in Chinese
 CHANGELOG.md           release notes users read (ADR-0012)
 CONTEXT.md             domain glossary — words only, no decisions, no implementation
-docs/adr/              architecture decisions, one per file (see Docs Rules)
-docs/guide/            user-facing guide, en/ with a zh-cn/ mirror (see Docs Rules)
-docs/backlog.md        deferred work — missing, not excluded (see Docs Rules)
+docs/
+  adr/                 architecture decisions, one per file (see Docs Rules)
+  guide/               user-facing guide, en/ with a zh-cn/ mirror (see Docs Rules)
+  backlog.md           deferred work — missing, not excluded (see Docs Rules)
 coovts/
   plugin.py            Plugin: connect/auth/recv loops, hooks, event dispatch
   request.py           request-id <-> future correlation
@@ -61,7 +62,12 @@ Only `poe` runs on the project venv; use `uv run` / `uv run --with` for anything
 
 - `CONTEXT.md` is the domain glossary: canonical terms and one-line definitions, nothing else.
 - `docs/adr/` holds one file per decision, numbered; add one when a decision is hard to reverse and would look arbitrary without the reason.
-- Follow the `domain-modeling` skill for both (install it from GitHub `mattpocock/skills` if missing), and write in English like everywhere else here — except `docs/guide/zh-cn/`, `README.zh-cn.md` and `CHANGELOG.zh-cn.md`, which mirror their English counterparts for Chinese readers.
+- Weigh every decision for whether it deserves an ADR, and ask the user before taking it: state the choice, the alternatives, and your ADR verdict, then wait for the answer. Nothing gets decided silently.
+- Follow the `domain-modeling` skill for both (ask user to install it from GitHub `mattpocock/skills` if missing).
+
+- Do not modify old ADRs (excluding their front-matter) unless user explicitly asks.
+- Every ADR opens with YAML front-matter at the very top, above the title: `status` (`accepted` | `proposed` | `deprecated` | `superseded`), then the relation keys `supersedes` / `superseded_by` and `amends` / `amended_by`, each holding quoted ids (`['0014']`, never a bare `0014`, which YAML reads as octal).
+- Relations are bidirectional: a relation is a mirrored pair of keys. A plain mention of another ADR earns no key, and an ADR records a relation only when its own file is the one making it.
 
 - `CHANGELOG.md` is the release notice users read: one section per release, plus an `Unreleased` one while work is pending; `0.0` promises nothing, so the number alone says nothing (ADR-0012). Keep `CHANGELOG.zh-cn.md` in step with it (same versions, same bullets).
 
@@ -87,7 +93,7 @@ Only `poe` runs on the project venv; use `uv run` / `uv run --with` for anything
 
 - Model fields and enum members are documented with a docstring written below them, never with a `#` comment.
 
-- Payload models inherit `VTSBaseModel` (one shared `vts_base_model_config`), and frames coming off the wire are validated with `by_alias=True` — the config alone builds models from field names.
+- Payload models inherit `VTSBaseModel` (one shared `vts_base_model_config`): field names and wire aliases both validate, and dumps spell fields the wire way (ADR-0018).
 
 ### Testing Rules
 

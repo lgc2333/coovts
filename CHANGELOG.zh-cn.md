@@ -13,6 +13,8 @@ minor 就是放破坏性变更的地方（[ADR-0012](./docs/adr/0012-public-api-
 - 把上游的常量表逐条转写进 `coovts.types.consts`：错误码、热键动作、后期效果及其配置、受限制的按键。
 - 补上权限流程、之前缺的六个事件、`ItemSort`，以及 api 与 event 两包共用的 ArtMesh 模型。
 - 用统一的 `VTSBaseModel` / `vts_base_model_config` 取代每个模型各自的 config 装饰器。
+- payload 模型现在按字段名和线上别名都能校验：帧和 Python 字典在任何调用点都能解析，`by_alias=True`
+  不再需要（[ADR-0018](./docs/adr/0018-aliases-validate-everywhere.md)）。
 - 重试也修不了的鉴权拒绝现在直接结束运行，不再空转；`stop()` 会取消还在跑的 handler 任务。
 - 连接断开时在途请求以 `NetworkError` 失败，超过 deadline 的请求抛 `RequestTimeout`。
 - 删掉日志 shim、`log` / `all` extra 与 `cookit` 依赖：库完全不打日志

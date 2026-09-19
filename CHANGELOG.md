@@ -18,6 +18,9 @@ on PyPI yet.
   shared between the api and event packages.
 - Replaced the per-model config decorators with one base model and one config dict,
   `VTSBaseModel` / `vts_base_model_config`.
+- Payload models now validate by field name and by wire alias everywhere, so a frame and a python dict
+  both decode at any call site and nothing passes `by_alias=True` anymore
+  ([ADR-0018](./docs/adr/0018-aliases-validate-everywhere.md)).
 - An authentication refusal a retry cannot fix now ends the run instead of looping, and `stop()`
   cancels the handler tasks still in flight.
 - A lost connection fails pending requests with `NetworkError`, and a request past its deadline

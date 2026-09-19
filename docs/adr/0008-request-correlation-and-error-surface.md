@@ -1,6 +1,8 @@
-# Request correlation, timeouts, and which failures are exceptions
+---
+status: accepted
+---
 
-**Status**: accepted
+# Request correlation, timeouts, and which failures are exceptions
 
 Each outbound request is registered in a table under a decimal-string id (`"1"` … `"2147483647"`,
 wrapping and skipping ids already in flight), sent with that id in the envelope, and awaited as a

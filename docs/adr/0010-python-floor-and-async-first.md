@@ -1,6 +1,8 @@
-# Python 3.12 floor, asynchronous end to end
+---
+status: accepted
+---
 
-**Status**: accepted
+# Python 3.12 floor, asynchronous end to end
 
 `requires-python = ">=3.12"` is a hard requirement, not a soft preference: the code uses PEP 695
 syntax throughout — `type X = ...` aliases, `class Hook[T]`, generic functions and

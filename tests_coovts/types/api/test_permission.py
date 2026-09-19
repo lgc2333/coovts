@@ -16,7 +16,6 @@ def test_documented_response_payload_decodes() -> None:
             "requestedPermission": "LoadCustomImagesAsItems",
             "permissions": [{"name": "LoadCustomImagesAsItems", "granted": True}],
         },
-        by_alias=True,
     )
 
     assert response.grant_success is True
@@ -30,7 +29,6 @@ def test_real_list_only_response_decodes() -> None:
     """A real VTube Studio answers a list-only request with `grantSuccess: false` and no name."""
     response = PermissionResponse.model_validate(
         real_payload("PermissionResponse"),
-        by_alias=True,
     )
 
     assert response.grant_success is False
