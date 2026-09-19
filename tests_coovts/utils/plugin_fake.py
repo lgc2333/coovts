@@ -107,6 +107,19 @@ class FlakyTransport(FakeTransport):
         return await super().connect(endpoint)
 
 
+class DyingTransport(FakeTransport):
+    """A transport whose socket completes the handshake and dies on its first read.
+
+    A port forwarder that accepts then resets, or VTube Studio restarting mid-handshake.
+    """
+
+    async def connect(self, endpoint: str) -> FakeConnection:
+        """Hand out a connection that fails the next read, like a socket that died at once."""
+        connection = await super().connect(endpoint)
+        connection.drop()
+        return connection
+
+
 def install_transport(
     monkeypatch: "pytest.MonkeyPatch", transport: FakeTransport
 ) -> None:

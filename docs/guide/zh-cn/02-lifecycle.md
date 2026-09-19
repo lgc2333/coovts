@@ -23,6 +23,7 @@ flowchart LR
 | `CONNECTING`     | socket 连上            | `AUTHENTICATING`                            | `on_connected`           |
 | `CONNECTING`     | 连接失败               | `DISCONNECTED`，等 `reconnect_delay` 后重试 | `on_connect_failed`      |
 | `AUTHENTICATING` | 鉴权成功               | `AUTHENTICATED`                             | `on_authenticated`       |
+| `AUTHENTICATING` | 连接断开               | `DISCONNECTED`，等 `reconnect_delay` 后重试 | `on_connection_closed`   |
 | `AUTHENTICATING` | 鉴权失败               | `DISCONNECTED`，等 `reconnect_delay` 后重试 | `on_authenticate_failed` |
 | `AUTHENTICATING` | 重试也修不了的鉴权拒绝 | `STOPPED`                                   | `on_authenticate_failed` |
 | `AUTHENTICATED`  | 连接断开               | `DISCONNECTED`，等 `reconnect_delay` 后重试 | `on_connection_closed`   |

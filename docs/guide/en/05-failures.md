@@ -11,13 +11,15 @@ This is the first thing to internalise about the library:
 | A hook (`on_xxx`)            | The transport's **verbatim exception**, or a library type. A `ConnectionClosed` still carries its close code |
 | `await plugin.call_api(...)` | **Only library types**: `APIError` / `ValidationError` / `RequestTimeout` / `NetworkError`                   |
 
-So the `e` in `on_authenticate_failed(e)` may be an `APIError` (VTS decided) or a
-`ConnectionClosed` (the socket died). **Telling those apart means checking
-`isinstance(e, APIError)` yourself.** Connection-level failures cannot show up at an `await` for a
-request, because by then there is no request waiting. A disconnect the library performs on its own is
-hook-only in the same way: it reaches `on_disconnect_failed`, never an `await`. The one exception is
-the teardown inside `stop()`: that disconnect reaches whoever called `stop()`, and it ends the pending
-requests as `CancelledError` rather than failing them.
+So the `e` in `on_authenticate_failed(e)` is a library type: an `APIError` (VTS decided) or an
+`AuthenticationFailedError` / `RequestTimeout` / `ValidationError`. A socket that dies during the
+handshake is a **drop, not a refusal**, so it reaches `on_connection_closed` instead — the run
+classifies it and opens the next session rather than reporting a failed authentication. Connection-level
+failures cannot show up at an `await` for a request either, because by then there is no request
+waiting. A disconnect the library performs on its own is hook-only in the same way: it reaches
+`on_disconnect_failed`, never an `await`. The one exception is the teardown inside `stop()`: that
+disconnect reaches whoever called `stop()`, and it ends the pending requests as `CancelledError`
+rather than failing them.
 
 That split is also why there is no `on_disconnected` hook: a dropped connection is already
 visible as "every pending request failed with `NetworkError`" plus "`on_connection_closed` got the

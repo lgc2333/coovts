@@ -166,6 +166,7 @@ def test_pin_request_emits_the_wire_shape() -> None:
         ),
     )
 
+    assert request.pin_info is not None
     assert request.pin_info.vertex_id1 == 17
     assert request.pin_info.vertex_id2 == 9
     assert request.pin_info.vertex_id3 == 55
@@ -187,6 +188,23 @@ def test_pin_request_emits_the_wire_shape() -> None:
             "vertexWeight2": 0.5,
             "vertexWeight3": 0.25,
         },
+    }
+
+
+def test_unpin_request_needs_no_pin_info() -> None:
+    """An unpin carries the item ID alone, so it does not have to invent a pin position."""
+    assert json.loads(
+        ItemPinRequest(
+            pin=False,
+            item_instance_id="4a241269394f463ca16b8b21aa636568",
+        ).model_dump_json(),
+    ) == {
+        "pin": False,
+        "itemInstanceID": "4a241269394f463ca16b8b21aa636568",
+        "angleRelativeTo": "RelativeToWorld",
+        "sizeRelativeTo": "RelativeToWorld",
+        "vertexPinType": "Center",
+        "pinInfo": None,
     }
 
 

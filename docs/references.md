@@ -33,7 +33,8 @@ case-insensitively with `_` and `-` ignored, so the wire form of a member is the
 ## Current surface
 
 `poe gen-api` prints these numbers every time it runs, and `poe gen-api --dry-run` prints them
-without writing the stub:
+without writing the stub. The same line names this file, so a run that changes the surface is
+reminded where the counts have to follow.
 
 - 39 `call_api` overloads (plus 4 generic ones), generated from 107 models in `coovts/types/api`.
 - 16 `subscribe_event` overloads, plus 1 for a model this package does not model and 1 for an event

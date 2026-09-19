@@ -55,6 +55,12 @@ raw = await plugin.send_request(request, response_model=None)  # unvalidated dic
 
 An expired request raises `RequestTimeout`.
 
+One request is outside the deadline: the `AuthenticationTokenRequest` the library sends when it has
+no token. Its answer is a person clicking a popup in VTube Studio, so it waits indefinitely rather
+than being cut off — an abandoned popup would be asked again on the next session while the user is
+still looking at the first one ([ADR-0016](../../adr/0016-fatal-authentication-refusals-end-the-run.md)).
+`api_timeout` covers every request VTS answers without a human.
+
 ## What a failed request raises
 
 Four exceptions, all raised at the `await`, all subclasses of `RequestError` (and so of `VTSError`):

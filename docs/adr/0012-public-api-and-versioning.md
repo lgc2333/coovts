@@ -9,8 +9,8 @@ The public API is every symbol the package exposes that does not start with an u
 `Plugin` class and its hooks, the models in `coovts.types.api` and `coovts.types.event`, the
 name-convention resolvers, `VTSBaseModel` and `vts_base_model_config` in `coovts/types/shared.py`,
 the exception classes in `coovts.errors`, and the generated type surface of `call_api` /
-`handle_event`. A leading underscore is the only marker of "internal", and it is load-bearing. Class
-names in the wire packages are public too, because they _are_ the protocol (ADR-0001).
+`subscribe_event`. A leading underscore is the only marker of "internal", and it is load-bearing.
+Class names in the wire packages are public too, because they _are_ the protocol (ADR-0001).
 
 The version is declared exactly once, in `coovts/__init__.py`, because the build reads it from there.
 `0.0` is the unstable line: while the version is `0.0.x` nothing is promised — the number inside it

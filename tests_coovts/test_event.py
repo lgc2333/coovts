@@ -288,3 +288,36 @@ def test_a_late_model_with_a_required_config_field_is_refused() -> None:
 
     with pytest.raises(ValueError, match="tracking_points"):
         registry.registration(event.ArtMeshTrackingEventData)
+
+
+def test_declaring_again_without_a_config_keeps_the_one_a_caller_chose() -> None:
+    """A second declaration that omits the config leaves the first one's choice alone."""
+    registry, _ = make_registry()
+    chosen = event.ModelOutlineEventConfig(draw=True)
+    registry.subscribe(event.ModelOutlineEventData, chosen)
+
+    registration = registry.subscribe(event.ModelOutlineEventData)
+
+    assert registration.config is chosen
+
+
+def test_declaring_a_named_event_again_without_a_config_keeps_what_was_given() -> None:
+    """The same rule for a by-name declaration, whose config is a plain dict."""
+    registry, _ = make_registry()
+    chosen = {"hand": "picked"}
+    registry.subscribe("ModelMovedEvent", chosen)
+
+    registration = registry.subscribe("ModelMovedEvent")
+
+    assert registration.config == chosen
+
+
+def test_a_configured_event_can_be_declared_again_without_its_config() -> None:
+    """An event whose config has a required field does not raise once a config is carried."""
+    registry, _ = make_registry()
+    chosen = event.TestEventConfig(test_message_for_event="hello")
+    registry.subscribe(event.TestEventData, chosen)
+
+    registration = registry.subscribe(event.TestEventData)
+
+    assert registration.config is chosen

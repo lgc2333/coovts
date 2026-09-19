@@ -48,6 +48,11 @@ raw = await plugin.send_request(request, response_model=None)  # unvalidated dic
 
 超时抛 `RequestTimeout`。
 
+有一个请求不受这个限定时间约束：库在没有 token 时发的 `AuthenticationTokenRequest`。它的答案是用户在
+VTube Studio 弹窗上点一下，所以它会一直等下去，而不是被超时切断——被放弃的弹窗会在下一个会话里再问一次，
+而用户还在看第一个弹窗（[ADR-0016](../../adr/0016-fatal-authentication-refusals-end-the-run.md)）。
+`api_timeout` 管的是 VTS 不需要人参与就能回答的那些请求。
+
 ## 请求失败时抛什么
 
 四个异常都在 `await` 处抛出，都继承 `RequestError`（进而 `VTSError`）：

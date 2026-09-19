@@ -190,15 +190,19 @@ class EventSubscriptionRegistry:
         """Register an event and the config it subscribes by; a model's config defaults when omitted.
 
         An event named by its wire name has no config model, so it gets an empty config instead; what
-        VTS accepts there is VTS's business.
+        VTS accepts there is VTS's business. An omitted config only ever derives one: a registration
+        that already carries a config keeps it, because a later declaration without one is not a
+        caller overriding what an earlier one chose (ADR-0022).
         """
         registration = self.registration(data_model)
         if config is not None:
             registration.config = config
-        elif registration.data_model is None:
-            registration.config = {}
-        else:
-            registration.config = default_event_config(registration.data_model)
+        elif registration.config is None:
+            registration.config = (
+                {}
+                if registration.data_model is None
+                else default_event_config(registration.data_model)
+            )
         return registration
 
     async def dispose[T: BaseModel](

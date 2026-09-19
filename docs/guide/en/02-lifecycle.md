@@ -23,6 +23,7 @@ flowchart LR
 | `CONNECTING`     | the socket is up                    | `AUTHENTICATING`                              | `on_connected`           |
 | `CONNECTING`     | connect failed                      | `DISCONNECTED`, retry after `reconnect_delay` | `on_connect_failed`      |
 | `AUTHENTICATING` | authenticated                       | `AUTHENTICATED`                               | `on_authenticated`       |
+| `AUTHENTICATING` | the connection dropped              | `DISCONNECTED`, retry after `reconnect_delay` | `on_connection_closed`   |
 | `AUTHENTICATING` | authentication failed               | `DISCONNECTED`, retry after `reconnect_delay` | `on_authenticate_failed` |
 | `AUTHENTICATING` | refused in a way a retry cannot fix | `STOPPED`                                     | `on_authenticate_failed` |
 | `AUTHENTICATED`  | the connection dropped              | `DISCONNECTED`, retry after `reconnect_delay` | `on_connection_closed`   |

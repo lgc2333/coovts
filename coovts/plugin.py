@@ -369,15 +369,22 @@ class Plugin(PluginAPI):
             connect = self._connect_task = asyncio.create_task(self._open_session())
             # A cancelled caller leaves this unawaited; take its outcome so the loop does not log.
             connect.add_done_callback(_take_failure)
-            await connect
+            # Shielded, so a caller that gives up detaches instead of cancelling a connect the
+            # plugin owns — and every other caller of it still sees its real outcome (ADR-0021).
+            await asyncio.shield(connect)
         elif wait_connect:
             # The connect in flight is the one this call asked for: same socket, same failure.
-            await connect
+            await asyncio.shield(connect)
 
     async def _open_session(self):
         """Connect to the endpoint and start receiving; the run in progress calls this."""
         async with self._connect_lock:
-            await self._disconnect(CONNECTION_LOST_MESSAGE)
+            try:
+                await self._disconnect(CONNECTION_LOST_MESSAGE)
+            except Exception as e:
+                # The session is dropped either way; only the close failed to say so, and that is
+                # not a connect failure — `on_connect_failed` would name the wrong hook.
+                self.dispatch_handlers(self.on_disconnect_failed, e)
 
             self._state = PluginState.CONNECTING
             self.dispatch_handlers(self.on_connecting)
@@ -460,10 +467,16 @@ class Plugin(PluginAPI):
                 try:
                     await self.authenticate()
                 except Exception as e:
-                    if self._session != session or isinstance(e, NetworkError):
-                        # Somebody replaced the session, or the socket died under it: not a
-                        # refusal to report (ADR-0019). A refusal VTS answered still reaches the
-                        # hooks below, so a fatal one ends the run as it always did (ADR-0016).
+                    if self._session != session:
+                        # Somebody replaced the session: the caller asked for a fresh one, so this
+                        # run opens the next at once (ADR-0019).
+                        continue
+                    if isinstance(e, NetworkError):
+                        # The socket died under the handshake: a drop, not a refusal to report. The
+                        # receive loop is already waiting out the delay, so the run parks on it —
+                        # opening the next session at once would cancel that wait and spin, since
+                        # the drop bumps nothing and the delay is the loop's own (ADR-0007).
+                        await task
                         continue
                     self.dispatch_handlers(self.on_authenticate_failed, e)
                     if (
@@ -583,12 +596,16 @@ class Plugin(PluginAPI):
         client = self.client
 
         if not self.authentication_token:
+            # The answer to this one is a person clicking a popup in VTube Studio, so the API
+            # deadline does not apply: cutting it off drops the session and asks again, which
+            # abandons a popup the user is still looking at (ADR-0016).
             token_data = await self.call_api(
                 AuthenticationTokenRequest(
                     plugin_name=self.plugin_name,
                     plugin_developer=self.plugin_developer,
                     plugin_icon=self.plugin_icon,
                 ),
+                api_timeout=None,
             )
             self.authentication_token = token_data.authentication_token
             self.dispatch_handlers(

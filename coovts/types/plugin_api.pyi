@@ -596,7 +596,7 @@ class PluginAPI(ABC):
     def subscribe_event(
         self,
         event_data_model: type[event.TestEventData],
-        config: event.TestEventConfig,
+        config: event.TestEventConfig | None = None,
     ) -> EventRegistration[event.TestEventData]: ...
     @overload
     def subscribe_event(

@@ -1,3 +1,4 @@
+codecov:
+  require_ci_to_pass: false
 comment:
   require_changes: 'coverage_drop OR uncovered_patch'
-  require_ci_to_pass: false

@@ -51,6 +51,21 @@
   `stop()` 也会取消还在建立中的连接，而不是把它本来会接手的 socket 留在身后
   （[ADR-0021](./docs/adr/0021-a-connect-has-an-owner.md)）。
 - `stop()` 只忘掉它自己结束的那条运行，所以 stop 收尾期间启动的运行之后仍然停得掉。
+- 鉴权途中掉线的会话现在会等满 `reconnect_delay`，和其它失败尝试一样，不再按事件循环速度狂重连——接收循环
+  自己的等待正好会被下一个会话取消，延迟就是在这条路径上丢掉的。
+- `AuthenticationTokenRequest` 不再被 `api_timeout` 切断。它的答案是用户在 VTube Studio 弹窗上点一下，所以
+  它会一直等下去，而不是把会话丢掉再问一次、让第一个弹窗还挂在屏幕上
+  （[ADR-0016](./docs/adr/0016-fatal-authentication-refusals-end-the-run.md)）。
+- 放弃 `reconnect()` 的调用方不再把插件持有的连接一起取消，所以那次连接的其它等待者照样能拿到 socket 或它的
+  失败原因（[ADR-0021](./docs/adr/0021-a-connect-has-an-owner.md)）。
+- 会话开头那次 teardown 里失败的 close 会报给 `on_disconnect_failed`，不再被当成 `on_connect_failed`。
+- 不带 config 再声明一次同一个事件，不再覆盖先前那次声明选定的 config——包括 config 模型有必填字段的那几个
+  事件，它们以前会在第二次声明时直接抛错
+  （[ADR-0022](./docs/adr/0022-one-registration-per-event-name.md)）。
+- `ItemPinRequest.pin_info` 变成可选，所以上游文档写明的 unpin payload（`pin=false`，不需要其它信息）现在
+  构造得出来、也发得出去。
+- `TestEventConfig.test_message_for_event` 默认 `""`，也就是上游说的那个可选字段，所以
+  `subscribe_event(event.TestEventData)` 不再需要显式传 config。
 - `on_authenticated` 只为还活着的会话触发。声明过的事件正在重新订阅时掉线，会直接重连，而不是让每次会话的
   初始化跑去面对一个已经没了的 socket。
 - 先用 wire 名、再用数据模型声明同一个事件，现在会补全那一份注册：handler 按模型解析，订阅带的是该模型默认

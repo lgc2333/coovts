@@ -38,7 +38,7 @@ import asyncio
 from coovts.plugin import Plugin
 from coovts.types import api, event
 
-# no token yet: VTS asks the user once
+# 还没有 token：VTS 会问用户一次
 plugin = Plugin("A Creative Plugin Name", "LgCuwukii☆")
 
 

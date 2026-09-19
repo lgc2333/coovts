@@ -140,7 +140,9 @@ SUBSCRIPTION_TAIL = """
     ) -> RawEventRegistration: ...
 """
 
-PYI_PATH = Path(__file__).parent.parent / "coovts" / "types" / "plugin_api.pyi"
+ROOT = Path(__file__).parent.parent
+PYI_PATH = ROOT / "coovts" / "types" / "plugin_api.pyi"
+REFERENCES_PATH = ROOT / "docs" / "references.md"
 
 
 def event_data_models() -> tuple[type[BaseModel], ...]:
@@ -227,6 +229,10 @@ def main() -> int:
 
     content = render()
     print(stats())
+    print(
+        f"these counts are recorded in {REFERENCES_PATH.relative_to(ROOT).as_posix()}; "
+        "update it when they change",
+    )
 
     if args.check:
         current = PYI_PATH.read_text(encoding="u8") if PYI_PATH.exists() else ""

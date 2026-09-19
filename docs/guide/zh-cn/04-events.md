@@ -31,9 +31,8 @@ dispose 它只是停掉分发——它背后没有订阅可以取消。
 - **config 是可选的，除非它的模型有必填字段**：默认值就是按 config 模型自己的字段默认值构造出来的，所以
   `subscribe_event(event.ModelOutlineEventData)` 发出去的是 `{"draw": false}`。想自己指定就传一个 config：
   `subscribe_event(event.ModelOutlineEventData, event.ModelOutlineEventConfig(draw=True))`。
-  `ArtMeshTrackingEventData`、`ArtMeshOutlineEventData`、`ExpressionToggledEventData` 和
-  `TestEventData`（需要 `test_message_for_event`）不能不带 config 声明——它们的 config 有必填字段，而生成
-  的 stub 会按事件给 `config` 定类型，所以管着你的是类型检查器。
+  `ArtMeshTrackingEventData`、`ArtMeshOutlineEventData` 和 `ExpressionToggledEventData` 不能不带 config
+  声明——它们的 config 有必填字段，而生成的 stub 会按事件给 `config` 定类型，所以管着你的是类型检查器。
 - **config 不一定是模型**：VTS 在该事件上接受的任何东西（通常是手搓的 dict）都会走不带类型的 overload，原样
   发上去。
 - **`await plugin.subscribe_event(...)`** 会立刻把订阅发出去，返回 `EventSubscriptionResponse`，同时照样

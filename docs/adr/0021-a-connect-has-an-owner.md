@@ -34,8 +34,8 @@ means the socket this authenticated is gone, and per-session setup in the hook w
 The pair is what sees it, because a drop bumps nothing — `_disconnect` is what bumps the session
 counter, and a receive loop that ends on its own is not a disconnect — while the socket's own close
 state is what a drop leaves behind. `Plugin._run` keeps classifying a failed authentication by the
-counter alone, so a drop during the handshake reconnects instead of reaching `on_authenticate_failed`,
-and a refusal VTS answered still reaches it, fatal or not (ADR-0016).
+counter and by the error it got, so a drop during the handshake reconnects instead of reaching
+`on_authenticate_failed`, and a refusal VTS answered still reaches it, fatal or not (ADR-0016).
 
 ## Consequences
 

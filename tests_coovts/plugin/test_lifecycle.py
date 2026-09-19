@@ -22,7 +22,12 @@ from ..utils.frames import (
     real_payload,
     sent_frame,
 )
-from ..utils.plugin_fake import FakeTransport, FlakyTransport, install_transport
+from ..utils.plugin_fake import (
+    DyingTransport,
+    FakeTransport,
+    FlakyTransport,
+    install_transport,
+)
 from ..utils.plugin_fixtures import TOKEN, authenticate, handshake, make_plugin
 
 
@@ -878,4 +883,91 @@ async def test_a_socket_that_died_during_resubscribing_does_not_reach_on_authent
     finally:
         gate.set()
         monkeypatch.setattr(connection, "send", sending)
+        await finish(plugin, run_task)
+
+
+async def test_a_socket_that_dies_during_the_handshake_waits_out_the_delay(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A drop under the handshake retries on the fixed delay, not at loop speed (ADR-0007)."""
+    transport = DyingTransport()
+    install_transport(monkeypatch, transport)
+    plugin = make_plugin(authentication_token=TOKEN, reconnect_delay=60)
+
+    run_task = plugin.run()
+    try:
+        await spin_until(lambda: len(transport.endpoints) == 1, "the first connect")
+
+        await tick(400)
+
+        assert len(transport.endpoints) == 1
+    finally:
+        await finish(plugin, run_task)
+
+
+async def test_a_cancelled_caller_leaves_the_connect_for_the_others(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A caller that gives up does not cancel the plugin's connect under the callers still waiting."""
+    transport = FakeTransport()
+    transport.gate = asyncio.Event()
+    install_transport(monkeypatch, transport)
+    plugin = make_plugin()
+
+    first = asyncio.create_task(plugin.reconnect())
+    try:
+        await spin_until(lambda: len(transport.endpoints) == 1, "connect attempt")
+        second = asyncio.create_task(plugin.reconnect(wait_connect=True))
+        await tick()
+        assert second.done() is False
+
+        first.cancel()
+        await tick()
+        transport.gate.set()
+        await asyncio.wait_for(second, 1)
+
+        assert first.cancelled() is True
+        assert second.cancelled() is False
+        assert plugin.state is PluginState.AUTHENTICATING
+    finally:
+        transport.gate.set()
+        await plugin.stop()
+
+
+async def test_a_teardown_close_that_fails_is_not_a_connect_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The leading disconnect of a session reports a refusing close to its own hook."""
+    transport = FakeTransport()
+    install_transport(monkeypatch, transport)
+    plugin = make_plugin(authentication_token=TOKEN, reconnect_delay=60)
+    connection = transport.connection
+    disconnect_failures: list[Exception] = []
+    connect_failures: list[Exception] = []
+    close_error = OSError("the socket refused to close")
+
+    async def refusing_close() -> None:
+        raise close_error
+
+    close = connection.close
+
+    @plugin.on_disconnect_failed
+    async def on_disconnect_failed(error: Exception) -> None:
+        disconnect_failures.append(error)
+
+    @plugin.on_connect_failed
+    async def on_connect_failed(error: Exception) -> None:
+        connect_failures.append(error)
+
+    await asyncio.wait_for(plugin.reconnect(wait_connect=True), 1)
+    monkeypatch.setattr(connection, "close", refusing_close)
+
+    run_task = plugin.run()
+    try:
+        await spin_until(lambda: bool(disconnect_failures), "on_disconnect_failed")
+
+        assert disconnect_failures == [close_error]
+        assert connect_failures == []
+    finally:
+        monkeypatch.setattr(connection, "close", close)
         await finish(plugin, run_task)

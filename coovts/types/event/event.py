@@ -11,7 +11,8 @@ class TestEventConfig(VTSBaseModel):
     # Not a pytest test class: `Test` is part of VTS's test event name.
     __test__ = False
 
-    test_message_for_event: str
+    test_message_for_event: str = ""
+    """The string VTS echoes back; empty when omitted, as upstream's optional field allows."""
 
 
 class TestEventData(VTSBaseModel):

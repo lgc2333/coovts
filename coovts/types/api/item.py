@@ -177,7 +177,8 @@ class ItemPinRequest(VTSBaseModel):
     angle_relative_to: AngleRelativeTo = "RelativeToWorld"
     size_relative_to: SizeRelativeTo = "RelativeToWorld"
     vertex_pin_type: VertexPinType = "Center"
-    pin_info: ItemPinInfo
+    pin_info: ItemPinInfo | None = None
+    """The pin position, needed only to pin an item; an unpin (`pin=False`) carries none."""
 
 
 class ItemPinResponse(VTSBaseModel):

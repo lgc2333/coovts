@@ -11,8 +11,9 @@
 | hook（`on_xxx`）             | 传输层抛出的**原样异常**，也可能是库类型。比如一个 `ConnectionClosed` 还带着 close code |
 | `await plugin.call_api(...)` | **只会是库类型**：`APIError` / `ValidationError` / `RequestTimeout` / `NetworkError`    |
 
-于是 `on_authenticate_failed(e)` 里的 `e` 可能是 `APIError`（VTS 明确拒绝），也可能是
-`ConnectionClosed`（socket 断了）。**想区分这两种，必须自己 `isinstance(e, APIError)`。**
+于是 `on_authenticate_failed(e)` 里的 `e` 一定是库类型：`APIError`（VTS 明确拒绝），或者
+`AuthenticationFailedError` / `RequestTimeout` / `ValidationError`。握手途中断掉的 socket 算**掉线，不算
+拒绝**，所以它走的是 `on_connection_closed`——run 会把它归类为掉线并去开下一个会话，不会报成鉴权失败。
 同理，连接类失败不会变成 `await` 侧的一种异常，因为那时候根本没有请求在等。库自己发起的一次断开也一样
 只走 hook：`on_disconnect_failed`，不会出现在 `await` 处。唯一的例外是 `stop()` 里的收尾：那次断开会到达
 `stop()` 的调用方，而且它让在途请求以 `CancelledError` 结束，而不是让它们失败。

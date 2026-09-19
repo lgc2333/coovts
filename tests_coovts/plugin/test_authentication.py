@@ -335,3 +335,32 @@ async def test_a_refusal_a_retry_can_fix_keeps_looping(
         )
     finally:
         await finish(plugin, run_task)
+
+
+async def test_the_human_answered_token_request_is_not_cut_short_by_the_api_timeout(
+    monkeypatch: "pytest.MonkeyPatch",
+) -> None:
+    """A popup nobody has clicked yet is waited for, not abandoned and asked again (ADR-0016)."""
+    transport = FakeTransport()
+    install_transport(monkeypatch, transport)
+    plugin = make_plugin(api_timeout=0.01, reconnect_delay=0)
+    connection = transport.connection
+    failures: list[Exception] = []
+
+    @plugin.on_authenticate_failed
+    async def on_failed(failure: Exception) -> None:
+        failures.append(failure)
+
+    run_task = plugin.run()
+    try:
+        await spin_until(
+            lambda: len(connection.sent) >= 1, "authentication token request"
+        )
+        # Real time passes, because the deadline being beaten is a wall-clock one.
+        await asyncio.sleep(0.1)
+
+        assert len(transport.endpoints) == 1
+        assert len(connection.sent) == 1
+        assert failures == []
+    finally:
+        await finish(plugin, run_task)

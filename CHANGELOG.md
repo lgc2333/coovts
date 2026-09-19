@@ -66,6 +66,25 @@ The newest release is first. Its date is the PyPI upload date.
   ([ADR-0021](./docs/adr/0021-a-connect-has-an-owner.md)).
 - `stop()` forgets only the run it ended, so a `run()` started while a stop is unwinding can still be
   stopped.
+- A drop that lands while the run is authenticating now waits out `reconnect_delay` like every other
+  failed attempt, instead of reconnecting at loop speed. The delay was lost on the one path where the
+  receive loop's own wait is cancelled by the next session.
+- The `AuthenticationTokenRequest` is no longer cut short by `api_timeout`. Its answer is a person
+  clicking a popup in VTube Studio, so it waits indefinitely rather than dropping the session and
+  asking again while the first popup is still on screen
+  ([ADR-0016](./docs/adr/0016-fatal-authentication-refusals-end-the-run.md)).
+- A caller that gives up on `reconnect()` no longer cancels the connect the plugin owns, so every
+  other caller of that connect still gets its socket or its failure
+  ([ADR-0021](./docs/adr/0021-a-connect-has-an-owner.md)).
+- A close that fails during the leading teardown of a session reaches `on_disconnect_failed` instead
+  of being reported to `on_connect_failed`.
+- Declaring an event again without a config no longer replaces the config an earlier declaration
+  chose — including the events whose config model has a required field, which used to raise on the
+  second declaration ([ADR-0022](./docs/adr/0022-one-registration-per-event-name.md)).
+- `ItemPinRequest.pin_info` is optional, so the unpin payload upstream documents (`pin=false`, no
+  other info) can be built and sent.
+- `TestEventConfig.test_message_for_event` defaults to `""`, the optional field upstream describes, so
+  `subscribe_event(event.TestEventData)` no longer needs an explicit config.
 - `on_authenticated` fires only for a session that is still live. A drop that lands while the declared
   events are being re-subscribed reconnects, instead of running per-session setup against a socket
   that is already gone.
