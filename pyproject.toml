@@ -45,13 +45,13 @@ path = "coovts/__init__.py"
 
 [tool.hatch.build.targets.sdist]
 exclude = [
-  "/uv.lock",
-  "/AGENTS.md",
-  "/CONTEXT.md",
-  "/codecov.yml",
-  "/.prettierrc.yml",
-  "/assets",
-  "/.agents",
+    "/uv.lock",
+    "/AGENTS.md",
+    "/CONTEXT.md",
+    "/codecov.yml",
+    "/.prettierrc.yml",
+    "/assets",
+    "/.agents",
 ]
 
 [tool.poe.tasks]
