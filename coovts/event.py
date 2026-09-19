@@ -137,7 +137,11 @@ class EventSubscriptionRegistry:
         self,
         data_model: type[BaseModel] | str,
     ) -> EventRegistration[Any]:
-        """The registration for an event, created on first use; a name keeps it model-less."""
+        """The registration for an event, created on first use and completed by the first model.
+
+        One registration per event name: a name creates it model-less, and a model arriving later
+        upgrades it.
+        """
         event_name = (
             data_model if isinstance(data_model, str) else get_event_name(data_model)
         )
@@ -150,6 +154,20 @@ class EventSubscriptionRegistry:
                 None,
             )
             self._registrations[event_name] = registration
+            return registration
+
+        if not isinstance(data_model, str):
+            if registration.data_model is None:
+                registration.data_model = data_model
+                # The name could not build a config, so the model's defaults take over the empty
+                # one it left behind (ADR-0022).
+                if registration.config == {}:
+                    registration.config = default_event_config(data_model)
+            elif registration.data_model is not data_model:
+                raise ValueError(
+                    f"{registration.data_model.__name__} and {data_model.__name__} both name "
+                    f"{event_name}, so they cannot both decode it",
+                )
         return registration
 
     @overload

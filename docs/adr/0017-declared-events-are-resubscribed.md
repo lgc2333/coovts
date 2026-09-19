@@ -1,6 +1,7 @@
 ---
 status: accepted
 amends: ['0005', '0009']
+amended_by: ['0022']
 ---
 
 # Events are declared, and the library keeps them subscribed

@@ -1,7 +1,7 @@
 """Registering events, subscribing to them, and dispatching their frames to the handlers."""
 
 import asyncio
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from coovts.errors import APIError
 from coovts.event import EventRegistration
@@ -619,5 +619,51 @@ async def test_a_disposed_local_handler_stops_dispatching(
 
         assert len(moved) == 1
         assert len(connection.sent) == 2
+    finally:
+        await finish(plugin, run_task)
+
+
+async def test_a_model_declared_after_its_name_still_decodes_and_configures(
+    monkeypatch: "pytest.MonkeyPatch",
+) -> None:
+    """Naming an event first does not cost the model declared after it its decode or config."""
+    transport = FakeTransport()
+    install_transport(monkeypatch, transport)
+    plugin = make_plugin()
+    connection = transport.connection
+    named: list[dict[str, Any]] = []
+    modelled: list[ModelOutlineEventData] = []
+
+    @plugin.handle_event("ModelOutlineEvent")
+    async def on_named(data: dict[str, Any]) -> None:
+        named.append(data)
+
+    @plugin.subscribe_event(ModelOutlineEventData)
+    async def on_modelled(data: ModelOutlineEventData) -> None:
+        modelled.append(data)
+
+    run_task = plugin.run()
+    try:
+        await handshake(plugin, connection)
+        await spin_until(
+            lambda: (
+                sent_frame(connection, len(connection.sent) - 1)["messageType"]
+                == "EventSubscriptionRequest"
+            ),
+            "subscription frame",
+        )
+
+        request = sent_frame(connection, len(connection.sent) - 1)
+        assert request["data"]["eventName"] == "ModelOutlineEvent"
+        assert request["data"]["config"] == {"draw": False}
+
+        connection.feed(real_frame("ModelOutlineEvent"))
+        await spin_until(
+            lambda: bool(modelled) and bool(named),
+            "the handlers of the late model",
+        )
+
+        assert isinstance(modelled[0], ModelOutlineEventData)
+        assert isinstance(named[0], dict)
     finally:
         await finish(plugin, run_task)

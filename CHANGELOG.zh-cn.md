@@ -41,8 +41,21 @@
 - 在途请求超过 API 超时后抛 `RequestTimeout`。
 - `plugin.reconnect()` 变成「请求一个新会话」，不再自己开一个。插件在跑的时候，这个调用断开当前会话，由
   跑着的那条运行开下一个并鉴权——所以正等着 `reconnect_delay` 的掉线会立刻重试。`wait_connect=True` 只等到
-  新 socket 建好，不等鉴权。连接已经在建时再调，现在什么都不做，不再抛 `RuntimeError`；手动重连也不会再
-  把持有连接的运行打死（[ADR-0019](./docs/adr/0019-the-run-owns-the-session.md)）。
+  新 socket 建好，不等鉴权；没有 run 时，如果它加入的是一次已经在建的连接，拿到的是那次连接失败的原因，而不是
+  去等一个不会到来的成功（有 run 时它照样只等 socket，连接失败由 run 重试）。连接已经在建时再调，现在什么都
+  不做，不再抛 `RuntimeError`；手动重连也不会再把持有连接的运行打死
+  （[ADR-0019](./docs/adr/0019-the-run-owns-the-session.md)、
+  [ADR-0021](./docs/adr/0021-a-connect-has-an-owner.md)）。
+- `stop()` 之后 `reconnect()` 就是终局：在 `run()` 重新启动插件之前，这个调用抛 `RuntimeError`；因为「重试
+  也修不了的鉴权拒绝」而结束的 run 也一样（[ADR-0016](./docs/adr/0016-fatal-authentication-refusals-end-the-run.md)）。
+  `stop()` 也会取消还在建立中的连接，而不是把它本来会接手的 socket 留在身后
+  （[ADR-0021](./docs/adr/0021-a-connect-has-an-owner.md)）。
+- `stop()` 只忘掉它自己结束的那条运行，所以 stop 收尾期间启动的运行之后仍然停得掉。
+- `on_authenticated` 只为还活着的会话触发。声明过的事件正在重新订阅时掉线，会直接重连，而不是让每次会话的
+  初始化跑去面对一个已经没了的 socket。
+- 先用 wire 名、再用数据模型声明同一个事件，现在会补全那一份注册：handler 按模型解析，订阅带的是该模型默认
+  值描述出来的 config。两个不同模型指同一个事件会抛 `ValueError`
+  （[ADR-0022](./docs/adr/0022-one-registration-per-event-name.md)）。
 - 模型没声明的字段现在会保留，不再丢弃：帧上和你自己构建的 payload 上都一样
   （[ADR-0020](./docs/adr/0020-unknown-fields-are-kept.md)）。别名不改写这些字段，所以要按 wire 的写法
   写它们。
@@ -61,6 +74,8 @@
 - 一帧事件解析失败只会报给 `on_parse_data_error` 一次，不再按该事件挂了多少 handler 重复上报。
 - `stop()` 先断连再清扫 handler 任务；`on_handler_run_failed` 之后重派发的 handler 也会被一起跟踪。
 - 请求已经放弃之后才到的应答会被安静丢掉。
+- 请求在 `send` 还没结束时就失败，不再留下一个等着 asyncio 打日志的异常——不打日志的库（ADR-0011）还是不
+  打日志。
 
 ## 0.0.1.alpha2 — 2025-05-21
 

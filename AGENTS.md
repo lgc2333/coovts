@@ -109,6 +109,8 @@ The Rules section introduced some skills. If some skill is missing, please ask u
 
 - Model fields and enum members can be documented with a docstring written below them.
 
+- Docstrings stay short: the key point, nothing else. What an ADR already reasons through is not repeated in code — link the ADR instead.
+
 ### Testing Rules
 
 - Organize `tests*/` like node `.spec.ts` structure: each source file must have one correspondingly named test module.

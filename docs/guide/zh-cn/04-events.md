@@ -47,8 +47,12 @@ dispose 它只是停掉分发——它背后没有订阅可以取消。
   `Any`——传错不会被类型层拦住，拦它的是 VTS。
 - **事件也可以用 wire 名来指名**：`handle_event("ModelMovedEvent")`，或者
   `subscribe_event("ModelMovedEvent", config)`。这种形式什么都不解析、也不校验：handler 拿到的是原始
-  payload，类型是 `Any`；config 不传就发空 config。手搓 `api.EventSubscriptionRequest` 经 `call_api` 发出
-  去，仍然是最后的兜底。
+  payload，类型是 `Any`；config 不传就发空 config。两种指名方式说的是同一个事件，所以在 wire 名之后声明的
+  模型会补全那份声明：订阅带的是该模型默认值描述的 config，用模型挂上的 handler 按模型解析，而用 wire 名挂上
+  的 handler 拿到的还是原始 payload。两个不同模型指同一个事件会抛 `ValueError`；如果那个模型的 config 有
+  必填字段，也一样会抛——就是不带 config 调 `subscribe_event` 时抛的那个 `ValueError`
+  （[ADR-0022](../../adr/0022-one-registration-per-event-name.md)）。手搓 `api.EventSubscriptionRequest`
+  经 `call_api` 发出去，仍然是最后的兜底。
 
 ## 分发语义
 

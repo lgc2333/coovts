@@ -1,6 +1,7 @@
 ---
 status: accepted
 amends: ['0007']
+amended_by: ['0021']
 ---
 
 # The run owns the session, and a drop ends it quietly

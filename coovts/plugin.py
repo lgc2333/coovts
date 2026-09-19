@@ -29,7 +29,7 @@ from .types.consts import ErrorID
 from .types.plugin_api import PluginAPI
 
 if TYPE_CHECKING:
-    from asyncio import Task
+    from asyncio import Future, Task
 
 type C[T] = CoroutineType[Any, Any, T]
 
@@ -92,6 +92,12 @@ def start_handler_task[R](
         running.add(task)
         task.add_done_callback(running.discard)
     return task
+
+
+def _take_failure(future: "Task[Any] | Future[Any]") -> None:
+    """Mark a background connect's failure as seen, so the loop does not log it as unretrieved."""
+    if not future.cancelled():
+        future.exception()
 
 
 def dispatch_handlers_inner[**P, R](
@@ -161,6 +167,10 @@ class Plugin(PluginAPI):
         self._state = PluginState.STOPPED
         self._recv_task: Task | None = None
         self._run_task: Task | None = None
+        # The connect a `reconnect()` without a run owns; the run owns its own connects.
+        self._connect_task: Task | None = None
+        # Set by `stop()` and by a fatal refusal, cleared by `run()` (ADR-0021).
+        self._shut_down = False
         self._handler_tasks: set[Task[Any]] = set()
         # Bumped by every disconnect, so a receive loop can tell its session is over.
         self._session = 0
@@ -235,6 +245,16 @@ class Plugin(PluginAPI):
         if not self.client:
             raise NetworkError("Not connected to VTube Studio")
         return self.client
+
+    def _session_over(self, session: int, client: ws.ClientConnection | None) -> bool:
+        """Whether the session captured as `(session, client)` is no longer live (ADR-0021).
+
+        A drop nulls `client` without bumping the counter, so the socket's own close state is what
+        sees it — the counter alone only sees a disconnect the plugin performed itself.
+        """
+        if client is None or client.close_code is not None:
+            return True
+        return self._session != session
 
     def _handle_raw(self, raw: str | bytes) -> None:
         self.dispatch_handlers(self.on_recv_raw, raw)
@@ -325,22 +345,34 @@ class Plugin(PluginAPI):
     async def reconnect(self, *, wait_connect: bool = False) -> None:
         """Ask for a fresh session; a run in progress opens it, otherwise this call connects.
 
-        Never raises while a run is in progress, and `wait_connect` waits for the new socket, not
-        for authentication.
+        Never raises while a run is in progress, and `wait_connect` waits for the new socket, not for
+        authentication. A plugin that was shut down refuses the call, and one of its connects belongs
+        to it, so every caller of that connect sees the same outcome (ADR-0021).
         """
-        if not self._connect_lock.locked():
-            if self._run_task and (not self._run_task.done()):
+        if self._shut_down:
+            raise RuntimeError("The plugin was stopped; run() starts it again")
+
+        if self._run_task and (not self._run_task.done()):
+            if not self._connect_lock.locked():
                 try:
                     async with self._connect_lock:
                         await self._disconnect(CONNECTION_LOST_MESSAGE)
                 except Exception as e:
                     # The session is dropped either way; only the close failed to say so.
                     self.dispatch_handlers(self.on_disconnect_failed, e)
-            else:
-                await self._open_session()
+            if wait_connect:
+                await self._connected.wait()
+            return
 
-        if wait_connect:
-            await self._connected.wait()
+        connect = self._connect_task
+        if connect is None or connect.done():
+            connect = self._connect_task = asyncio.create_task(self._open_session())
+            # A cancelled caller leaves this unawaited; take its outcome so the loop does not log.
+            connect.add_done_callback(_take_failure)
+            await connect
+        elif wait_connect:
+            # The connect in flight is the one this call asked for: same socket, same failure.
+            await connect
 
     async def _open_session(self):
         """Connect to the endpoint and start receiving; the run in progress calls this."""
@@ -357,6 +389,12 @@ class Plugin(PluginAPI):
                 )
                 raise
 
+            if self._shut_down:
+                # Stopped while connecting: this socket belongs to nobody, so it is closed.
+                await client.close()
+                self._state = PluginState.STOPPED
+                raise RuntimeError("The plugin was stopped while connecting")
+
             self.client = client
             self._state = PluginState.AUTHENTICATING
             self.dispatch_handlers(self.on_connected)
@@ -367,20 +405,32 @@ class Plugin(PluginAPI):
 
     async def stop(self):
         self._stopped = True
-        if self._run_task:
-            self._run_task.cancel()
-            await asyncio.gather(self._run_task, return_exceptions=True)
+        self._shut_down = True
+
+        run_task = self._run_task
+        if run_task:
+            run_task.cancel()
+            await asyncio.gather(run_task, return_exceptions=True)
+        # A connect nobody supervises must not adopt a socket after this call returns.
+        connect_task = self._connect_task
+        if connect_task:
+            connect_task.cancel()
+            await asyncio.gather(connect_task, return_exceptions=True)
+
         try:
             # Sweep after the disconnect (a drop landing here dispatches handlers), and even when
-            # the close refuses.
-            await self._disconnect(None)
+            # the close refuses. The lock keeps this disconnect and a caller's apart.
+            async with self._connect_lock:
+                await self._disconnect(None)
         finally:
             handler_tasks = tuple(self._handler_tasks)
             for task in handler_tasks:
                 task.cancel()
             await asyncio.gather(*handler_tasks, return_exceptions=True)
             self._handler_tasks.clear()
-            self._run_task = None
+            # Only the run this call ended is forgotten.
+            if self._run_task is run_task:
+                self._run_task = None
 
     async def _resubscribe(self) -> None:
         """Re-send every declared subscription, which a new session does not remember."""
@@ -410,15 +460,19 @@ class Plugin(PluginAPI):
                 try:
                     await self.authenticate()
                 except Exception as e:
-                    if self._session != session:
-                        # The session was dropped while authenticating: not a refusal to report.
+                    if self._session != session or isinstance(e, NetworkError):
+                        # Somebody replaced the session, or the socket died under it: not a
+                        # refusal to report (ADR-0019). A refusal VTS answered still reaches the
+                        # hooks below, so a fatal one ends the run as it always did (ADR-0016).
                         continue
                     self.dispatch_handlers(self.on_authenticate_failed, e)
                     if (
                         isinstance(e, APIError)
                         and e.data.error_id in _FATAL_AUTH_ERROR_IDS
                     ):
+                        # A refusal no retry can fix ends the run; only `run()` starts it again.
                         self._stopped = True
+                        self._shut_down = True
                     try:
                         await self._disconnect(CONNECTION_LOST_MESSAGE)
                     except Exception as disconnect_error:
@@ -438,6 +492,7 @@ class Plugin(PluginAPI):
     def run(self):
         if self._run_task and not self._run_task.done():
             raise RuntimeError("Already running")
+        self._shut_down = False
         self._run_task = asyncio.create_task(self._run())
         return self._run_task
 
@@ -477,6 +532,9 @@ class Plugin(PluginAPI):
             return await pending.result(req_timeout)
         finally:
             self.req_manager.discard(pending.req_id)
+            if pending.future.done():
+                # A disconnect failed this mid-send, so nobody awaits it.
+                _take_failure(pending.future)
 
     @override
     async def _call_api(
@@ -521,6 +579,9 @@ class Plugin(PluginAPI):
         if self._state is PluginState.AUTHENTICATED:
             return
 
+        session = self._session
+        client = self.client
+
         if not self.authentication_token:
             token_data = await self.call_api(
                 AuthenticationTokenRequest(
@@ -547,4 +608,7 @@ class Plugin(PluginAPI):
             raise AuthenticationFailedError(data)
         self._state = PluginState.AUTHENTICATED
         await self._resubscribe()
+        if self._session_over(session, client):
+            # The session died while re-subscribing: there is nothing live to hand to the hook.
+            raise NetworkError(CONNECTION_LOST_MESSAGE)
         self.dispatch_handlers(self.on_authenticated)

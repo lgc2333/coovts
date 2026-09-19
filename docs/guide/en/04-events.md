@@ -57,8 +57,13 @@ event.ModelOutlineEventConfig(draw=True))`. `ArtMeshTrackingEventData`,
   there, and VTS is the one that refuses it.
 - **An event can also be named by its wire name**: `handle_event("ModelMovedEvent")`, or
   `subscribe_event("ModelMovedEvent", config)`. Nothing is decoded or validated, the handler gets the
-  raw payload typed `Any`, and an omitted config goes out empty. Hand-built
-  `api.EventSubscriptionRequest` frames through `call_api` stay the last resort.
+  raw payload typed `Any`, and an omitted config goes out empty. Both ways name one event, so a model
+  declared after the name completes that declaration: the subscription carries the config the model's
+  defaults describe, and the handlers attached with the model decode with it, while the handlers
+  attached by the name keep the raw payload. Two different models naming one event raise `ValueError`,
+  and a model whose config has a required field raises it too — the same `ValueError` a
+  `subscribe_event` without a config raises ([ADR-0022](../../adr/0022-one-registration-per-event-name.md)).
+  Hand-built `api.EventSubscriptionRequest` frames through `call_api` stay the last resort.
 
 ## Dispatch semantics
 

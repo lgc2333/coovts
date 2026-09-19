@@ -67,6 +67,8 @@ flowchart LR
 - `stop()` 期间断开失败会抛给 `stop()` 的调用方；重连循环自己发起的断开失败则报给
   `on_disconnect_failed`。
 - `stop()` 之后可以再 `run()`，会重新走一遍连接与鉴权。
+- `stop()` 只忘掉它自己结束的那条 run，所以 stop 还在收尾时启动的 `run()` 会继续跑，之后一次 `stop()` 照样
+  停得掉它。
 
 ## 重连语义
 
@@ -77,7 +79,8 @@ flowchart LR
 
 对使用者的两个结论：
 
-1. 重连成功后 `on_authenticated` 会**再次**触发，所以每会话初始化都写在那里。
+1. 重连成功后 `on_authenticated` 会**再次**触发，所以每会话初始化都写在那里。它只为还活着的会话触发：
+   声明过的事件正在重新订阅时掉线，会去开下一个会话，而不是拿一个已经没了的 socket 去跑这个 hook。
 2. `on_authenticated` 的 handler 跑之前，所有用 `subscribe_event` 声明过的事件都会重新订阅一次；订阅被
    拒绝时会走 `on_subscribe_failed`，而不是结束会话。所以这个 hook 看到的是已经生效的订阅，而不是一个
    承诺。
@@ -91,11 +94,17 @@ flowchart LR
 
 - **有 run 在跑时，调用只扔掉当前会话**：run 会直接去开下一个会话并鉴权，不会再等 `reconnect_delay`，
   所以还在等延迟的断开立刻就会重试。VTS 自己接受下一个 socket 可能要花一点时间：重连很快，但不是瞬间。
-- **没有 run 在跑时，调用自己连上去**，之后没有任何东西会重连它。
+- **没有 run 在跑时，调用自己连上去**，之后没有任何东西会重连它。这次连接归插件而不归调用方：它失败时，
+  等过它的每个调用方都会拿到那个失败，`stop()` 也取消得了它。
 - **`reconnect(wait_connect=True)` 只等新 socket**，不等鉴权，run 一结束就不再等；会话可以用了的信号是
-  `on_authenticated`。
+  `on_authenticated`。没有 run 时，如果它加入的是一次已经在建的连接，它等的是那次连接，抛的也是那次连接抛的
+  东西；有 run 在跑时它照样只等 socket，因为连接失败由 run 去重试。
 - **已经有一次重连在飞的时候，这次调用要的就是它**，所以调用什么都不做。
 - **有 run 在跑时它不会抛异常**；结束一次 run 仍然是用 `stop()`。
+- **`stop()` 之后这个调用抛 `RuntimeError`**，直到 `run()` 重新启动插件为止：停下来的插件不会去连接，
+  而在 stop 到来时还在飞的连接会被关掉，而不是被接手（[ADR-0021](../../adr/0021-a-connect-has-an-owner.md)）。
+  因为「重试也修不了的鉴权拒绝」而结束的 run，同样会拒绝这个调用
+  （[ADR-0016](../../adr/0016-fatal-authentication-refusals-end-the-run.md)）。
 
 ## 该在哪里做初始化
 

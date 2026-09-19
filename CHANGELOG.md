@@ -50,9 +50,29 @@ The newest release is first. Its date is the PyPI upload date.
 - `plugin.reconnect()` asks for a fresh session instead of opening one itself. While the plugin runs,
   the call drops the current session and the run opens and authenticates the next one — so a drop
   that is still waiting out `reconnect_delay` retries immediately. `wait_connect=True` waits for the
-  new socket, not for authentication. A call while a connect is already in flight does nothing now
-  instead of raising `RuntimeError`, and a reconnect by hand no longer ends the run that owns the
-  connection ([ADR-0019](./docs/adr/0019-the-run-owns-the-session.md)).
+  new socket, not for authentication, and a `wait_connect` call that joins a connect already in
+  flight **without a run** gets that connect's failure instead of waiting for a success that is not
+  coming; with a run in progress it still waits for the socket, because the run retries a failed
+  connect. A call while
+  a connect is already in flight does nothing now instead of raising `RuntimeError`, and a reconnect
+  by hand no longer ends the run that owns the connection
+  ([ADR-0019](./docs/adr/0019-the-run-owns-the-session.md),
+  [ADR-0021](./docs/adr/0021-a-connect-has-an-owner.md)).
+- `stop()` is final for `reconnect()`: until `run()` starts the plugin again, the call raises
+  `RuntimeError`, and so does a run that ended on a fatal authentication refusal
+  ([ADR-0016](./docs/adr/0016-fatal-authentication-refusals-end-the-run.md)). A stop also cancels a
+  connect that is still opening rather than leaving the socket
+  it would have adopted behind it
+  ([ADR-0021](./docs/adr/0021-a-connect-has-an-owner.md)).
+- `stop()` forgets only the run it ended, so a `run()` started while a stop is unwinding can still be
+  stopped.
+- `on_authenticated` fires only for a session that is still live. A drop that lands while the declared
+  events are being re-subscribed reconnects, instead of running per-session setup against a socket
+  that is already gone.
+- Declaring an event by its wire name and then by its data model now completes the one registration
+  for that event, so its handlers decode with the model and its subscription carries the config that
+  model's defaults describe. Two different models naming one event raise `ValueError`
+  ([ADR-0022](./docs/adr/0022-one-registration-per-event-name.md)).
 - A field the models do not declare is kept instead of dropped, on frames and on the payloads you
   build alike ([ADR-0020](./docs/adr/0020-unknown-fields-are-kept.md)). The aliases do not rename
   those fields, so write them the way the wire does.
@@ -72,6 +92,8 @@ The newest release is first. Its date is the PyPI upload date.
 - `stop()` disconnects before it sweeps the handler tasks, and a handler re-dispatched after
   `on_handler_run_failed` is tracked like the rest.
 - An answer that arrives for a request that already gave up is dropped quietly.
+- A request that fails while its `send` is still going out no longer leaves an exception for asyncio
+  to log, so a library that does not log (ADR-0011) still does not.
 
 ## 0.0.1.alpha2 — 2025-05-21
 

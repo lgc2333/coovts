@@ -78,10 +78,14 @@ class FakeTransport:
     async def connect(self, endpoint: str) -> FakeConnection:
         """Record the endpoint and return the shared connection."""
         self.endpoints.append(endpoint)
-        if self.gate is not None:
-            await self.gate.wait()
+        await self.wait_gate()
         self.connection.reopen()
         return self.connection
+
+    async def wait_gate(self) -> None:
+        """Park on the gate when one is set, so a test can hold a connect open."""
+        if self.gate is not None:
+            await self.gate.wait()
 
 
 class FlakyTransport(FakeTransport):
@@ -98,6 +102,7 @@ class FlakyTransport(FakeTransport):
         self.attempts += 1
         if self.attempts <= self.failures:
             self.endpoints.append(endpoint)
+            await self.wait_gate()
             raise self.error
         return await super().connect(endpoint)
 

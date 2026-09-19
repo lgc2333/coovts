@@ -1,10 +1,12 @@
 """The registry of registered events, and the subscriptions it sends for them."""
 
+from typing import ClassVar
+
 import pytest
 
 from coovts.errors import NetworkError
 from coovts.event import EventSubscriptionRegistry, default_event_config
-from coovts.types import event
+from coovts.types import VTSBaseModel, event
 from coovts.types.api import EventSubscriptionRequest, EventSubscriptionResponse
 
 
@@ -217,3 +219,72 @@ async def test_walking_the_registry_survives_a_dispose_inside_the_walk() -> None
 
     assert walked == ["ModelMovedEvent", "ModelLoadedEvent"]
     assert list(registry) == []
+
+
+class AliasedMovedEvent(VTSBaseModel):
+    """A model that names `ModelMovedEvent` too, through the `msg_t` escape hatch."""
+
+    msg_t: ClassVar[str] = "ModelMovedEvent"
+
+
+def test_a_model_named_after_the_event_upgrades_the_registration() -> None:
+    """Declaring an event by name first does not cost the model declared after it."""
+    registry, _ = make_registry()
+
+    registration = registry.registration("ModelMovedEvent")
+    same = registry.registration(event.ModelMovedEventData)
+
+    assert same is registration
+    assert registration.data_model is event.ModelMovedEventData
+
+
+def test_a_model_arriving_late_still_brings_its_default_config() -> None:
+    """The default config a name cannot supply is built once the model arrives."""
+    registry, _ = make_registry()
+
+    registry.subscribe("ModelOutlineEvent")
+    registration = registry.subscribe(event.ModelOutlineEventData)
+
+    assert registration.config == default_event_config(event.ModelOutlineEventData)
+
+
+def test_two_models_naming_one_event_are_refused() -> None:
+    """Two models cannot decode one event name, so the second one is refused."""
+    registry, _ = make_registry()
+    registry.registration(event.ModelMovedEventData)
+
+    with pytest.raises(ValueError, match="ModelMovedEvent"):
+        registry.registration(AliasedMovedEvent)
+
+
+def test_a_model_arriving_after_a_named_subscription_replaces_its_empty_config() -> (
+    None
+):
+    """Completing a named declaration with a model sends that model's defaults, not `{}`."""
+    registry, _ = make_registry()
+    registry.subscribe("ModelOutlineEvent")
+
+    registration = registry.registration(event.ModelOutlineEventData)
+
+    assert registration.data_model is event.ModelOutlineEventData
+    assert registration.config == default_event_config(event.ModelOutlineEventData)
+
+
+def test_a_config_a_caller_passed_survives_a_late_model() -> None:
+    """A model completing a named declaration leaves a config the caller chose alone."""
+    registry, _ = make_registry()
+    config = {"hand": "picked"}
+    registry.subscribe("ModelOutlineEvent", config)
+
+    registration = registry.registration(event.ModelOutlineEventData)
+
+    assert registration.config == config
+
+
+def test_a_late_model_with_a_required_config_field_is_refused() -> None:
+    """A model whose config cannot be defaulted raises where the name alone could not."""
+    registry, _ = make_registry()
+    registry.subscribe("ArtMeshTrackingEvent")
+
+    with pytest.raises(ValueError, match="tracking_points"):
+        registry.registration(event.ArtMeshTrackingEventData)

@@ -2,15 +2,26 @@
 
 import asyncio
 import contextlib
+import gc
+from typing import Any
 
 import pytest
+from websockets.exceptions import ConnectionClosedError
 
+from coovts.errors import APIError, NetworkError
+from coovts.event import EventRegistration
 from coovts.plugin import PluginState
+from coovts.types.api import APIStateRequest
 from coovts.types.consts import ErrorID
-from coovts.types.event import ModelLoadedEventData
+from coovts.types.event import ModelLoadedEventData, ModelOutlineEventData
 
 from ..utils.async_helpers import finish, spin_until, tick
-from ..utils.frames import envelope, sent_frame
+from ..utils.frames import (
+    envelope,
+    real_error_payload,
+    real_payload,
+    sent_frame,
+)
 from ..utils.plugin_fake import FakeTransport, FlakyTransport, install_transport
 from ..utils.plugin_fixtures import TOKEN, authenticate, handshake, make_plugin
 
@@ -523,4 +534,348 @@ async def test_reconnect_survives_a_refused_close(
         assert plugin.state is PluginState.AUTHENTICATED
     finally:
         monkeypatch.setattr(connection, "close", closing)
+        await finish(plugin, run_task)
+
+
+async def test_a_waiter_shares_the_failure_of_the_connect_it_waited_for(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A failed connect reaches every caller that waited on it, not only the one that started it."""
+    error = OSError("VTube Studio is not running")
+    transport = FlakyTransport(error, failures=1)
+    transport.gate = asyncio.Event()
+    install_transport(monkeypatch, transport)
+    plugin = make_plugin()
+
+    connecting = asyncio.create_task(plugin.reconnect())
+    try:
+        await spin_until(lambda: len(transport.endpoints) == 1, "connect attempt")
+        waiting = asyncio.create_task(plugin.reconnect(wait_connect=True))
+        await tick()
+        assert waiting.done() is False
+
+        transport.gate.set()
+
+        with pytest.raises(OSError, match="not running"):
+            await asyncio.wait_for(connecting, 1)
+        with pytest.raises(OSError, match="not running"):
+            await asyncio.wait_for(waiting, 1)
+    finally:
+        transport.gate.set()
+        await plugin.stop()
+
+
+async def test_stop_ends_a_connect_nobody_supervises(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """`stop()` cancels the connect a manual `reconnect()` owns, so no socket outlives it."""
+    transport = FakeTransport()
+    transport.gate = asyncio.Event()
+    install_transport(monkeypatch, transport)
+    plugin = make_plugin()
+
+    connecting = asyncio.create_task(plugin.reconnect())
+    try:
+        await spin_until(
+            lambda: plugin.state is PluginState.CONNECTING,
+            "connect attempt",
+        )
+
+        await asyncio.wait_for(plugin.stop(), 1)
+        transport.gate.set()
+
+        with pytest.raises(asyncio.CancelledError):
+            await asyncio.wait_for(connecting, 1)
+        await tick()
+        assert plugin.client is None
+        assert plugin.state is PluginState.STOPPED
+    finally:
+        transport.gate.set()
+        await plugin.stop()
+
+
+async def test_a_stopped_plugin_refuses_a_hand_connect_until_it_runs_again(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """`stop()` is final for `reconnect()`; `run()` is what starts the plugin again."""
+    transport = FakeTransport()
+    install_transport(monkeypatch, transport)
+    plugin = make_plugin(authentication_token=TOKEN, reconnect_delay=0)
+
+    await plugin.stop()
+    with pytest.raises(RuntimeError, match="stopped"):
+        await plugin.reconnect()
+
+    run_task = plugin.run()
+    try:
+        await spin_until(lambda: len(transport.endpoints) == 1, "connect attempt")
+
+        await asyncio.wait_for(plugin.reconnect(wait_connect=True), 1)
+
+        assert plugin.state is PluginState.AUTHENTICATING
+    finally:
+        await finish(plugin, run_task)
+
+
+async def test_a_drop_while_resubscribing_does_not_reach_on_authenticated(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A session that dies while its events are re-sent never hands a live session to the hook."""
+    transport = FakeTransport()
+    install_transport(monkeypatch, transport)
+    plugin = make_plugin(authentication_token=TOKEN, reconnect_delay=0)
+    connection = transport.connection
+    authenticated: list[bool] = []
+    refusals: list[Exception] = []
+
+    @plugin.on_authenticated
+    async def on_authenticated() -> None:
+        authenticated.append(True)
+
+    @plugin.on_subscribe_failed
+    async def on_subscribe_failed(
+        registration: EventRegistration[Any],
+        error: Exception,
+    ) -> None:
+        refusals.append(error)
+
+    plugin.subscribe_event(ModelOutlineEventData)
+
+    run_task = plugin.run()
+    try:
+        await authenticate(
+            plugin, connection
+        )  # authenticated, re-subscription still in flight
+
+        connection.drop()
+        await spin_until(lambda: len(transport.endpoints) == 2, "the next session")
+
+        assert authenticated == []
+        assert len(refusals) == 1
+        assert isinstance(refusals[0], NetworkError)
+    finally:
+        await finish(plugin, run_task)
+
+
+async def test_a_run_started_while_stopping_is_not_forgotten(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """`stop()` forgets only the run it ended, so a run started mid-stop can still be stopped."""
+    transport = FakeTransport()
+    install_transport(monkeypatch, transport)
+    plugin = make_plugin(authentication_token=TOKEN)
+    connection = transport.connection
+    gate = asyncio.Event()
+    started: list[bool] = []
+    unwinding: list[bool] = []
+
+    @plugin.handle_event(ModelLoadedEventData)
+    async def on_loaded(data: ModelLoadedEventData) -> None:
+        started.append(True)
+        try:
+            await asyncio.Event().wait()
+        except asyncio.CancelledError:
+            unwinding.append(True)
+            await gate.wait()  # the stop waits here, with its run already ended
+            raise
+
+    run_task = plugin.run()
+    try:
+        await authenticate(plugin, connection)
+        connection.feed(
+            envelope(
+                "ModelLoadedEvent",
+                {"modelLoaded": True, "modelName": "model-a", "modelID": "id-1"},
+            ),
+        )
+        await spin_until(lambda: bool(started), "the handler to start")
+
+        stopping = asyncio.create_task(plugin.stop())
+        await spin_until(lambda: bool(unwinding), "the stop to reach its sweep")
+        sent_before = len(connection.sent)
+        second_run = plugin.run()
+        await spin_until(
+            lambda: len(connection.sent) == sent_before + 1,
+            "the second session's authentication request",
+        )
+        await authenticate(plugin, connection)  # started mid-stop, it gets a session
+
+        gate.set()
+        await asyncio.wait_for(stopping, 1)
+
+        await asyncio.wait_for(plugin.stop(), 1)
+        with contextlib.suppress(asyncio.CancelledError):
+            await asyncio.wait_for(second_run, 1)
+
+        attempts = len(transport.endpoints)
+        await tick(50)  # a run that was forgotten connects again here
+
+        assert second_run.done()
+        assert len(transport.endpoints) == attempts
+        assert plugin.state is PluginState.STOPPED
+    finally:
+        gate.set()
+        await finish(plugin, run_task)
+
+
+async def test_a_request_failed_mid_send_leaves_nothing_for_the_loop_to_log(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A disconnect that fails a request mid-send leaves no exception for the loop to report."""
+    transport = FakeTransport()
+    install_transport(monkeypatch, transport)
+    plugin = make_plugin(authentication_token=TOKEN)
+    connection = transport.connection
+    logged: list[str] = []
+    loop = asyncio.get_running_loop()
+    previous = loop.get_exception_handler()
+    loop.set_exception_handler(
+        lambda _loop, context: logged.append(str(context["message"])),
+    )
+
+    async def send_after_the_drop(payload: str) -> None:
+        connection.drop()
+        await tick(
+            20
+        )  # the receive loop fails the pending request before the send gives up
+        raise ConnectionClosedError(None, None)
+
+    run_task = plugin.run()
+    try:
+        await authenticate(plugin, connection)
+        monkeypatch.setattr(connection, "send", send_after_the_drop)
+
+        with pytest.raises(NetworkError, match="lost"):
+            await plugin.call_api(APIStateRequest())
+
+        gc.collect()
+        await tick()
+        assert logged == []
+    finally:
+        loop.set_exception_handler(previous)
+        await finish(plugin, run_task)
+
+
+async def test_two_stops_at_once_leave_the_plugin_stopped(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Two `stop()` calls in the same tick both return, with no session left behind."""
+    transport = FakeTransport()
+    install_transport(monkeypatch, transport)
+    plugin = make_plugin(authentication_token=TOKEN)
+    connection = transport.connection
+
+    run_task = plugin.run()
+    try:
+        await authenticate(plugin, connection)
+
+        await asyncio.wait_for(asyncio.gather(plugin.stop(), plugin.stop()), 2)
+
+        assert plugin.state is PluginState.STOPPED
+        assert plugin.client is None
+        assert run_task.done()
+    finally:
+        with contextlib.suppress(asyncio.CancelledError):
+            await run_task
+
+
+async def test_a_fatal_refusal_that_arrives_with_a_close_still_ends_the_run(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A refusal no retry can fix stops the plugin even when the socket dies with it."""
+    transport = FakeTransport()
+    install_transport(monkeypatch, transport)
+    plugin = make_plugin(authentication_token=TOKEN, reconnect_delay=0)
+    connection = transport.connection
+    failures: list[Exception] = []
+
+    @plugin.on_authenticate_failed
+    async def on_failed(error: Exception) -> None:
+        failures.append(error)
+
+    run_task = plugin.run()
+    try:
+        await spin_until(lambda: bool(connection.sent), "authentication request")
+        request = sent_frame(connection, len(connection.sent) - 1)
+        connection.feed(
+            envelope(
+                "APIError",
+                real_error_payload(ErrorID.TokenRequestDenied),
+                request["requestID"],
+            ),
+        )
+        connection.drop()  # the socket dies in the same receive step as the refusal
+        await tick(80)
+
+        assert len(failures) == 1
+        assert isinstance(failures[0], APIError)
+        assert plugin.state is PluginState.STOPPED
+        assert len(transport.endpoints) == 1  # no retry loop
+    finally:
+        await finish(plugin, run_task)
+
+
+async def test_a_socket_that_died_during_resubscribing_does_not_reach_on_authenticated(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A socket that is already closed when re-subscription ends never reaches the hook.
+
+    The receive loop may not have noticed the close yet, so the socket's own state is what decides.
+    """
+    transport = FakeTransport()
+    install_transport(monkeypatch, transport)
+    plugin = make_plugin(authentication_token=TOKEN, reconnect_delay=60)
+    connection = transport.connection
+    authenticated: list[bool] = []
+    refusals: list[Exception] = []
+    gate = asyncio.Event()
+    parked: list[bool] = []
+    sending = connection.send
+
+    async def park_the_resubscribe(payload: str) -> None:
+        if not parked and "EventSubscriptionRequest" in payload:
+            parked.append(True)
+            await gate.wait()
+        await sending(payload)
+
+    @plugin.on_authenticated
+    async def on_authenticated() -> None:
+        authenticated.append(True)
+
+    @plugin.on_subscribe_failed
+    async def on_subscribe_failed(
+        registration: EventRegistration[Any],
+        error: Exception,
+    ) -> None:
+        refusals.append(error)
+
+    plugin.subscribe_event(ModelOutlineEventData)
+
+    run_task = plugin.run()
+    try:
+        await spin_until(lambda: bool(connection.sent), "authentication request")
+        request = sent_frame(connection, len(connection.sent) - 1)
+        monkeypatch.setattr(connection, "send", park_the_resubscribe)
+        connection.feed(
+            envelope(
+                "AuthenticationResponse",
+                real_payload("AuthenticationResponse"),
+                request["requestID"],
+            ),
+        )
+        await spin_until(lambda: bool(parked), "the re-subscription to park")
+
+        connection.closed = (
+            True  # the peer is gone; the receive loop has not noticed yet
+        )
+        connection.close_code = 1006
+        gate.set()
+        await tick(80)
+
+        assert len(refusals) == 1
+        assert isinstance(refusals[0], NetworkError)
+        assert authenticated == []
+    finally:
+        gate.set()
+        monkeypatch.setattr(connection, "send", sending)
         await finish(plugin, run_task)

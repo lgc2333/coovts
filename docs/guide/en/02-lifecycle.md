@@ -69,6 +69,8 @@ carry the token, so filter them out before logging or sharing a capture.
 - A teardown that fails during `stop()` reaches the caller of `stop()`; a disconnect the reconnect
   loop performs on its own reaches `on_disconnect_failed` instead.
 - After `stop()` you may `run()` again; it goes through connect and authenticate from the top.
+- `stop()` forgets only the run it ended, so a `run()` called while a stop is still unwinding keeps
+  running, and a later `stop()` still ends it.
 
 ## Reconnect semantics
 
@@ -80,7 +82,9 @@ same loop, and since an attempt is a loopback call, backoff would buy nothing. T
 
 Two consequences for your code:
 
-1. `on_authenticated` fires **again** after a reconnect, which is why per-session setup lives there.
+1. `on_authenticated` fires **again** after a reconnect, which is why per-session setup lives there. It
+   fires only for a session that is still live: a drop that lands while the declared events are being
+   re-sent opens the next session instead of running the hook against a socket that is already gone.
 2. Before the `on_authenticated` handlers run, every event you declared with `subscribe_event` is
    subscribed to again; a refusal reaches `on_subscribe_failed` instead of ending the session. So the
    hook sees a live subscription, not a promise of one.
@@ -96,11 +100,20 @@ is a request rather than a takeover:
 - **With a run in progress, the call only drops the current session.** The run opens and authenticates
   the next one without waiting out `reconnect_delay`, so a drop that is still mid-wait retries at
   once. VTS itself may take a moment to accept the next socket: quick, not instant.
-- **Without a run in progress, the call connects itself**, and nothing reconnects it afterwards.
+- **Without a run in progress, the call connects itself**, and nothing reconnects it afterwards. That
+  connect belongs to the plugin, not to the caller: a failure reaches every caller that waited on it,
+  and `stop()` cancels it.
 - **`reconnect(wait_connect=True)` waits for the new socket only**, not for authentication, and stops
-  waiting as soon as the run ends; `on_authenticated` is the signal that the session is usable.
+  waiting as soon as the run ends; `on_authenticated` is the signal that the session is usable. Without
+  a run, a call that joins a connect already in flight waits for that connect and raises what it
+  raised; with a run in progress it still waits for the socket, since the run retries a failed connect.
 - **A reconnect already in flight is exactly what the call asks for**, so the call does nothing.
 - **It does not raise while a run is in progress**; `stop()` is still how a run ends.
+- **After `stop()` the call raises `RuntimeError`** until `run()` starts the plugin again: a stopped
+  plugin does not connect, and a connect that was already in flight when the stop arrived is closed
+  instead of adopted ([ADR-0021](../../adr/0021-a-connect-has-an-owner.md)). A run that ended on a
+  fatal authentication refusal refuses the same way
+  ([ADR-0016](../../adr/0016-fatal-authentication-refusals-end-the-run.md)).
 
 ## Where to put what
 
