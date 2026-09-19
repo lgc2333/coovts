@@ -32,6 +32,30 @@ def make_plugin(
     )
 
 
+async def authenticate(plugin: Plugin, connection: "FakeConnection") -> None:
+    """Answer the authentication request the plugin sends last, then wait for `AUTHENTICATED`."""
+    await spin_until(
+        lambda: (
+            bool(connection.sent)
+            and sent_frame(connection, len(connection.sent) - 1)["messageType"]
+            == "AuthenticationRequest"
+        ),
+        "authentication request",
+    )
+    request = sent_frame(connection, len(connection.sent) - 1)
+    connection.feed(
+        envelope(
+            "AuthenticationResponse",
+            real_payload("AuthenticationResponse"),
+            request["requestID"],
+        ),
+    )
+    await spin_until(
+        lambda: plugin.state is PluginState.AUTHENTICATED,
+        "authenticated state",
+    )
+
+
 async def handshake(plugin: Plugin, connection: "FakeConnection") -> None:
     """Drive the plugin through the token request and the authentication exchange."""
     await spin_until(lambda: len(connection.sent) >= 1, "authentication token request")
@@ -45,16 +69,4 @@ async def handshake(plugin: Plugin, connection: "FakeConnection") -> None:
     )
 
     await spin_until(lambda: len(connection.sent) >= 2, "authentication request")
-    auth_request = sent_frame(connection, 1)
-    connection.feed(
-        envelope(
-            "AuthenticationResponse",
-            real_payload("AuthenticationResponse"),
-            auth_request["requestID"],
-        ),
-    )
-
-    await spin_until(
-        lambda: plugin.state is PluginState.AUTHENTICATED,
-        "authenticated state",
-    )
+    await authenticate(plugin, connection)

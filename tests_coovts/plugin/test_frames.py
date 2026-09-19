@@ -1,16 +1,16 @@
-"""Inbound frames that are malformed, unknown, or carry unmodelled fields."""
+"""Inbound frames that are malformed, unknown, or carry unmodelled fields, and the raw copies."""
 
 import asyncio
 from typing import TYPE_CHECKING
 
 from coovts.plugin import PluginState
 from coovts.types.api import APIStateRequest, APIStateResponse
-from coovts.types.event import ModelLoadedEventData
+from coovts.types.event import ModelLoadedEventData, TestEventData
 
-from ..utils.async_helpers import finish, spin_until
+from ..utils.async_helpers import finish, spin_until, tick
 from ..utils.frames import envelope, real_payload, sent_frame
 from ..utils.plugin_fake import FakeTransport, install_transport
-from ..utils.plugin_fixtures import handshake, make_plugin
+from ..utils.plugin_fixtures import TOKEN, authenticate, handshake, make_plugin
 
 if TYPE_CHECKING:
     import pytest
@@ -99,7 +99,7 @@ async def test_unknown_message_type_is_dropped(
 async def test_invalid_event_payload_reaches_parse_error_hook(
     monkeypatch: "pytest.MonkeyPatch",
 ) -> None:
-    """An event whose payload does not decode is reported instead of being dispatched."""
+    """An event whose payload does not decode is reported once, not once per handler."""
     transport = FakeTransport()
     install_transport(monkeypatch, transport)
     plugin = make_plugin()
@@ -115,6 +115,10 @@ async def test_invalid_event_payload_reaches_parse_error_hook(
     async def on_loaded(data: ModelLoadedEventData) -> None:
         received.append(data)
 
+    @plugin.handle_event(ModelLoadedEventData)
+    async def on_loaded_again(data: ModelLoadedEventData) -> None:
+        received.append(data)
+
     run_task = plugin.run()
     try:
         await handshake(plugin, connection)
@@ -122,6 +126,7 @@ async def test_invalid_event_payload_reaches_parse_error_hook(
         frame = envelope("ModelLoadedEvent", {"modelLoaded": True})
         connection.feed(frame)
         await spin_until(lambda: bool(errors), "on_parse_data_error for a bad payload")
+        await tick()
 
         assert [raw for raw, _ in errors] == [frame]
         assert received == []
@@ -129,12 +134,10 @@ async def test_invalid_event_payload_reaches_parse_error_hook(
         await finish(plugin, run_task)
 
 
-async def test_unknown_payload_fields_are_ignored(
+async def test_unknown_payload_fields_survive_the_round_trip(
     monkeypatch: "pytest.MonkeyPatch",
 ) -> None:
-    """A payload carrying a field the library does not model still decodes (ADR-0003)."""
-    from coovts.types.event import TestEventData
-
+    """A payload carrying a field the library does not model decodes, and keeps it (ADR-0020)."""
     transport = FakeTransport()
     install_transport(monkeypatch, transport)
     plugin = make_plugin()
@@ -160,6 +163,7 @@ async def test_unknown_payload_fields_are_ignored(
             lambda: bool(received), "handler for a payload with extra fields"
         )
         assert received[0].counter == 560
+        assert received[0].model_extra == {"someFieldVtsAddedLater": {"nested": 1}}
 
         call = asyncio.create_task(plugin.call_api(APIStateRequest()))
         await spin_until(lambda: len(connection.sent) >= 3, "api state request")
@@ -175,5 +179,40 @@ async def test_unknown_payload_fields_are_ignored(
         response = await asyncio.wait_for(call, 1)
         assert isinstance(response, APIStateResponse)
         assert response.vtube_studio_version == "1.35.10"
+        assert response.model_extra == {"futureField": 1}
+    finally:
+        await finish(plugin, run_task)
+
+
+async def test_raw_frames_reach_their_hooks(
+    monkeypatch: "pytest.MonkeyPatch",
+) -> None:
+    """Every inbound frame reaches `on_recv_raw`, every outbound one `on_before_send_raw`."""
+    transport = FakeTransport()
+    install_transport(monkeypatch, transport)
+    plugin = make_plugin(authentication_token=TOKEN)
+    connection = transport.connection
+    received_raw: list[str | bytes] = []
+    sent_raw: list[str] = []
+
+    @plugin.on_recv_raw
+    async def on_recv_raw(raw: str | bytes) -> None:
+        received_raw.append(raw)
+
+    @plugin.on_before_send_raw
+    async def on_before_send_raw(payload: str) -> None:
+        sent_raw.append(payload)
+
+    run_task = plugin.run()
+    try:
+        await authenticate(plugin, connection)
+
+        frame = envelope("TestEvent", real_payload("TestEvent"))
+        connection.feed(frame)
+        await spin_until(lambda: len(received_raw) == 2, "the event frame")
+
+        assert len(received_raw) == 2
+        assert received_raw[-1] == frame
+        assert sent_raw == [connection.sent[0]]
     finally:
         await finish(plugin, run_task)

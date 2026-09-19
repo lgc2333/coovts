@@ -1,5 +1,6 @@
 ---
 status: accepted
+amended_by: ['0019']
 ---
 
 # Reconnection is an unconditional fixed-delay loop

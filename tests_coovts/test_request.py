@@ -151,3 +151,16 @@ async def test_resolve_error_payload_fails_future_with_api_error() -> None:
     assert error.data.message == "User denied authentication request for your plugin."
     assert "50" in str(error)
     assert "denied" in str(error)
+
+
+def test_resolve_after_the_wait_is_over_is_ignored() -> None:
+    """An answer for a request that already gave up is dropped instead of raising in the loop."""
+    from coovts.request import RequestManager
+
+    manager = RequestManager()
+    pending = manager.start()
+    pending.future.cancel()
+
+    pending.resolve('{"data": {}}', {}, is_error=False)
+
+    assert pending.future.cancelled()

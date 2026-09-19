@@ -1,7 +1,8 @@
 """The authentication handshake and the plugin's policy on refused tokens."""
 
 import asyncio
-from typing import TYPE_CHECKING
+
+import pytest
 
 from coovts.errors import APIError, AuthenticationFailedError
 from coovts.plugin import PluginState
@@ -12,8 +13,27 @@ from ..utils.frames import envelope, sent_frame
 from ..utils.plugin_fake import FakeTransport, install_transport
 from ..utils.plugin_fixtures import PLUGIN_NAME, TOKEN, handshake, make_plugin
 
-if TYPE_CHECKING:
-    import pytest
+FATAL_REFUSALS = [
+    ErrorID.APIAccessDeactivated,
+    ErrorID.JSONInvalid,
+    ErrorID.APINameInvalid,
+    ErrorID.APIVersionInvalid,
+    ErrorID.TokenRequestDenied,
+    ErrorID.TokenRequestPluginNameInvalid,
+    ErrorID.TokenRequestDeveloperNameInvalid,
+    ErrorID.TokenRequestPluginIconInvalid,
+    ErrorID.AuthenticationTokenMissing,
+    ErrorID.AuthenticationPluginNameMissing,
+    ErrorID.AuthenticationPluginDeveloperMissing,
+]
+"""Every refusal a retry cannot fix: the plugin stops instead of asking again (ADR-0016)."""
+
+RETRYABLE_REFUSALS = [
+    ErrorID.RequestIDInvalid,
+    ErrorID.RequestTypeUnknown,
+    ErrorID.TokenRequestCurrentlyOngoing,
+]
+"""Refusals that say nothing about the next attempt, so the plugin tries again."""
 
 
 async def test_handshake_gets_token_then_authenticates(
@@ -234,8 +254,10 @@ async def test_authenticate_when_already_authenticated_is_a_noop(
         await finish(plugin, run_task)
 
 
-async def test_authentication_refusal_no_retry_can_fix_stops_the_plugin(
+@pytest.mark.parametrize("error_id", FATAL_REFUSALS, ids=lambda e: e.name)
+async def test_a_refusal_no_retry_can_fix_stops_the_plugin(
     monkeypatch: "pytest.MonkeyPatch",
+    error_id: ErrorID,
 ) -> None:
     """A refusal caused by the plugin's own settings stops it instead of looping forever."""
     transport = FakeTransport()
@@ -255,7 +277,7 @@ async def test_authentication_refusal_no_retry_can_fix_stops_the_plugin(
         connection.feed(
             envelope(
                 "APIError",
-                {"errorID": ErrorID.TokenRequestDenied, "message": "denied"},
+                {"errorID": error_id, "message": "refused"},
                 request["requestID"],
             ),
         )
@@ -264,15 +286,17 @@ async def test_authentication_refusal_no_retry_can_fix_stops_the_plugin(
 
         assert len(failures) == 1
         assert isinstance(failures[0], APIError)
-        assert failures[0].data.error_id == ErrorID.TokenRequestDenied
+        assert failures[0].data.error_id == error_id
         assert plugin.state is PluginState.STOPPED
         assert len(transport.endpoints) == 1
     finally:
         await finish(plugin, run_task)
 
 
-async def test_authentication_refusal_a_retry_can_fix_keeps_looping(
+@pytest.mark.parametrize("error_id", RETRYABLE_REFUSALS, ids=lambda e: e.name)
+async def test_a_refusal_a_retry_can_fix_keeps_looping(
     monkeypatch: "pytest.MonkeyPatch",
+    error_id: ErrorID,
 ) -> None:
     """A refusal VTS may answer differently next time keeps the supervisor reconnecting."""
     transport = FakeTransport()
@@ -287,10 +311,7 @@ async def test_authentication_refusal_a_retry_can_fix_keeps_looping(
         connection.feed(
             envelope(
                 "APIError",
-                {
-                    "errorID": ErrorID.TokenRequestCurrentlyOngoing,
-                    "message": "the request window is open",
-                },
+                {"errorID": error_id, "message": "not now"},
                 request["requestID"],
             ),
         )

@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 async def test_call_api_resolves_only_the_matching_request_id(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """An in-flight call is resolved by the response echoing its `requestID`, and no other."""
+    """A pending request is resolved by the response echoing its `requestID`, and no other."""
     transport = FakeTransport()
     install_transport(monkeypatch, transport)
     plugin = make_plugin()
@@ -71,10 +71,10 @@ async def test_call_api_resolves_only_the_matching_request_id(
         await finish(plugin, run_task)
 
 
-async def test_connection_drop_fails_in_flight_call(
+async def test_connection_drop_fails_the_pending_request(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A drop fails the in-flight call at once and hands the socket error to the close hook."""
+    """A drop fails the pending request at once and hands the socket error to the close hook."""
     transport = FakeTransport()
     install_transport(monkeypatch, transport)
     plugin = make_plugin(api_timeout=30, reconnect_delay=60)

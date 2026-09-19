@@ -15,6 +15,9 @@ class PendingRequest[M: BaseModel]:
     future: Future[M] = field(default_factory=Future)
 
     def resolve(self, raw: str | bytes, data: Any, *, is_error: bool) -> None:
+        if self.future.done():
+            # The caller gave up before the answer arrived; the wait is over either way.
+            return
         model: type[BaseModel] | None = APIErrorResponse if is_error else self.model
         try:
             result = data if model is None else model.model_validate(data)

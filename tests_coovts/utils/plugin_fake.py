@@ -3,7 +3,7 @@
 import asyncio
 from typing import TYPE_CHECKING
 
-from websockets.exceptions import ConnectionClosedError
+from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 
 if TYPE_CHECKING:
     import pytest
@@ -18,6 +18,7 @@ class FakeConnection:
         self.close_code: int | None = None
         self.closed = False
         self._inbound: asyncio.Queue[str | BaseException] = asyncio.Queue()
+        self._reading = False
 
     def feed(self, frame: str) -> None:
         """Queue one raw frame for the next `recv` call."""
@@ -25,6 +26,7 @@ class FakeConnection:
 
     def drop(self) -> None:
         """Make the next `recv` raise, the way a lost connection does."""
+        self.closed = True
         self.close_code = 1006
         self._inbound.put_nowait(ConnectionClosedError(None, None))
 
@@ -36,20 +38,28 @@ class FakeConnection:
 
     async def recv(self) -> str:
         """Return the next queued frame, or raise the queued failure."""
-        item = await self._inbound.get()
+        self._reading = True
+        try:
+            item = await self._inbound.get()
+        finally:
+            self._reading = False
         if isinstance(item, BaseException):
             raise item
         return item
 
     async def close(self) -> None:
-        """Close the connection the way `websockets` would."""
+        """Close the connection the way `websockets` would, failing a read left waiting."""
         self.closed = True
         self.close_code = 1000
+        if self._reading:
+            self._inbound.put_nowait(ConnectionClosedOK(None, None))
 
     def reopen(self) -> None:
         """Make the connection usable again, as a new session on a fresh socket would."""
         self.closed = False
         self.close_code = None
+        while not self._inbound.empty():
+            self._inbound.get_nowait()
 
 
 class FakeTransport:

@@ -1,5 +1,6 @@
 ---
 status: accepted
+amended_by: ['0017']
 ---
 
 # One `Plugin` object owns the whole connection

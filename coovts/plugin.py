@@ -82,9 +82,22 @@ class Hook[T]:
         return iter(self._handlers)
 
 
+def start_handler_task[R](
+    coro: C[R],
+    running: "set[Task[Any]] | None" = None,
+) -> "Task[R]":
+    """Start one handler task, and keep it in `running` for as long as it lives."""
+    task = asyncio.create_task(coro)
+    if running is not None:
+        running.add(task)
+        task.add_done_callback(running.discard)
+    return task
+
+
 def dispatch_handlers_inner[**P, R](
     handlers: Iterable[Callable[P, C[R]]],
     run_failed_handlers: Iterable[HandlerRunFailedHandler] | None = None,
+    running: "set[Task[Any]] | None" = None,
     *args: P.args,
     **kwargs: P.kwargs,
 ) -> list["Task[R | Exception]"]:
@@ -93,10 +106,10 @@ def dispatch_handlers_inner[**P, R](
             return await f(*args, **kwargs)
         except Exception as e:
             if run_failed_handlers:
-                dispatch_handlers_inner(run_failed_handlers, None, e)
+                dispatch_handlers_inner(run_failed_handlers, None, running, e)
             return e
 
-    return [asyncio.create_task(run_task(x)) for x in handlers]
+    return [start_handler_task(run_task(x), running) for x in handlers]
 
 
 class PluginState(Enum):
@@ -149,6 +162,11 @@ class Plugin(PluginAPI):
         self._recv_task: Task | None = None
         self._run_task: Task | None = None
         self._handler_tasks: set[Task[Any]] = set()
+        # Bumped by every disconnect, so a receive loop can tell its session is over.
+        self._session = 0
+        self._connect_lock = asyncio.Lock()
+        # Set while a socket is up, and when the run ends, so a waiter cannot hang.
+        self._connected = asyncio.Event()
 
     @staticmethod
     def prepare_icon(icon: str | bytes | Path) -> str:
@@ -205,16 +223,13 @@ class Plugin(PluginAPI):
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> list["Task[R | Exception]"]:
-        tasks = dispatch_handlers_inner(
+        return dispatch_handlers_inner(
             handlers,
             self.on_handler_run_failed,
+            self._handler_tasks,
             *args,
             **kwargs,
         )
-        for task in tasks:
-            self._handler_tasks.add(task)
-            task.add_done_callback(self._handler_tasks.discard)
-        return tasks
 
     def ensure_client(self) -> ws.ClientConnection:
         if not self.client:
@@ -238,43 +253,65 @@ class Plugin(PluginAPI):
             )
 
         registration = self.subscriptions.get(resp.message_type)
-        if registration is not None:
-            for data_model, handler in registration.handlers:
-                try:
-                    data = (
-                        resp.data
-                        if data_model is None
-                        else data_model.model_validate(resp.data)
-                    )
-                except Exception as e:
-                    self.dispatch_handlers(self.on_parse_data_error, raw, e)
-                else:
-                    self.dispatch_handlers([handler], data)
+        if registration is None:
+            return
+
+        # One decode per model, in handler order: a frame that does not decode is reported once.
+        decoded: dict[type[BaseModel], Any] = {}
+        for data_model in dict.fromkeys(
+            model for model, _ in registration.handlers if model is not None
+        ):
+            try:
+                decoded[data_model] = data_model.model_validate(resp.data)
+            except Exception as e:
+                self.dispatch_handlers(self.on_parse_data_error, raw, e)
+
+        for data_model, handler in registration.handlers:
+            if data_model is None:
+                self.dispatch_handlers([handler], resp.data)
+            elif data_model in decoded:
+                self.dispatch_handlers([handler], decoded[data_model])
 
     async def _recv(self, client: ws.ClientConnection):
         self._handle_raw(await client.recv())
 
-    async def _recv_loop(self, client: ws.ClientConnection):
-        while True:
-            try:
+    async def _recv_loop(self, client: ws.ClientConnection, session: int) -> None:
+        """Receive frames until the socket fails, or until this session is dropped.
+
+        A cancellation from a session that is already replaced ends the loop quietly, so the run
+        awaiting it survives (ADR-0019).
+        """
+        try:
+            while True:
                 await self._recv(client)
-            except asyncio.CancelledError:
+        except asyncio.CancelledError:
+            if self._session == session:
                 raise
-            except Exception as e:
-                self.client = None
-                self._state = (
-                    PluginState.STOPPED if self._stopped else PluginState.DISCONNECTED
-                )
-                self.req_manager.reset(CONNECTION_LOST_MESSAGE)
-                self.dispatch_handlers(self.on_connection_closed, e)
+            return
+        except Exception as e:
+            if self._session != session:
+                return
+            self.client = None
+            self._state = (
+                PluginState.STOPPED if self._stopped else PluginState.DISCONNECTED
+            )
+            self.req_manager.reset(CONNECTION_LOST_MESSAGE)
+            self.dispatch_handlers(self.on_connection_closed, e)
+            try:
                 await asyncio.sleep(self.reconnect_delay)
-                break
+            except asyncio.CancelledError:
+                if self._session == session:
+                    raise
+                return
 
     async def _disconnect(self, pending_error: str | None):
         client = self.client
         task = self._recv_task
         self.client = None
         self._recv_task = None
+        # Whatever is receiving now belongs to a past session, and must end quietly.
+        self._session += 1
+        self._connected.clear()
         self._state = PluginState.STOPPED if self._stopped else PluginState.DISCONNECTED
         self.req_manager.reset(pending_error)
         try:
@@ -283,39 +320,67 @@ class Plugin(PluginAPI):
         finally:
             if task and (not task.done()):
                 task.cancel()
+                await asyncio.gather(task, return_exceptions=True)
 
-    async def reconnect(self):
-        if self._state is PluginState.CONNECTING:
-            raise RuntimeError("Already connecting")
+    async def reconnect(self, *, wait_connect: bool = False) -> None:
+        """Ask for a fresh session; a run in progress opens it, otherwise this call connects.
 
-        await self._disconnect(CONNECTION_LOST_MESSAGE)
+        Never raises while a run is in progress, and `wait_connect` waits for the new socket, not
+        for authentication.
+        """
+        if not self._connect_lock.locked():
+            if self._run_task and (not self._run_task.done()):
+                try:
+                    async with self._connect_lock:
+                        await self._disconnect(CONNECTION_LOST_MESSAGE)
+                except Exception as e:
+                    # The session is dropped either way; only the close failed to say so.
+                    self.dispatch_handlers(self.on_disconnect_failed, e)
+            else:
+                await self._open_session()
 
-        self._state = PluginState.CONNECTING
-        self.dispatch_handlers(self.on_connecting)
-        try:
-            self.client = await ws.connect(self.endpoint)
-        except BaseException:
-            self._state = (
-                PluginState.STOPPED if self._stopped else PluginState.DISCONNECTED
-            )
-            raise
+        if wait_connect:
+            await self._connected.wait()
 
-        self._state = PluginState.AUTHENTICATING
-        self.dispatch_handlers(self.on_connected)
-        self._recv_task = asyncio.create_task(self._recv_loop(self.client))
-        return self._recv_task
+    async def _open_session(self):
+        """Connect to the endpoint and start receiving; the run in progress calls this."""
+        async with self._connect_lock:
+            await self._disconnect(CONNECTION_LOST_MESSAGE)
+
+            self._state = PluginState.CONNECTING
+            self.dispatch_handlers(self.on_connecting)
+            try:
+                client = await ws.connect(self.endpoint)
+            except BaseException:
+                self._state = (
+                    PluginState.STOPPED if self._stopped else PluginState.DISCONNECTED
+                )
+                raise
+
+            self.client = client
+            self._state = PluginState.AUTHENTICATING
+            self.dispatch_handlers(self.on_connected)
+            task = asyncio.create_task(self._recv_loop(client, self._session))
+            self._recv_task = task
+            self._connected.set()
+            return task
 
     async def stop(self):
         self._stopped = True
         if self._run_task:
             self._run_task.cancel()
-        handler_tasks = tuple(self._handler_tasks)
-        for task in handler_tasks:
-            task.cancel()
-        await asyncio.gather(*handler_tasks, return_exceptions=True)
-        self._handler_tasks.clear()
-        await self._disconnect(None)
-        self._run_task = None
+            await asyncio.gather(self._run_task, return_exceptions=True)
+        try:
+            # Sweep after the disconnect (a drop landing here dispatches handlers), and even when
+            # the close refuses.
+            await self._disconnect(None)
+        finally:
+            handler_tasks = tuple(self._handler_tasks)
+            for task in handler_tasks:
+                task.cancel()
+            await asyncio.gather(*handler_tasks, return_exceptions=True)
+            self._handler_tasks.clear()
+            self._run_task = None
 
     async def _resubscribe(self) -> None:
         """Re-send every declared subscription, which a new session does not remember."""
@@ -330,34 +395,45 @@ class Plugin(PluginAPI):
     async def _run(self):
         self._stopped = False
         self._state = PluginState.DISCONNECTED
+        self._connected.clear()
 
-        while True:
-            try:
-                task = await self.reconnect()
-            except Exception as e:
-                self.dispatch_handlers(self.on_connect_failed, e)
-                await asyncio.sleep(self.reconnect_delay)
-                continue
-
-            try:
-                await self.authenticate()
-            except Exception as e:
-                self.dispatch_handlers(self.on_authenticate_failed, e)
-                if isinstance(e, APIError) and e.data.error_id in _FATAL_AUTH_ERROR_IDS:
-                    self._stopped = True
+        try:
+            while True:
                 try:
-                    await self._disconnect(CONNECTION_LOST_MESSAGE)
-                except Exception as disconnect_error:
-                    self.dispatch_handlers(
-                        self.on_disconnect_failed,
-                        disconnect_error,
-                    )
-                if self._stopped:
-                    break
-                await asyncio.sleep(self.reconnect_delay)
-                continue
+                    task = await self._open_session()
+                except Exception as e:
+                    self.dispatch_handlers(self.on_connect_failed, e)
+                    await asyncio.sleep(self.reconnect_delay)
+                    continue
 
-            await task
+                session = self._session
+                try:
+                    await self.authenticate()
+                except Exception as e:
+                    if self._session != session:
+                        # The session was dropped while authenticating: not a refusal to report.
+                        continue
+                    self.dispatch_handlers(self.on_authenticate_failed, e)
+                    if (
+                        isinstance(e, APIError)
+                        and e.data.error_id in _FATAL_AUTH_ERROR_IDS
+                    ):
+                        self._stopped = True
+                    try:
+                        await self._disconnect(CONNECTION_LOST_MESSAGE)
+                    except Exception as disconnect_error:
+                        self.dispatch_handlers(
+                            self.on_disconnect_failed,
+                            disconnect_error,
+                        )
+                    if self._stopped:
+                        break
+                    await asyncio.sleep(self.reconnect_delay)
+                    continue
+
+                await task
+        finally:
+            self._connected.set()
 
     def run(self):
         if self._run_task and not self._run_task.done():
