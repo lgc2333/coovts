@@ -1,7 +1,7 @@
 [project]
 name = "coovts"
 dynamic = ["version"]
-description = "Another type rich library for making VTube Studio plugins with Python"
+description = "A fully typed, asynchronous and easy-to-use Python library for VTube Studio plugins"
 authors = [{ name = "LgCuwukii", email = "lgc2333@126.com" }]
 readme = "README.md"
 license = "MIT"

@@ -8,7 +8,7 @@
 
 # CooVTS
 
-_✨ 另一个写 VTube Studio 插件的 Python 库 ✨_
+_✨ 类型完整、异步设计、上手简单的 VTube Studio 插件 Python 库 ✨_
 
 [English](https://github.com/lgc2333/coovts/blob/main/README.md) | 简体中文
 
@@ -24,7 +24,7 @@ _✨ 另一个写 VTube Studio 插件的 Python 库 ✨_
 
 - ✨ 完整的类型提示，支持静态类型检查
 - 🎯 用 Pydantic 做数据校验与序列化
-- 🔄 异步优先，基于 WebSocket 通信
+- 🔄 全异步设计，基于 WebSocket 通信
 - 🎨 好用的插件事件系统
 - 🛡️ 内置错误处理与重连机制
 
@@ -39,7 +39,7 @@ from coovts.plugin import Plugin
 from coovts.types import api, event
 
 # 还没有 token：VTS 会问用户一次
-plugin = Plugin("A Creative Plugin Name", "LgCuwukii☆")
+plugin = Plugin("A Creative Plugin Name", "A Cute Author Name")
 
 
 @plugin.subscribe_event(event.ModelMovedEventData)
@@ -69,7 +69,7 @@ asyncio.run(main())
 - 看看详细的[使用指南](https://github.com/lgc2333/coovts/blob/main/docs/guide/zh-cn/README.md)
 - 看看 [`examples/basic.py`](https://github.com/lgc2333/coovts/blob/main/examples/basic.py) ——同一个插件，但把每个日志 hook 都填满了。
 
-感谢各位使用，也欢迎大家贡献 😊
+感谢各位使用本库，也欢迎大家贡献 😊
 
 ## 💿 安装
 
@@ -95,3 +95,7 @@ uv add coovts
 ## 📝 更新日志
 
 [CHANGELOG.zh-cn.md](https://github.com/lgc2333/coovts/blob/main/CHANGELOG.zh-cn.md)
+
+## ⚖️ 许可证
+
+[MIT](https://github.com/lgc2333/coovts/blob/main/LICENSE)

@@ -8,7 +8,7 @@
 
 # CooVTS
 
-_✨ Another library for making VTube Studio plugins with Python ✨_
+_✨ A fully typed, asynchronous and easy-to-use Python library for VTube Studio plugins ✨_
 
 English | [简体中文](https://github.com/lgc2333/coovts/blob/main/README.zh-cn.md)
 
@@ -24,7 +24,7 @@ English | [简体中文](https://github.com/lgc2333/coovts/blob/main/README.zh-c
 
 - ✨ Full type hints support with static type checking
 - 🎯 Data validation and serialization using Pydantic
-- 🔄 Async-first design with WebSocket communication
+- 🔄 Fully asynchronous design over WebSocket communication
 - 🎨 Easy-to-use event system for plugin development
 - 🛡️ Built-in error handling and reconnection mechanisms
 
@@ -39,7 +39,7 @@ from coovts.plugin import Plugin
 from coovts.types import api, event
 
 # no token yet: VTS asks the user once
-plugin = Plugin("A Creative Plugin Name", "LgCuwukii☆")
+plugin = Plugin("A Creative Plugin Name", "A Cute Author Name")
 
 
 @plugin.subscribe_event(event.ModelMovedEventData)
@@ -70,7 +70,7 @@ because `asyncio.run()` builds its argument before the loop starts.
 - Read the [guide in detail](https://github.com/lgc2333/coovts/blob/main/docs/guide/en/README.md)
 - Read [`examples/basic.py`](https://github.com/lgc2333/coovts/blob/main/examples/basic.py) — the same plugin, with every logging hook filled in
 
-Thanks for using it, and contributions are welcome 😊
+Thanks for using this library, and contributions are welcome 😊
 
 ## 💿 Install
 
@@ -96,3 +96,7 @@ uv add coovts
 ## 📝 Changelog
 
 [CHANGELOG.md](https://github.com/lgc2333/coovts/blob/main/CHANGELOG.md)
+
+## ⚖️ License
+
+[MIT](https://github.com/lgc2333/coovts/blob/main/LICENSE)
