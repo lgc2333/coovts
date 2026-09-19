@@ -16,6 +16,8 @@ def make_registry() -> tuple[EventSubscriptionRegistry, list[EventSubscriptionRe
 
     async def send(request: EventSubscriptionRequest) -> EventSubscriptionResponse:
         sent.append(request)
+        # Every subscription the registry sends names one event; only an unsubscribe-all may not.
+        assert isinstance(request.event_name, str), request
         return EventSubscriptionResponse(
             subscribed_event_count=1,
             subscribed_events=[request.event_name],
@@ -69,6 +71,14 @@ def test_default_event_config_builds_the_config_of_an_event() -> None:
     """The config of an event that requires no field is built from its defaults."""
     assert (
         default_event_config(event.ModelMovedEventData) == event.ModelMovedEventConfig()
+    )
+
+
+def test_default_event_config_builds_a_beta_event_config_too() -> None:
+    """A beta event whose config fields are all optional is built from its defaults too."""
+    assert (
+        default_event_config(event.ExpressionToggledEventData)
+        == event.ExpressionToggledEventConfig()
     )
 
 

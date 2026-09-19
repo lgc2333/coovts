@@ -186,8 +186,8 @@ class ExpressionToggledEventConfig(VTSBaseModel):
     https://github.com/DenchiSoft/VTubeStudio/blob/master/Events/README.md#expression-activateddeactivated-event
     """
 
-    send_all_active_states_on_subscription: bool
-    ignore_live2d_items: bool
+    send_all_active_states_on_subscription: bool = False
+    ignore_live2d_items: bool = False
 
 
 class ExpressionToggledEventData(VTSBaseModel):

@@ -12,12 +12,7 @@ class HotkeyAction(RawStrEnum):
     """Enum for the actions that can be triggered by hotkeys."""
 
     Unset = auto()
-    """
-    Unset.
-    Upstream declares this as `-1` in its own integer enum. No VTS payload carries it
-    and this library never sends it, so it is transcribed as an ordinary member like the
-    rest.
-    """
+    """Unset."""
 
     TriggerAnimation = auto()
     """Play an animation."""

@@ -36,7 +36,7 @@ case-insensitively with `_` and `-` ignored, so the wire form of a member is the
 without writing the stub. The same line names this file, so a run that changes the surface is
 reminded where the counts have to follow.
 
-- 39 `call_api` overloads (plus 4 generic ones), generated from 107 models in `coovts/types/api`.
+- 39 `call_api` overloads (plus 5 generic ones), generated from 107 models in `coovts/types/api`.
 - 16 `subscribe_event` overloads, plus 1 for a model this package does not model and 1 for an event
   named by its wire name, generated from the 32 event config/data models in `coovts/types/event`. The
   overload for an unmodelled model defaults no `config`, so a call that forgot the config of an event

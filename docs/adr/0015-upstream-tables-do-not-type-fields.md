@@ -21,9 +21,9 @@ same case — it records the two permissions upstream documents today, and no fi
 A table whose values travel as names is a `RawStrEnum`, whose `auto()` yields the member name so the
 upstream spelling is written once; one whose values are numbers is an `IntEnum`. A member that
 exists only to keep the table readable against its source is still transcribed and says so:
-`HotkeyAction.Unset` is upstream's `-1` sentinel and documents that no payload carries it, and
-`ErrorID.Event_TestEvent_TestMessageTooLong` repeats `EVENT_OFFSET`, which Python turns into an alias
-rather than a second value.
+`HotkeyAction.Unset` is upstream's `-1` sentinel, whose `"Unset"` spelling VTS's own `hotkeyList`
+example payload sends, and `ErrorID.Event_TestEvent_TestMessageTooLong` repeats `EVENT_OFFSET`, which
+Python turns into an alias rather than a second value.
 
 The alternative was to put the tables in `cookit` or a package of their own; they are VTube Studio
 protocol vocabulary, not general-purpose utilities, and a shared helper library must not carry one

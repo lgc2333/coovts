@@ -4,10 +4,12 @@ import asyncio
 from typing import TYPE_CHECKING, cast
 
 import pytest
+from pydantic_core import PydanticSerializationError
 from websockets.exceptions import ConnectionClosedError
 
 from coovts.errors import NetworkError, RequestTimeout
 from coovts.plugin import PluginState
+from coovts.types import BaseRequest
 from coovts.types.api import MoveModelRequest, MoveModelResponse
 from coovts.types.event import ModelLoadedEventData
 
@@ -276,5 +278,29 @@ async def test_send_on_a_closed_connection_raises_network_error(
             )
 
         assert plugin.req_manager.pending == {}
+    finally:
+        await finish(plugin, run_task)
+
+
+async def test_an_unserialisable_payload_leaves_nothing_pending(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A payload that cannot be serialised forgets the entry the call registered."""
+    transport = FakeTransport()
+    install_transport(monkeypatch, transport)
+    plugin = make_plugin()
+    connection = transport.connection
+
+    run_task = plugin.run()
+    try:
+        await handshake(plugin, connection)
+        sent_before = len(connection.sent)
+
+        request = BaseRequest(message_type="MoveModelRequest", data={"bad": object()})
+        with pytest.raises(PydanticSerializationError):
+            await asyncio.wait_for(plugin.send_request(request), 1)
+
+        assert plugin.req_manager.pending == {}
+        assert len(connection.sent) == sent_before
     finally:
         await finish(plugin, run_task)

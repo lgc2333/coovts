@@ -169,6 +169,42 @@ async def test_stop_cancels_running_handlers(monkeypatch: pytest.MonkeyPatch) ->
         await finish(plugin, run_task)
 
 
+async def test_stop_awaited_from_inside_a_hook_returns_to_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A hook that awaits `stop()` gets past it, since its own task is left out of the sweep.
+
+    Event handlers are dispatched the same way, so the one exclusion covers both.
+    """
+    transport = FakeTransport()
+    install_transport(monkeypatch, transport)
+    plugin = make_plugin()
+    returned = asyncio.Event()
+    seen: list[PluginState] = []
+    failures: list[Exception] = []
+
+    @plugin.on_connected
+    async def on_connected() -> None:
+        await asyncio.wait_for(plugin.stop(), 1)
+        seen.append(plugin.state)
+        returned.set()
+
+    @plugin.on_handler_run_failed
+    async def on_failed(failure: Exception) -> None:
+        failures.append(failure)
+
+    run_task = plugin.run()
+    try:
+        await asyncio.wait_for(returned.wait(), 1)
+
+        assert seen == [PluginState.STOPPED]
+        assert plugin.state is PluginState.STOPPED
+        assert plugin._handler_tasks == set()  # noqa: SLF001
+        assert failures == []
+    finally:
+        await finish(plugin, run_task)
+
+
 async def test_failed_disconnect_reaches_its_hook(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

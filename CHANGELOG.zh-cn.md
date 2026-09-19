@@ -74,6 +74,25 @@
 - 模型没声明的字段现在会保留，不再丢弃：帧上和你自己构建的 payload 上都一样
   （[ADR-0020](./docs/adr/0020-unknown-fields-are-kept.md)）。别名不改写这些字段，所以要按 wire 的写法
   写它们。
+- `stop()` 允许在 hook 或 handler 里调用。发起这次调用的那个会被排除在清扫之外，因为取消它就等于取消那个
+  又要取消它自己的 gather；在此之前，这个调用永不返回，进程最终以栈溢出结束
+  （[ADR-0021](./docs/adr/0021-a-connect-has-an-owner.md)）。
+- `ItemSortRequest.set_split_point` 与 `set_back_order` 变成可选。VTS 对非 Live2D 物品完全忽略这两个字段，
+  上游也说留空或写 `null` 即可，所以现在不带它们也能构造出那个 payload。
+- `EventSubscriptionRequest.event_name` 与 `config` 接受 `None`。两者依然是必填的，所以每个字段都是显式传
+  的：`EventSubscriptionRequest(event_name=None, config=None, subscribe=False)` 就是上游写明的「一次退订
+  全部事件」。
+- `ExpressionToggledEventConfig` 的两个字段都给了 `False` 默认值，于是这个原本没有可选 config 字段的 beta
+  事件，也能像其它事件一样订阅。
+- 序列化不了的 payload 不再留下在途请求：序列化挪进了那个「无论怎么退出都会忘掉这个请求」的块里。异常本身不变。
+- 省略 `response_model` 时，生成的 API 表面现在标成 `BaseModel`。应答依然由 payload 推导——它的 `resp_m` /
+  `resp_t`，否则按命名约定——所以那是个模型；只有显式传 `response_model=None` 才拿原始 body。以前两种写法都
+  被标成 `dict[str, Any]`。
+- 有三个请求的答案是人在操作，而不是 VTS：带自定义数据的 `ItemLoadRequest`、传了 `requested_permission` 的
+  `PermissionRequest`，以及 `ArtMeshSelectionRequest`。API 超时照样会在弹窗还开着的时候把它们切断，所以这三
+  个请传 `api_timeout=None`。
+- 载荷里的非有限浮点数会以 JSON `null` 发出去。`nan` 与 `inf` 到了 VTS 就是 `null`，而且不会报错，所以请在
+  发送前自己拒绝或夹取。
 
 ### 移除
 
@@ -91,6 +110,11 @@
 - 请求已经放弃之后才到的应答会被安静丢掉。
 - 请求在 `send` 还没结束时就失败，不再留下一个等着 asyncio 打日志的异常——不打日志的库（ADR-0011）还是不
   打日志。
+- `HotkeyAction.Unset` 不再声称没有 payload 用它：上游自己的 `hotkeyList` 示例就发 `"type": "Unset"`，
+  `docs/adr/0015` 里那句也一并改正了。
+- 指南的逃生舱示例给出了 `msg_t` 与 `resp_m` 的可用写法：两者都必须是 `ClassVar`，裸写
+  `resp_m = SomeModel` 不是 pydantic 认得的字段。
+- ADR-0021 记下了「`stop()` 可以在 hook 或 handler 里调用」，以及为什么发起调用的那个会被排除在清扫之外。
 
 ## 0.0.1.alpha2 — 2025-05-21
 

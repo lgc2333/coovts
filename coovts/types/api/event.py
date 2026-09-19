@@ -4,9 +4,9 @@ from ..shared import VTSBaseModel
 
 
 class EventSubscriptionRequest(VTSBaseModel):
-    event_name: str
+    event_name: str | None
     subscribe: bool
-    config: Any
+    config: Any | None
 
 
 class EventSubscriptionResponse(VTSBaseModel):

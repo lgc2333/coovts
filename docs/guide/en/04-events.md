@@ -77,8 +77,8 @@ it:
 - **A handler's exception does not surface in `run()`**: it is caught and re-dispatched to
   `on_handler_run_failed`. With no such hook registered, the exception disappears. Any plugin running
   for real should at least have a logging hook.
-- **`stop()` cancels every running handler**, so handlers must tolerate `CancelledError` rather than
-  swallow it.
+- **`stop()` cancels every running handler**, the one calling it excepted, so handlers must tolerate
+  `CancelledError` rather than swallow it.
 
 None of that is an oversight: handlers are fire-and-forget by design. See
 [ADR-0006](../../adr/0006-handler-dispatch-is-fire-and-forget.md).

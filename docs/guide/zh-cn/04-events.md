@@ -61,7 +61,7 @@ dispose 它只是停掉分发——它背后没有订阅可以取消。
 - **无背压**：handler 跟不上事件频率时，任务会堆积而不是让流慢下来。
 - **handler 抛异常不会在 `run()` 里冒泡**：异常被捕获后转发给 `on_handler_run_failed`。没注册那个
   hook，异常就此消失。所以线上跑的插件至少要挂一个日志 hook。
-- **`stop()` 会取消所有在跑的 handler**：handler 得容忍 `CancelledError`，别吞它。
+- **`stop()` 会取消所有在跑的 handler**（发起调用的那个除外）：handler 得容忍 `CancelledError`，别吞它。
 
 以上都不是缺口，而是有意为之：handler 就是 fire-and-forget 的。见
 [ADR-0006](../../adr/0006-handler-dispatch-is-fire-and-forget.md)。

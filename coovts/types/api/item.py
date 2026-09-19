@@ -198,9 +198,11 @@ class ItemSortRequest(VTSBaseModel):
     item_instance_id: Annotated[str, Field(alias="itemInstanceID")]
     front_on: bool = False
     back_on: bool = False
-    set_split_point: ItemSortSplitPoint
+    set_split_point: ItemSortSplitPoint | None = None
+    """Ignored for non-Live2D items, which have no split point."""
     set_front_order: ItemSortFrontOrder
-    set_back_order: ItemSortBackOrder
+    set_back_order: ItemSortBackOrder | None = None
+    """Ignored for non-Live2D items, which have no back part."""
     split_at: str | None = None
     within_model_order_front: str | None = None
     within_model_order_back: str | None = None

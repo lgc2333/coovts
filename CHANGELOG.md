@@ -95,6 +95,30 @@ The newest release is first. Its date is the PyPI upload date.
 - A field the models do not declare is kept instead of dropped, on frames and on the payloads you
   build alike ([ADR-0020](./docs/adr/0020-unknown-fields-are-kept.md)). The aliases do not rename
   those fields, so write them the way the wire does.
+- `stop()` can be called from inside a hook or a handler. The one that makes the call is left out of
+  the sweep, because cancelling it would cancel the gather that cancels it; before, the call never
+  returned and the process ended in a stack overflow
+  ([ADR-0021](./docs/adr/0021-a-connect-has-an-owner.md)).
+- `ItemSortRequest.set_split_point` and `set_back_order` are optional. VTube Studio ignores both for a
+  non-Live2D item — upstream says to leave them empty or `null` — so that payload now builds without
+  them.
+- `EventSubscriptionRequest.event_name` and `config` accept `None`. Both stay required, so every field
+  is passed on purpose: `EventSubscriptionRequest(event_name=None, config=None, subscribe=False)` is
+  the unsubscribe from every event at once that upstream documents.
+- `ExpressionToggledEventConfig` gives both of its fields a default of `False`, so the one beta event
+  that had no optional config field can be subscribed to the way its siblings already could.
+- A payload that cannot be serialised no longer leaves a pending request behind: the serialisation
+  runs inside the block that forgets the request on every exit. The error itself is unchanged.
+- An omitted `response_model` is typed as `BaseModel` in the generated API surface. The answer is
+  still derived from the payload — its `resp_m` / `resp_t`, else the naming convention — so it is a
+  model; only an explicit `response_model=None` returns the raw body. The typing promised
+  `dict[str, Any]` for both.
+- Three requests are answered by a person rather than by VTube Studio: `ItemLoadRequest` that carries
+  custom data, `PermissionRequest` with a `requested_permission`, and `ArtMeshSelectionRequest`. An
+  API timeout still cuts such a request off while its popup is on screen, so pass `api_timeout=None`
+  for those three.
+- A non-finite float in a payload leaves as JSON `null`. `nan` and `inf` reach VTube Studio as `null`
+  and nothing raises, so reject or clamp them before you send.
 
 ### Removed
 
@@ -113,6 +137,12 @@ The newest release is first. Its date is the PyPI upload date.
 - An answer that arrives for a request that already gave up is dropped quietly.
 - A request that fails while its `send` is still going out no longer leaves an exception for asyncio
   to log, so a library that does not log (ADR-0011) still does not.
+- `HotkeyAction.Unset` no longer claims that no payload carries it: upstream's own `hotkeyList`
+  example sends `"type": "Unset"`, and `docs/adr/0015` was corrected with it.
+- The guide's escape-hatch example shows the working spelling of `msg_t` and `resp_m`: both are
+  `ClassVar`s, and a bare `resp_m = SomeModel` is not a field pydantic knows.
+- ADR-0021 records that `stop()` is safe to call from a hook or a handler, and why that one is left
+  out of the sweep.
 
 ## 0.0.1.alpha2 — 2025-05-21
 

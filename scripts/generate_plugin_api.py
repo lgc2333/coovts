@@ -74,6 +74,20 @@ API_REST = """
         api_version: str = "1.0",
         api_timeout: float | EllipsisType | None = ...,
     ) -> M: ...
+    # an omitted response_model is derived from the payload's resp_m / resp_t, or from the
+    # Request -> Response convention, so it still answers with a model; only an explicit None
+    # asks for the raw response body
+    @overload
+    async def call_api(
+        self,
+        data: BaseModel,
+        *,
+        message_type: str | None = None,
+        response_model: EllipsisType = ...,
+        api_name: str = "VTubeStudioPublicAPI",
+        api_version: str = "1.0",
+        api_timeout: float | EllipsisType | None = ...,
+    ) -> BaseModel: ...
     @overload
     async def call_api(
         self,
@@ -207,7 +221,8 @@ def stats() -> str:
         name for name in event.__dict__ if name.endswith(("EventData", "EventConfig"))
     ]
     return (
-        f"{len(requests)} call_api overloads from {len(api_models)} api models, "
+        f"{len(requests)} call_api overloads (plus {API_REST.count('@overload')} generic ones) "
+        f"from {len(api_models)} api models, "
         f"{len(events)} subscribe_event overloads (plus 1 generic one and 1 by event name) from "
         f"{len(event_models)} event models"
     )

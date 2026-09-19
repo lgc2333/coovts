@@ -471,6 +471,20 @@ class PluginAPI(ABC):
         api_version: str = "1.0",
         api_timeout: float | EllipsisType | None = ...,
     ) -> M: ...
+    # an omitted response_model is derived from the payload's resp_m / resp_t, or from the
+    # Request -> Response convention, so it still answers with a model; only an explicit None
+    # asks for the raw response body
+    @overload
+    async def call_api(
+        self,
+        data: BaseModel,
+        *,
+        message_type: str | None = None,
+        response_model: EllipsisType = ...,
+        api_name: str = "VTubeStudioPublicAPI",
+        api_version: str = "1.0",
+        api_timeout: float | EllipsisType | None = ...,
+    ) -> BaseModel: ...
     @overload
     async def call_api(
         self,
@@ -530,7 +544,7 @@ class PluginAPI(ABC):
     def subscribe_event(
         self,
         event_data_model: type[event.ExpressionToggledEventData],
-        config: event.ExpressionToggledEventConfig,
+        config: event.ExpressionToggledEventConfig | None = None,
     ) -> EventRegistration[event.ExpressionToggledEventData]: ...
     @overload
     def subscribe_event(

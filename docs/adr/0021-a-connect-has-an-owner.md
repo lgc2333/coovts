@@ -27,6 +27,9 @@ Ownership is what `stop()` forgets, and only what it owns: it clears `Plugin._ru
 is still the run it cancelled, so a `run()` that started while the stop was unwinding stays reachable —
 and reachable is what a later `stop()` needs.
 
+`stop()` is safe to call from inside a hook or a handler: the task making the call is left out of the
+handler sweep, because cancelling it would cancel the gather that cancels it.
+
 A session is live only while its socket is, and a hook sees only a live session. `authenticate()`
 captures the `(session, client)` pair it started with and refuses to dispatch `on_authenticated` once
 that pair no longer describes the live session: a drop while the declared events are being re-sent

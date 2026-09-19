@@ -24,8 +24,11 @@ Both derivations are defaults, not requirements, and any call can override eithe
 raw = await plugin.call_api(api.CurrentModelRequest(), response_model=None)  # raw dict
 ```
 
-The four generic overloads at the bottom of the stub are what types that: pass
-`response_model=SomeModel` and you get `SomeModel` back, pass `None` and you get `dict[str, Any]`.
+The generic overloads at the bottom of the stub are what types that, three ways: pass
+`response_model=SomeModel` and you get `SomeModel` back; pass `response_model=None` and you get a raw
+`dict[str, Any]`; omit it and the answer is still derived from the payload (its `resp_m` / `resp_t`,
+else the naming convention) but typed as `BaseModel`, because only the payload can say which model
+that is.
 `data` need not be a model either — then `message_type` has to be spelled out, since there is no class
 name to fall back on, and `response_model` has to be given explicitly (a model, or `None` for the raw
 dict).
@@ -59,7 +62,14 @@ One request is outside the deadline: the `AuthenticationTokenRequest` the librar
 no token. Its answer is a person clicking a popup in VTube Studio, so it waits indefinitely rather
 than being cut off — an abandoned popup would be asked again on the next session while the user is
 still looking at the first one ([ADR-0016](../../adr/0016-fatal-authentication-refusals-end-the-run.md)).
-`api_timeout` covers every request VTS answers without a human.
+
+That request is not the only one a person answers. `api.ItemLoadRequest` carrying custom data asks the
+user whether to load it ([upstream][s-item-custom]); `api.PermissionRequest` with a
+`requested_permission` shows a popup the user grants or denies; and `api.ArtMeshSelectionRequest`
+returns the ArtMesh ids the user picks. Upstream hands each answer back only once the user decides, so
+any positive deadline cuts the request off while the popup is still on screen, and a retry stacks
+another popup. Pass `api_timeout=None` — or `0`, which the table above also reads as forever — for
+those three and let the popup finish.
 
 ## What a failed request raises
 
@@ -88,12 +98,16 @@ except APIError as e:
 `ErrorID` is a transcription of upstream's `Files/ErrorID.cs`, each member carrying upstream's own
 comment.
 
-Two sharp edges:
+Three sharp edges:
 
 - `RequestTimeout` subclasses the builtin `TimeoutError`, and therefore `OSError`. Your
   `except OSError` will quietly swallow it.
 - A `ValidationError` can also come from an error response that fails to decode — either way, a
   payload that does not decode is a `ValidationError`, never something else.
+- A payload the library cannot serialise is your bug rather than a wire failure, so it is not wrapped
+  in a library type: a model holding something pydantic cannot dump raises
+  `pydantic_core.PydanticSerializationError` (a `ValueError`) at the `await`. The request is still
+  forgotten, so nothing is left pending.
 
 ## What happens to pending requests on a disconnect
 
@@ -114,20 +128,34 @@ library model: its class name is the messageType, and it carries the same naming
 validation.
 
 ```python
+from typing import ClassVar
+
 from coovts.types.shared import VTSBaseModel
 
 
-class MyEndpointRequest(VTSBaseModel):
+class MyEndpointResponse(VTSBaseModel):
     some_field: int
 
 
-raw = await plugin.call_api(MyEndpointRequest(some_field=1), response_model=None)
+class MyEndpointRequest(VTSBaseModel):
+    msg_t: ClassVar[str] = "SomeUnmodelledRequest"
+    resp_m: ClassVar[type[MyEndpointResponse]] = MyEndpointResponse
+    some_field: int
+
+
+data = await plugin.call_api(MyEndpointRequest(some_field=1))
 ```
 
+Here the wire message type deliberately differs from the class name, which is what `msg_t` is for.
+`resp_m` points at the answer by class, so a response you define yourself works; `resp_t` names an
+answer instead, but only one that lives in `coovts.types.api`.
+
 Three class attributes bend the naming conventions for a single model: `msg_t` (the message type, and
-the event name), `resp_t` (a response model, by name) and `resp_m` (a response model, by class). A
-payload that is not a model at all works too, as long as you hand over `message_type` and
-`response_model` yourself.
+the event name), `resp_t` (a response model, by name) and `resp_m` (a response model, by class). All
+three must be declared `ClassVar`s, as above — a bare `resp_m = MyEndpointResponse` is not a field
+pydantic knows, and it raises `PydanticUserError: A non-annotated attribute was detected ...` until it
+is annotated. A payload that is not a model at all works too, as long as you hand over `message_type`
+and `response_model` yourself.
 
 ## Field names and the wire
 
@@ -143,6 +171,11 @@ payload that is not a model at all works too, as long as you hand over `message_
   exactly as they came in rather than being dropped. The alias generator does not rename them, so
   anything the models do not declare must be written in the wire spelling (camelCase). See
   [ADR-0020](../../adr/0020-unknown-fields-are-kept.md).
+- **Non-finite floats leave as `null`.** The config does not set `ser_json_inf_nan`, so pydantic's
+  default applies: `float("nan")`, `float("inf")` and `float("-inf")` in a payload serialise as JSON
+  `null`, and VTS receives `null` instead of the number, with no error raised. Reject or clamp those
+  values before sending; `ser_json_inf_nan` is the knob to find in
+  [ADR-0014](../../adr/0014-one-model-config-and-a-wire-boundary.md).
 
 ## Where the per-request field docs live
 

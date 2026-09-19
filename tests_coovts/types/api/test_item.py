@@ -247,6 +247,27 @@ def test_unload_and_sort_requests_emit_the_wire_shape() -> None:
     }
 
 
+def test_sort_request_for_a_normal_item_needs_no_split_point_or_back_order() -> None:
+    """A non-Live2D item has neither, so the sparse request builds and sends both as null."""
+    assert json.loads(
+        ItemSortRequest(
+            item_instance_id="b616cf51fe3444729ccbf6ee54a14d1a",
+            front_on=True,
+            set_front_order="UseArtMeshID",
+        ).model_dump_json(),
+    ) == {
+        "itemInstanceID": "b616cf51fe3444729ccbf6ee54a14d1a",
+        "frontOn": True,
+        "backOn": False,
+        "setSplitPoint": None,
+        "setFrontOrder": "UseArtMeshID",
+        "setBackOrder": None,
+        "splitAt": None,
+        "withinModelOrderFront": None,
+        "withinModelOrderBack": None,
+    }
+
+
 def test_move_request_emits_the_wire_shape() -> None:
     """The move request carries one wire entry per item, fade mode included."""
     request = ItemMoveRequest(

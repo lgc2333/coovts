@@ -20,8 +20,10 @@ data = await plugin.call_api(api.CurrentModelRequest())
 raw = await plugin.call_api(api.CurrentModelRequest(), response_model=None)  # raw dict
 ```
 
-stub 底部那四个泛型重载就是给这两种用法做类型的：传 `response_model=SomeModel` 就得到 `SomeModel`，
-传 `None` 就得到 `dict[str, Any]`。`data` 也允许根本不是模型——这时 `message_type` 必须显式给出
+stub 底部的泛型重载就是给这件事做类型的，分三种情况：传 `response_model=SomeModel` 就得到
+`SomeModel`；传 `response_model=None` 就得到原始 `dict[str, Any]`；不传则答案仍然由载荷推导（用它的
+`resp_m` / `resp_t`，否则按命名约定），但类型是 `BaseModel`，因为只有载荷才知道那个模型是谁。`data`
+也允许根本不是模型——这时 `message_type` 必须显式给出
 （没有类名可退），`response_model` 也必须显式给（一个模型，或者给 `None` 拿原始字典）。
 
 `send_request` 是下面那层原语：它收一个完整的 `BaseRequest`（message type、api name、api version 都在
@@ -51,7 +53,12 @@ raw = await plugin.send_request(request, response_model=None)  # unvalidated dic
 有一个请求不受这个限定时间约束：库在没有 token 时发的 `AuthenticationTokenRequest`。它的答案是用户在
 VTube Studio 弹窗上点一下，所以它会一直等下去，而不是被超时切断——被放弃的弹窗会在下一个会话里再问一次，
 而用户还在看第一个弹窗（[ADR-0016](../../adr/0016-fatal-authentication-refusals-end-the-run.md)）。
-`api_timeout` 管的是 VTS 不需要人参与就能回答的那些请求。
+
+需要人参与才能回答的请求不止那一个。带自定义数据的 `api.ItemLoadRequest` 会问用户是否加载
+（[上游][s-item-custom]）；带 `requested_permission` 的 `api.PermissionRequest` 会弹窗让用户同意或拒绝；
+`api.ArtMeshSelectionRequest` 则要等用户选完，再把 ArtMesh 的 id 返回。上游只在用户做出决定后才给出答案，
+所以任何**正的**限定时间都会在弹窗还挂在屏幕上时把请求切断，而重试会再叠一个弹窗。对这几种请求请传
+`api_timeout=None`（或者 `0`，上面的表里也读作「永远等」），让弹窗把流程走完。
 
 ## 请求失败时抛什么
 
@@ -79,12 +86,15 @@ except APIError as e:
 
 `ErrorID` 是上游 `Files/ErrorID.cs` 的逐条转写表，每条都带上游注释。
 
-两个容易咬人的细节：
+三个容易咬人的细节：
 
 - `RequestTimeout` 同时是内置 `TimeoutError` 的子类，也就**同时是 `OSError`**。你的
   `except OSError` 会顺手把它吃掉。
 - `ValidationError` 也可能来自错误响应本身解不出来——无论如何，解不出来就是 `ValidationError`，
   不会变成别的异常。
+- 库序列化不了的载荷是你的 bug，不是线层故障，所以它不会被包成库内类型：模型里塞了 pydantic 倒不出来的
+  东西，`await` 处抛的是 `pydantic_core.PydanticSerializationError`（`ValueError` 的子类）。请求本身
+  照样会被忘掉，不会留下在途条目。
 
 ## 断线时在途请求会怎样
 
@@ -101,19 +111,32 @@ except APIError as e:
 就走和库内模型完全一样的路径：类名就是 messageType，命名规则和校验行为也都一样。
 
 ```python
+from typing import ClassVar
+
 from coovts.types.shared import VTSBaseModel
 
 
-class MyEndpointRequest(VTSBaseModel):
+class MyEndpointResponse(VTSBaseModel):
     some_field: int
 
 
-raw = await plugin.call_api(MyEndpointRequest(some_field=1), response_model=None)
+class MyEndpointRequest(VTSBaseModel):
+    msg_t: ClassVar[str] = "SomeUnmodelledRequest"
+    resp_m: ClassVar[type[MyEndpointResponse]] = MyEndpointResponse
+    some_field: int
+
+
+data = await plugin.call_api(MyEndpointRequest(some_field=1))
 ```
 
+这里线上 message type 故意和类名不同，`msg_t` 就是干这个的。`resp_m` 按类指定响应，所以自己定义的响应也能
+用；`resp_t` 则按名字指定，但只能指向 `coovts.types.api` 里的响应。
+
 三个类属性可以给单个模型改命名约定：`msg_t`（message type，同时也是事件名）、`resp_t`（按名字指定响应
-模型）、`resp_m`（按类指定响应模型）。连模型都不是的载荷也行，只要你把 `message_type` 和
-`response_model` 自己交出来。
+模型）、`resp_m`（按类指定响应模型）。这三个都必须声明成 `ClassVar`，就上面那样——裸写
+`resp_m = MyEndpointResponse` 不是 pydantic 认得的字段，加注解之前它会抛
+`PydanticUserError: A non-annotated attribute was detected ...`。连模型都不是的载荷也行，只要你把
+`message_type` 和 `response_model` 自己交出来。
 
 ## 字段命名与线层
 
@@ -125,6 +148,10 @@ raw = await plugin.call_api(MyEndpointRequest(some_field=1), response_model=None
 - **未知字段原样走完一圈**：VTS 明确说可以在不升版本的情况下加字段，所以多出来的键会留在模型上
   （`model_extra`）并原样发出去，而不是被丢弃。别名生成器不会给它们改名，所以模型没有声明的字段必须按线上
   拼写（驼峰）写。见 [ADR-0020](../../adr/0020-unknown-fields-are-kept.md)。
+- **非有限浮点数会变成 `null` 发出去。** 配置没有设 `ser_json_inf_nan`，所以用 pydantic 的默认行为：
+  载荷里的 `float("nan")`、`float("inf")`、`float("-inf")` 会序列化成 JSON `null`，VTS 收到的是
+  `null` 而不是那个数，而且不会报错。发送前请自己拒绝或夹取这些值；`ser_json_inf_nan` 就是可以在
+  [ADR-0014](../../adr/0014-one-model-config-and-a-wire-boundary.md) 里查到的配置名。
 
 ## 各个请求的字段含义在哪
 

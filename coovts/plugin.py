@@ -430,7 +430,11 @@ class Plugin(PluginAPI):
             async with self._connect_lock:
                 await self._disconnect(None)
         finally:
-            handler_tasks = tuple(self._handler_tasks)
+            # A hook or a handler may call `stop()`; the caller is left out of the sweep (ADR-0021).
+            calling = asyncio.current_task()
+            handler_tasks = tuple(
+                task for task in self._handler_tasks if task is not calling
+            )
             for task in handler_tasks:
                 task.cancel()
             await asyncio.gather(*handler_tasks, return_exceptions=True)
@@ -535,9 +539,11 @@ class Plugin(PluginAPI):
         pending = self.req_manager.start(response_model)
         request.request_id = pending.req_id
 
-        payload = request.model_dump_json()
-        self.dispatch_handlers(self.on_before_send_raw, payload)
         try:
+            # Inside the `try`: a payload that cannot be serialised, or a hook that raises, must
+            # still forget the entry this call registered.
+            payload = request.model_dump_json()
+            self.dispatch_handlers(self.on_before_send_raw, payload)
             try:
                 await client.send(payload)
             except (WebSocketException, OSError) as e:

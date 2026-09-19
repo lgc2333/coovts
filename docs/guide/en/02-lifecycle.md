@@ -64,7 +64,10 @@ carry the token, so filter them out before logging or sharing a capture.
   supervisor ends; calling it while it is running raises `RuntimeError`.
 - `await plugin.stop()` marks the plugin stopped (`plugin.state` becomes `STOPPED`), cancels the
   supervisor — making that `run()` await raise `CancelledError` — **cancels and awaits every handler
-  still running**, and closes the socket (pending requests end as `CancelledError`).
+  and hook still running**, and closes the socket (pending requests end as `CancelledError`).
+- A hook or a handler may call `stop()` itself. The task that makes that call is the one exception to
+  the sweep: it is left alone, so its `await` returns and the code after it still runs
+  ([ADR-0021](../../adr/0021-a-connect-has-an-owner.md)).
 - So a handler must tolerate cancellation: swallowing or blocking on `CancelledError` keeps the whole
   program from exiting. See [ADR-0006](../../adr/0006-handler-dispatch-is-fire-and-forget.md).
 - A teardown that fails during `stop()` reaches the caller of `stop()`; a disconnect the reconnect
