@@ -13,10 +13,11 @@
 
 于是 `on_authenticate_failed(e)` 里的 `e` 可能是 `APIError`（VTS 明确拒绝），也可能是
 `ConnectionClosed`（socket 断了）。**想区分这两种，必须自己 `isinstance(e, APIError)`。**
-同理，连接类失败不会变成 `await` 侧的一种异常，因为那时候根本没有请求在等。库自己发起的一次断开失败了
-也一样只走 hook：`on_disconnect_failed`，不会出现在 `await` 处。
+同理，连接类失败不会变成 `await` 侧的一种异常，因为那时候根本没有请求在等。库自己发起的一次断开也一样
+只走 hook：`on_disconnect_failed`，不会出现在 `await` 处。唯一的例外是 `stop()` 里的收尾：那次断开会到达
+`stop()` 的调用方，而且它让在途请求以 `CancelledError` 结束，而不是让它们失败。
 
-这也解释了为什么没有 `on_disconnected` 这种回调：断开这件事的可见后果，就是「在途请求全以
+这也解释了为什么没有 `on_disconnected` 这个 hook：断开这件事的可见后果，就是「在途请求全以
 `NetworkError` 失败」加上「`on_connection_closed` 收到传输异常」，再加一个专门的 hook 只是多一条
 可能被忘记处理的路径。
 
@@ -68,7 +69,8 @@ supervisor 直接结束运行，状态落到 `STOPPED`：
 
 1. `on_connect_failed` / `on_connection_closed` / `on_disconnect_failed`：连接层到底通不通，异常原样
    打出来。
-2. `on_recv_raw` / `on_before_send_raw`：线上实际流动的 JSON。
+2. `on_recv_raw` / `on_before_send_raw`：线上实际流动的 JSON。鉴权帧里带着 token，打日志或把抓包分享
+   出去之前先过滤掉。
 3. `on_parse_data_error`：帧到了但解不出来（信封坏了，或者载荷和模型对不上）。
 4. `on_subscribe_failed`：声明过的事件的订阅被拒绝了——这个 VTS 不认识的事件（稳定版上跑 beta 事件），
    或者它不接受的 config。

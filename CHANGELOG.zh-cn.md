@@ -9,7 +9,7 @@
 ### 新增
 
 - `coovts.types.consts` 现在放着上游常量表：错误码、受限制按键、热键动作，以及后期效果和它们的配置。
-- 库补齐了权限流程、之前缺的六个事件、`ItemSort`，以及 api 包与 event 包共用的 ArtMesh 模型。
+- 库补齐了权限流程、此前缺的事件、`ItemSort`，以及 api 包与 event 包共用的 ArtMesh 模型。
 - 库自己发起的断开若关闭失败，失败现在报给新增的 `on_disconnect_failed` hook。
 - `plugin.subscribe_event(...)` 一次声明一个事件。声明本身持有数据模型、它订阅用的 config，以及它的
   handler。每次重连后库都会重发订阅，所以订阅不会一直丢着
@@ -22,6 +22,11 @@
   - stub 和模型不一致时 CI 直接失败。
   - `subscribe_event` 为每个事件给出一条带类型的重载。只有对应的 config 模型没有必填字段时，`config`
     参数才是可选的。
+- ArtMesh 群组也建进模型了：`ArtMeshMatcher.art_mesh_group_id_exact`，以及
+  `ArtMeshListResponse.number_of_art_mesh_groups` 与 `art_mesh_groups`，它们装着新的 `ArtMeshGroup`
+  （`groupID`、`groupName`、`numberOfArtMeshesInGroup`、`artMeshNames`）。
+- `ExpressionInfo.seconds_since_last_active` 读得到表情上次激活过去了多久——VTS 会发这个字段，但它自己
+  的文档里没有。
 
 ### 变更
 
@@ -34,6 +39,13 @@
 - `stop()` 会取消还在跑的 handler 任务。
 - 连接断开时，每个在途请求都以 `NetworkError` 失败。
 - 在途请求超过 API 超时后抛 `RequestTimeout`。
+- `plugin.reconnect()` 变成「请求一个新会话」，不再自己开一个。插件在跑的时候，这个调用断开当前会话，由
+  跑着的那条运行开下一个并鉴权——所以正等着 `reconnect_delay` 的掉线会立刻重试。`wait_connect=True` 只等到
+  新 socket 建好，不等鉴权。连接已经在建时再调，现在什么都不做，不再抛 `RuntimeError`；手动重连也不会再
+  把持有连接的运行打死（[ADR-0019](./docs/adr/0019-the-run-owns-the-session.md)）。
+- 模型没声明的字段现在会保留，不再丢弃：帧上和你自己构建的 payload 上都一样
+  （[ADR-0020](./docs/adr/0020-unknown-fields-are-kept.md)）。别名不改写这些字段，所以要按 wire 的写法
+  写它们。
 
 ### 移除
 
@@ -46,6 +58,9 @@
 
 - 新增 pytest 套件，回放真实 VTube Studio 抓到的帧。
 - 新增 `CONTEXT.md`、ADR、使用指南，以及这份 changelog。
+- 一帧事件解析失败只会报给 `on_parse_data_error` 一次，不再按该事件挂了多少 handler 重复上报。
+- `stop()` 先断连再清扫 handler 任务；`on_handler_run_failed` 之后重派发的 handler 也会被一起跟踪。
+- 请求已经放弃之后才到的应答会被安静丢掉。
 
 ## 0.0.1.alpha2 — 2025-05-21
 

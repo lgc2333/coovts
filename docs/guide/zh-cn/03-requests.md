@@ -117,8 +117,9 @@ raw = await plugin.call_api(MyEndpointRequest(some_field=1), response_model=None
   字典走 `model_validate` 进去；构造函数签名由字段名生成，所以 `modelID=` 这种关键字是类型错误。
 - **两种写法都不算错**：每个模型按字段名和别名都能校验，帧和 Python 字典都能解析；线上依然是驼峰，因为 VTS
   就发驼峰。见 [ADR-0018](../../adr/0018-aliases-validate-everywhere.md)。
-- **未知字段静默丢弃**：VTS 明确说可以在不升版本的情况下加字段，所以多出来的键一律忽略，不会报错——
-  代价是新字段在你建模它之前是不可见的。见 [ADR-0003](../../adr/0003-model-config-and-tolerant-reader.md)。
+- **未知字段原样走完一圈**：VTS 明确说可以在不升版本的情况下加字段，所以多出来的键会留在模型上
+  （`model_extra`）并原样发出去，而不是被丢弃。别名生成器不会给它们改名，所以模型没有声明的字段必须按线上
+  拼写（驼峰）写。见 [ADR-0020](../../adr/0020-unknown-fields-are-kept.md)。
 
 ## 各个请求的字段含义在哪
 

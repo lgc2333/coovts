@@ -53,13 +53,15 @@ flowchart LR
 | `on_before_send_raw`          | 即将发出一个请求                             | `payload: str`    |
 
 `on_recv_raw` / `on_before_send_raw` 是一对抓包用的钩子：拿到的是原样的 JSON 字符串，适合排查
-「到底发出去/收回来什么」。
+「到底发出去/收回来什么」。鉴权帧里带着 token，打日志或把抓包分享出去之前先过滤掉。
 
 ## `run()` 与 `stop()`
 
-- `await plugin.run()` 启动 supervisor 任务并返回它。已经在跑时再调会 `RuntimeError`。
-- `await plugin.stop()` 做四件事：把插件标记为已停止（`plugin.state` 变成 `STOPPED`）、取消 supervisor、
-  **取消并等待所有在跑的 handler 任务**、关掉 socket（此时在途请求以 `CancelledError` 结束）。
+- `await plugin.run()` 启动 supervisor 任务并返回它。await 它会阻塞到 supervisor 结束；已经在跑时再调会
+  `RuntimeError`。
+- `await plugin.stop()` 做四件事：把插件标记为已停止（`plugin.state` 变成 `STOPPED`）、取消 supervisor
+  ——于是上面那个 `run()` 的 await 会抛 `CancelledError`——**取消并等待所有在跑的 handler 任务**、关掉
+  socket（此时在途请求以 `CancelledError` 结束）。
 - 因此 handler 必须容忍取消：吞掉或阻塞 `CancelledError` 会让整个程序退不出去。见
   [ADR-0006](../../adr/0006-handler-dispatch-is-fire-and-forget.md)。
 - `stop()` 期间断开失败会抛给 `stop()` 的调用方；重连循环自己发起的断开失败则报给
@@ -82,6 +84,18 @@ flowchart LR
 
 断开时在途请求**不会**被续传，也不会重发，失败方式见
 [发请求](./03-requests.md#断线时在途请求会怎样)。
+
+### 主动重连
+
+`plugin.reconnect()` 是主动要一个新会话的公开入口。会话归 run 所有，所以这是一个请求，而不是接管：
+
+- **有 run 在跑时，调用只扔掉当前会话**：run 会直接去开下一个会话并鉴权，不会再等 `reconnect_delay`，
+  所以还在等延迟的断开立刻就会重试。VTS 自己接受下一个 socket 可能要花一点时间：重连很快，但不是瞬间。
+- **没有 run 在跑时，调用自己连上去**，之后没有任何东西会重连它。
+- **`reconnect(wait_connect=True)` 只等新 socket**，不等鉴权，run 一结束就不再等；会话可以用了的信号是
+  `on_authenticated`。
+- **已经有一次重连在飞的时候，这次调用要的就是它**，所以调用什么都不做。
+- **有 run 在跑时它不会抛异常**；结束一次 run 仍然是用 `stop()`。
 
 ## 该在哪里做初始化
 

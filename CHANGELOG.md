@@ -10,8 +10,8 @@ The newest release is first. Its date is the PyPI upload date.
 
 - `coovts.types.consts` now holds the upstream constant tables: error IDs, restricted keys, hotkey
   actions, and post-processing effects with their configs.
-- The library gains the permission flow, the six events that were missing, `ItemSort`, and the
-  ArtMesh models that the api package and the event package share.
+- The library gains the permission flow, the events that were missing, `ItemSort`, and the ArtMesh
+  models that the api package and the event package share.
 - A disconnect that the plugin starts itself now reports a failed close to the new
   `on_disconnect_failed` hook.
 - `plugin.subscribe_event(...)` declares an event once. The declaration holds the data model, the
@@ -29,6 +29,11 @@ The newest release is first. Its date is the PyPI upload date.
   - CI fails when the stub and the models disagree.
   - `subscribe_event` gets one typed overload per event. The `config` argument is optional only when
     the event config model has no required field.
+- The ArtMesh groups are modelled too: `ArtMeshMatcher.art_mesh_group_id_exact`, plus
+  `ArtMeshListResponse.number_of_art_mesh_groups` and `art_mesh_groups`, which carry the new
+  `ArtMeshGroup` (`groupID`, `groupName`, `numberOfArtMeshesInGroup`, `artMeshNames`).
+- `ExpressionInfo.seconds_since_last_active` reads how long ago an expression was active — a field
+  VTube Studio sends that its own documents leave out.
 
 ### Changed
 
@@ -42,6 +47,15 @@ The newest release is first. Its date is the PyPI upload date.
 - `stop()` cancels the handler tasks that are still running.
 - A lost connection fails every pending request with `NetworkError`.
 - A pending request that passes its API timeout raises `RequestTimeout`.
+- `plugin.reconnect()` asks for a fresh session instead of opening one itself. While the plugin runs,
+  the call drops the current session and the run opens and authenticates the next one — so a drop
+  that is still waiting out `reconnect_delay` retries immediately. `wait_connect=True` waits for the
+  new socket, not for authentication. A call while a connect is already in flight does nothing now
+  instead of raising `RuntimeError`, and a reconnect by hand no longer ends the run that owns the
+  connection ([ADR-0019](./docs/adr/0019-the-run-owns-the-session.md)).
+- A field the models do not declare is kept instead of dropped, on frames and on the payloads you
+  build alike ([ADR-0020](./docs/adr/0020-unknown-fields-are-kept.md)). The aliases do not rename
+  those fields, so write them the way the wire does.
 
 ### Removed
 
@@ -54,6 +68,10 @@ The newest release is first. Its date is the PyPI upload date.
 
 - A pytest suite replays frames that a real VTube Studio captured.
 - `CONTEXT.md`, the ADRs, the user guide, and this changelog are new.
+- A malformed event frame reaches `on_parse_data_error` once, not once per handler of that event.
+- `stop()` disconnects before it sweeps the handler tasks, and a handler re-dispatched after
+  `on_handler_run_failed` is tracked like the rest.
+- An answer that arrives for a request that already gave up is dropped quietly.
 
 ## 0.0.1.alpha2 — 2025-05-21
 

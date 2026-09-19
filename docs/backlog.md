@@ -20,7 +20,8 @@ when the value changes" decides what the defaults should be, so the helpers wait
 the unsolicited state broadcast VTS sends over UDP.
 
 **Trigger**: a plugin that needs it. The WebSocket API works today as long as the endpoint is
-configured, which is why this is the only gap in the model set
+configured, and since the models are transcribed from the upstream document and checked against a
+live VTube Studio, this is the only gap in the model set
 ([ADR-0004](./adr/0004-vts-api-coverage.md)).
 
 ## Logging in the library, if it ever needs any

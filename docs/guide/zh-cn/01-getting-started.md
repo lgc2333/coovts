@@ -63,6 +63,9 @@ if __name__ == "__main__":
 
 带全部日志 hook 的完整版见 [`examples/basic.py`](../../../examples/basic.py)。
 
+token 是 bearer 凭据：把它放在仓库之外，加进你自己的 `.gitignore`，并且要知道，能在 `endpoint` 上应答的
+东西都会收到它。
+
 请求需要有会话，所以 `call_api` 同样写在 `on_authenticated` 里；它按请求给出类型，返回对应的响应模型
 （见[发请求](./03-requests.md)）。
 

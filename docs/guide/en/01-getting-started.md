@@ -64,6 +64,9 @@ if __name__ == "__main__":
 
 [`examples/basic.py`](../../../examples/basic.py) is the same thing with every logging hook filled in.
 
+The token is a bearer credential: keep it outside the repository, add it to your own `.gitignore`, and
+keep in mind that anything able to answer on `endpoint` receives it.
+
 A request needs an authenticated session, so `call_api` goes in `on_authenticated` too; it is typed per
 request and returns that request's response model ([Requests](./03-requests.md)).
 

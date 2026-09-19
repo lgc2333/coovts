@@ -16,6 +16,12 @@ live in [`docs/adr/`](./docs/adr/).
 The one object that owns a connection to VTube Studio and everything happening on it.
 _Avoid_: Client, Connection, Session, Bot
 
+**Session**:
+One connection to VTube Studio together with the authentication that goes with it. VTube Studio
+remembers nothing across sessions, so a declared event is subscribed to again in each one and a
+pending request never survives into the next.
+_Avoid_: Connection, Socket
+
 **Hook**:
 A lifecycle callback registered on a `Plugin` with a decorator (`@plugin.on_connected`), invoked at
 a fixed moment of the connection lifecycle; several handlers per hook, in registration order.
@@ -83,7 +89,7 @@ override if one exists, otherwise by swapping the `Request` suffix for `Response
 _Avoid_: Result, Reply
 
 **Event data model**:
-The inbound model for one VTube Studio event. Its class name minus the `EventData` suffix is the
+The inbound model for one VTube Studio event. Its class name without the trailing `Data` is the
 event name used for the subscription.
 _Avoid_: Event payload, Message
 
@@ -98,8 +104,8 @@ None is used today; they exist so an awkward name bends the convention instead o
 _Avoid_: Override, Exception
 
 **Generated API surface**:
-The typed signatures of `call_api` and `handle_event`, generated from the request and event models
-into a stub file. Derived from the models, never edited by hand.
+The typed signatures of `call_api` and `subscribe_event`, generated from the request and event
+models into a stub file. Derived from the models, never edited by hand.
 _Avoid_: Stub, Interface, Typing
 
 **Constant table**:

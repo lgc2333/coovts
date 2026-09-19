@@ -10,13 +10,13 @@
 
 _✨ Another library for making VTube Studio plugins with Python ✨_
 
-English | [简体中文](README.zh-cn.md)
+English | [简体中文](https://github.com/lgc2333/coovts/blob/main/README.zh-cn.md)
 
 [![CI](https://github.com/lgc2333/coovts/actions/workflows/ci.yml/badge.svg)](https://github.com/lgc2333/coovts/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/lgc2333/coovts/branch/main/graph/badge.svg)](https://codecov.io/gh/lgc2333/coovts)
 [![PyPI](https://img.shields.io/pypi/v/coovts)](https://pypi.org/project/coovts/)
 [![Python versions](https://img.shields.io/pypi/pyversions/coovts)](https://pypi.org/project/coovts/)
-[![License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/lgc2333/coovts/blob/main/LICENSE)
 
 </div>
 
@@ -55,13 +55,20 @@ async def _():
     print("current model:", model.model_name, model.model_id)
 
 
-asyncio.run(plugin.run())
+async def main() -> None:
+    await plugin.run()
+
+
+asyncio.run(main())
 ```
+
+`plugin.run()` hands back the supervisor task; it must be awaited inside a running event loop,
+because `asyncio.run()` builds its argument before the loop starts.
 
 ### Next
 
-- Read the [guide in detail](./docs/guide/en/README.md)
-- Read [`examples/basic.py`](./examples/basic.py) — the same plugin, with every logging hook filled in
+- Read the [guide in detail](https://github.com/lgc2333/coovts/blob/main/docs/guide/en/README.md)
+- Read [`examples/basic.py`](https://github.com/lgc2333/coovts/blob/main/examples/basic.py) — the same plugin, with every logging hook filled in
 
 Thanks for using it, and contributions are welcome 😊
 
@@ -88,4 +95,4 @@ uv add coovts
 
 ## 📝 Changelog
 
-[CHANGELOG.md](./CHANGELOG.md)
+[CHANGELOG.md](https://github.com/lgc2333/coovts/blob/main/CHANGELOG.md)

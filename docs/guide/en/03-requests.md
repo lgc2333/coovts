@@ -132,10 +132,11 @@ payload that is not a model at all works too, as long as you hand over `message_
 - **Neither spelling is an error.** Every model validates by field name and by alias, so a frame and a
   python dict both decode; wire data is camelCase because VTS sends camelCase. See
   [ADR-0018](../../adr/0018-aliases-validate-everywhere.md).
-- **Unknown fields are dropped silently.** VTube Studio documents that it may add fields to existing
-  payloads without a version bump, so extra keys are ignored rather than rejected — the price being
-  that a new field stays invisible until someone models it. See
-  [ADR-0003](../../adr/0003-model-config-and-tolerant-reader.md).
+- **Unknown fields survive the round trip.** VTube Studio documents that it may add fields to existing
+  payloads without a version bump, so extra keys are kept on the model (`model_extra`) and go out
+  exactly as they came in rather than being dropped. The alias generator does not rename them, so
+  anything the models do not declare must be written in the wire spelling (camelCase). See
+  [ADR-0020](../../adr/0020-unknown-fields-are-kept.md).
 
 ## Where the per-request field docs live
 

@@ -54,15 +54,16 @@ Every hook is a `Hook` object registered with `@plugin.on_xxx`. A hook takes sev
 | `on_before_send_raw`          | A request is about to go out                                | `payload: str`    |
 
 `on_recv_raw` and `on_before_send_raw` are the packet-capture pair: they hand you the raw JSON
-strings, which is how you answer "what did we actually send and receive".
+strings, which is how you answer "what did we actually send and receive". The authentication frames
+carry the token, so filter them out before logging or sharing a capture.
 
 ## `run()` and `stop()`
 
-- `await plugin.run()` starts the supervisor task and returns it. Calling it while it is running
-  raises `RuntimeError`.
+- `await plugin.run()` starts the supervisor task and returns it. Awaiting it blocks until the
+  supervisor ends; calling it while it is running raises `RuntimeError`.
 - `await plugin.stop()` marks the plugin stopped (`plugin.state` becomes `STOPPED`), cancels the
-  supervisor, **cancels and awaits every handler still running**, and closes the socket (pending
-  requests end as `CancelledError`).
+  supervisor — making that `run()` await raise `CancelledError` — **cancels and awaits every handler
+  still running**, and closes the socket (pending requests end as `CancelledError`).
 - So a handler must tolerate cancellation: swallowing or blocking on `CancelledError` keeps the whole
   program from exiting. See [ADR-0006](../../adr/0006-handler-dispatch-is-fire-and-forget.md).
 - A teardown that fails during `stop()` reaches the caller of `stop()`; a disconnect the reconnect
@@ -86,6 +87,20 @@ Two consequences for your code:
 
 Requests in flight are never resumed or re-sent; see
 [Requests](./03-requests.md#what-happens-to-pending-requests-on-a-disconnect).
+
+### Asking for a reconnect
+
+`plugin.reconnect()` is the public way to ask for a fresh session. A run owns the session, so the call
+is a request rather than a takeover:
+
+- **With a run in progress, the call only drops the current session.** The run opens and authenticates
+  the next one without waiting out `reconnect_delay`, so a drop that is still mid-wait retries at
+  once. VTS itself may take a moment to accept the next socket: quick, not instant.
+- **Without a run in progress, the call connects itself**, and nothing reconnects it afterwards.
+- **`reconnect(wait_connect=True)` waits for the new socket only**, not for authentication, and stops
+  waiting as soon as the run ends; `on_authenticated` is the signal that the session is usable.
+- **A reconnect already in flight is exactly what the call asks for**, so the call does nothing.
+- **It does not raise while a run is in progress**; `stop()` is still how a run ends.
 
 ## Where to put what
 

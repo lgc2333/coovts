@@ -10,13 +10,13 @@
 
 _✨ 另一个写 VTube Studio 插件的 Python 库 ✨_
 
-[English](README.md) | 简体中文
+[English](https://github.com/lgc2333/coovts/blob/main/README.md) | 简体中文
 
 [![CI](https://github.com/lgc2333/coovts/actions/workflows/ci.yml/badge.svg)](https://github.com/lgc2333/coovts/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/lgc2333/coovts/branch/main/graph/badge.svg)](https://codecov.io/gh/lgc2333/coovts)
 [![PyPI](https://img.shields.io/pypi/v/coovts)](https://pypi.org/project/coovts/)
 [![Python versions](https://img.shields.io/pypi/pyversions/coovts)](https://pypi.org/project/coovts/)
-[![License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/lgc2333/coovts/blob/main/LICENSE)
 
 </div>
 
@@ -55,13 +55,19 @@ async def _():
     print("current model:", model.model_name, model.model_id)
 
 
-asyncio.run(plugin.run())
+async def main() -> None:
+    await plugin.run()
+
+
+asyncio.run(main())
 ```
+
+`plugin.run()` 交回 supervisor task，所以必须在运行中的事件循环里 await 它：`asyncio.run()` 是先算好参数、再启动循环。
 
 ### 接下来
 
-- 看看详细的[使用指南](./docs/guide/zh-cn/README.md)
-- 看看 [`examples/basic.py`](./examples/basic.py) ——同一个插件，但把每个日志 hook 都填满了。
+- 看看详细的[使用指南](https://github.com/lgc2333/coovts/blob/main/docs/guide/zh-cn/README.md)
+- 看看 [`examples/basic.py`](https://github.com/lgc2333/coovts/blob/main/examples/basic.py) ——同一个插件，但把每个日志 hook 都填满了。
 
 感谢各位使用，也欢迎大家贡献 😊
 
@@ -88,4 +94,4 @@ uv add coovts
 
 ## 📝 更新日志
 
-[CHANGELOG.zh-cn.md](./CHANGELOG.zh-cn.md)
+[CHANGELOG.zh-cn.md](https://github.com/lgc2333/coovts/blob/main/CHANGELOG.zh-cn.md)

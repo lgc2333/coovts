@@ -9,7 +9,7 @@ the same thing:
 
 - **The subscription** is what makes VTS push the event. It is a network action, and it is
   session-scoped.
-- **The handler** is a local callback. VTS knows nothing about it.
+- **The handler** is local. VTS knows nothing about it.
 
 `plugin.subscribe_event(...)` declares both halves at once, and the library keeps the subscription
 alive:
@@ -37,9 +37,9 @@ The details that matter:
   built from its own field defaults, so `subscribe_event(event.ModelOutlineEventData)` sends
   `{"draw": false}`. Pass a config to choose: `subscribe_event(event.ModelOutlineEventData,
 event.ModelOutlineEventConfig(draw=True))`. `ArtMeshTrackingEventData`,
-  `ArtMeshOutlineEventData` and `ExpressionToggledEventData` cannot be declared without one — their
-  configs have required fields, and the generated stub types `config` per event, so the type checker
-  is what holds you to it.
+  `ArtMeshOutlineEventData`, `ExpressionToggledEventData` and `TestEventData` (which needs
+  `test_message_for_event`) cannot be declared without one — their configs have required fields, and
+  the generated stub types `config` per event, so the type checker is what holds you to it.
 - **A config does not have to be a model**: anything VTS accepts for that event — a hand-built dict,
   typically — goes through the untyped overload and out untouched.
 - **`await plugin.subscribe_event(...)`** sends the subscription right away, returns the
