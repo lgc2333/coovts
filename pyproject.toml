@@ -23,6 +23,7 @@ dependencies = ["pydantic>=2.13.5", "websockets>=17.1"]
 Homepage = "https://github.com/lgc2333/coovts"
 Repository = "https://github.com/lgc2333/coovts"
 Issues = "https://github.com/lgc2333/coovts/issues"
+Changelog = "https://github.com/lgc2333/coovts/blob/main/CHANGELOG.md"
 
 [dependency-groups]
 dev = [
@@ -41,6 +42,17 @@ build-backend = "hatchling.build"
 
 [tool.hatch.version]
 path = "coovts/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+  "/uv.lock",
+  "/AGENTS.md",
+  "/CONTEXT.md",
+  "/codecov.yml",
+  "/.prettierrc.yml",
+  "/assets",
+  "/.agents",
+]
 
 [tool.poe.tasks]
 lint.cmd = "ruff check"
